@@ -3,18 +3,18 @@
 using namespace std;
 
 template <typename T>
-struct Node
+struct HashNode
 {
     string key;
     T value;
-    Node<T>* next;
-    Node(const string& key, const T& value);
+    HashNode<T>* next;
+    HashNode(const string& key, const T& value);
 };
 
 template <typename T>
 class HashTable {
 private:
-    Node<T>** table;
+    HashNode<T>** table;
     int capacity;
     int count;
     int hashFunction(const string& key) const;
@@ -28,14 +28,14 @@ public:
     void show() const;
     void insert(const string& key, const T& value);
     void remove(const string& key);
-    Node<T>* search(const string& key);
+    HashNode<T>* search(const string& key);
     void clear();
 };
 
 //----
 
 template <typename T>
-Node<T>::Node(const string& key, const T& value)
+HashNode<T>::HashNode(const string& key, const T& value)
     : key(key), value(value), next(nullptr)
 {}
 
@@ -47,7 +47,7 @@ HashTable<T>::HashTable(int capacity)
     }
     this->capacity = capacity;
     this->count = 0;
-    this->table = new Node<T>*[this->capacity];
+    this->table = new HashNode<T>*[this->capacity];
     for (int i = 0; i < this->capacity; i++) {
         this->table[i] = nullptr;
     }
@@ -81,7 +81,7 @@ int HashTable<T>::size() const {
 template <typename T>
 void HashTable<T>::show() const {
     for (int i = 0; i < this->capacity; i++) {
-        Node<T>* temp = this->table[i];
+        HashNode<T>* temp = this->table[i];
         while (temp != nullptr) {
             cout << " -> (" << temp->key << ", " << temp->value << ")";
             temp = temp->next;
@@ -93,7 +93,7 @@ void HashTable<T>::show() const {
 template <typename T>
 void HashTable<T>::insert(const string& key, const T& value) {
     int index = this->hashFunction(key);
-    Node<T>* temp = this->table[index];
+    HashNode<T>* temp = this->table[index];
     while (temp != nullptr) {
         if (temp->key == key) {
             temp->value = value;
@@ -101,7 +101,7 @@ void HashTable<T>::insert(const string& key, const T& value) {
         }
         temp = temp->next;
     }
-    Node<T>* newNode = new Node<T>(key, value);
+    HashNode<T>* newNode = new HashNode<T>(key, value);
     newNode->next = this->table[index];
     this->table[index] = newNode;
     this->count++;
@@ -109,8 +109,8 @@ void HashTable<T>::insert(const string& key, const T& value) {
 template <typename T>
 void HashTable<T>::remove(const string& key) {
     int index = this->hashFunction(key);
-    Node<T>* temp = this->table[index];
-    Node<T>* prev = nullptr;
+    HashNode<T>* temp = this->table[index];
+    HashNode<T>* prev = nullptr;
     while (temp != nullptr) {
         if (temp->key == key) {
             if (prev == nullptr) {
@@ -129,9 +129,9 @@ void HashTable<T>::remove(const string& key) {
 }
 
 template <typename T>
-Node<T>* HashTable<T>::search(const string& key) {
+HashNode<T>* HashTable<T>::search(const string& key) {
     int index = this->hashFunction(key);
-    Node<T>* temp = this->table[index];
+    HashNode<T>* temp = this->table[index];
     while (temp != nullptr) {
         if (temp->key == key) {
             return temp;
@@ -144,9 +144,9 @@ Node<T>* HashTable<T>::search(const string& key) {
 template <typename T>
 void HashTable<T>::clear() {
     for (int i = 0; i < this->capacity; i++) {
-        Node<T>* temp = this->table[i];
+        HashNode<T>* temp = this->table[i];
         while (temp != nullptr) {
-            Node<T>* del = temp;
+            HashNode<T>* del = temp;
             temp = temp->next;
             delete del;
         }

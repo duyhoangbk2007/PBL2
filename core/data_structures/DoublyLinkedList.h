@@ -2,19 +2,19 @@
 using namespace std;
 
 template <typename T>
-struct Node
+struct ListNode
 {
     T data;
-    Node<T>* next;
-    Node<T>* prev;
+    ListNode<T>* next;
+    ListNode<T>* prev;
     
-    Node(const T& x);
+    ListNode(const T& x);
 };
 
 template <typename T>
 class DoublyLinkedList {
 private:
-    Node<T>* head;
+    ListNode<T>* head;
 public:
     DoublyLinkedList();
     ~DoublyLinkedList();
@@ -29,14 +29,14 @@ public:
     void erase(int k);
     void update(int k, const T& x);
     void clear();
-    Node<T>* search(const T& x);
-    Node<T>* getAt(int k);
+    ListNode<T>* search(const T& x);
+    ListNode<T>* getAt(int k);
 };
 
 //----
 
 template <typename T>
-Node<T>::Node(const T& x) : data(x), next(nullptr), prev(nullptr)
+ListNode<T>::ListNode(const T& x) : data(x), next(nullptr), prev(nullptr)
 {}
 
 template <typename T>
@@ -50,7 +50,7 @@ DoublyLinkedList<T>::~DoublyLinkedList() {
 
 template <typename T>
 void DoublyLinkedList<T>::show() const {
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     while (temp != nullptr) {
         cout << temp->data << " ";
         temp = temp->next;
@@ -61,7 +61,7 @@ void DoublyLinkedList<T>::show() const {
 template <typename T>
 int DoublyLinkedList<T>::nodeCount() const {
     int count = 0;
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     while (temp != nullptr) {
         count++;
         temp = temp->next;
@@ -71,7 +71,7 @@ int DoublyLinkedList<T>::nodeCount() const {
 
 template <typename T>
 void DoublyLinkedList<T>::pushFront(const T& x) {
-    Node<T>* newNode = new Node<T>(x);
+    ListNode<T>* newNode = new ListNode<T>(x);
     if (head == nullptr) {
         head = newNode;
         return;
@@ -83,12 +83,12 @@ void DoublyLinkedList<T>::pushFront(const T& x) {
 
 template <typename T>
 void DoublyLinkedList<T>::pushBack(const T& x) {
-    Node<T>* newNode = new Node<T>(x);
+    ListNode<T>* newNode = new ListNode<T>(x);
     if (head == nullptr) {
         head = newNode;
         return;
     }
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     while (temp->next != nullptr) {
         temp = temp->next;
     }
@@ -110,8 +110,8 @@ void DoublyLinkedList<T>::insert(const T& x, int k) {
         pushBack(x);
         return;
     }
-    Node<T>* temp = getAt(k);
-    Node<T>* newNode = new Node<T>(x);
+    ListNode<T>* temp = getAt(k);
+    ListNode<T>* newNode = new ListNode<T>(x);
     newNode->next = temp;
     newNode->prev = temp->prev;
     temp->prev->next = newNode;
@@ -123,7 +123,7 @@ void DoublyLinkedList<T>::popFront() {
     if (head == nullptr) {
         return;
     }
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     head = head->next;
     if (head != nullptr) {
         head->prev = nullptr;
@@ -140,7 +140,7 @@ void DoublyLinkedList<T>::popBack() {
         popFront();
         return;
     }
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     while (temp->next != nullptr) {
         temp = temp->next;
     }
@@ -162,7 +162,7 @@ void DoublyLinkedList<T>::erase(int k) {
         popBack();
         return;
     }
-    Node<T>* temp = getAt(k);
+    ListNode<T>* temp = getAt(k);
     temp->prev->next = temp->next;
     temp->next->prev = temp->prev;
     delete temp;
@@ -170,7 +170,7 @@ void DoublyLinkedList<T>::erase(int k) {
 
 template <typename T>
 void DoublyLinkedList<T>::update(int k, const T& x) {
-    Node<T>* temp = getAt(k);
+    ListNode<T>* temp = getAt(k);
     if (temp == nullptr) {
         return;
     }
@@ -185,8 +185,8 @@ void DoublyLinkedList<T>::clear() {
 }
 
 template <typename T>
-Node<T>* DoublyLinkedList<T>::search(const T& x) {
-    Node<T>* temp = head;
+ListNode<T>* DoublyLinkedList<T>::search(const T& x) {
+    ListNode<T>* temp = head;
     while (temp != nullptr) {
         if (temp->data == x) {
             return temp;
@@ -197,11 +197,11 @@ Node<T>* DoublyLinkedList<T>::search(const T& x) {
 }
 
 template <typename T>
-Node<T>* DoublyLinkedList<T>::getAt(int k) {
+ListNode<T>* DoublyLinkedList<T>::getAt(int k) {
     if (k < 0) {
         return nullptr;
     }
-    Node<T>* temp = head;
+    ListNode<T>* temp = head;
     int index = 0;
     while (temp != nullptr) {
         if (index == k) {

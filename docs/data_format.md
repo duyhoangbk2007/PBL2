@@ -12,7 +12,7 @@
 - Mã gồm tiền tố và số tăng dần tối thiểu sáu chữ số: USR000001, MOV000001, ROM000001, SHW000001, TKT000001, INV000001, MEM000001. Không giới hạn ở sáu chữ số và không tái sử dụng mã.
 - seatId duy nhất trong phòng, ví dụ A01; hàng/cột bắt đầu từ 1.
 - Username phân biệt hoa/thường, không có khoảng trắng đầu/cuối. Điện thoại là chuỗi 10 chữ số bắt đầu bằng 0, duy nhất trong danh sách thành viên.
-- Không lưu mật khẩu rõ. passwordHash là chuỗi hash có salt và tham số thuật toán từ thư viện chuyên dụng, phải tương thích quy tắc ký tự file. Không dùng hash table hoặc std::hash để bảo vệ mật khẩu. Thư viện cụ thể được chọn khi triển khai đăng nhập.
+- Không lưu mật khẩu rõ. passwordHash là chuỗi hash có salt, định danh thuật toán và tham số từ thư viện chuyên dụng, phải tương thích quy tắc ký tự file. Ưu tiên Argon2id; nếu môi trường môn học không hỗ trợ thì chọn bcrypt hoặc PBKDF2-HMAC-SHA-256 và ghi rõ trong tài liệu triển khai. Không tự viết thuật toán và không dùng hash table hoặc std::hash để bảo vệ mật khẩu.
 
 ## 2. Schema (thứ tự trường)
 
@@ -22,9 +22,9 @@
 userId|username|passwordHash|fullName|role|active
 ```
 
-Hash table tài khoản dùng `userId` làm khóa; hash table hóa đơn dùng `invoiceId`. Username vẫn dùng để đăng nhập: AuthRepository tìm tài khoản theo username trong danh sách, rồi xác thực mật khẩu và trạng thái. Username phải duy nhất; không dùng làm khóa hash table tài khoản.
+Trong bộ nhớ dựng hai chỉ mục tài khoản: một hash table theo `userId` cho quan hệ tham chiếu và một hash table theo `username` cho đăng nhập. Hash table hóa đơn dùng `invoiceId`. Username phải duy nhất và không thay thế `userId` làm mã bất biến của tài khoản.
 
-role = ADMIN/STAFF. AuthRepository và StaffRepository cùng dùng file này; sửa nhân viên phải giữ các tài khoản Admin.
+role = ADMIN/STAFF. Mô hình dùng một kiểu `User` có trường role, không cần lớp con Admin/Staff. AuthRepository và StaffRepository cùng dùng file này; sửa nhân viên phải giữ các tài khoản Admin.
 
 ### movies.txt
 
@@ -48,7 +48,7 @@ Số hàng/cột dương. Số vị trí và số chỗ ngồi được tính t�
 roomId|seatId|row|column|seatType
 ```
 
-seatType = STANDARD/VIP/COUPLE. Khóa `(roomId, seatId)` và vị trí `(roomId, row, column)` không trùng. Vị trí nằm trong kích thước phòng; ô không có bản ghi là ô rỗng. Không lưu trạng thái bán.
+seatType = STANDARD/VIP/COUPLE. Khóa `(roomId, seatId)` và vị trí `(roomId, row, column)` không trùng. Vị trí nằm trong kích thước phòng; ô không có bản ghi là ô rỗng. Ghế COUPLE có một seatId và một vị trí logic, không tách thành hai bản ghi. Không lưu trạng thái bán.
 
 ### showtimes.txt
 
@@ -61,10 +61,10 @@ status = SCHEDULED/CANCELLED. endAt > startAt, chốt theo thời lượng phim 
 ### invoices.txt
 
 ```text
-invoiceId|staffId|memberId|createdAt|totalAmount
+invoiceId|showtimeId|staffId|memberId|createdAt|totalAmount
 ```
 
-staffId tham chiếu userId người bán (Staff hoặc Admin); memberId tùy chọn. totalAmount bằng tổng paidAmount ban đầu của mọi vé thuộc hóa đơn, kể cả vé về sau hủy. Mỗi hóa đơn có ít nhất một vé, tất cả cùng suất. Không lưu lặp danh sách mã vé.
+showtimeId tham chiếu suất của hóa đơn; staffId tham chiếu userId người bán (Staff hoặc Admin); memberId tùy chọn. totalAmount bằng tổng paidAmount ban đầu của mọi vé thuộc hóa đơn, kể cả vé về sau hủy. Mỗi hóa đơn có ít nhất một vé; showtimeId trên mọi vé phải bằng showtimeId của hóa đơn. Không lưu lặp danh sách mã vé.
 
 ### tickets.txt
 
@@ -100,9 +100,11 @@ Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dươn
 
 1. Phục hồi giao dịch dang dở trước khi đọc dữ liệu nghiệp vụ.
 2. Kiểm tra schema, số trường, kiểu, enum và mã trùng.
-3. Tải danh mục rồi kiểm tra tham chiếu suất/hóa đơn/vé.
-4. Kiểm tra ghế bán trùng, tổng tiền, điểm thành viên và bộ đếm mã.
+3. Tải danh mục rồi kiểm tra tham chiếu suất/hóa đơn/vé; showtimeId của từng vé phải trùng showtimeId trên hóa đơn tương ứng.
+4. Kiểm tra hóa đơn không rỗng, ghế bán trùng, tổng tiền, điểm thành viên và bộ đếm mã.
 5. Chỉ sau khi hợp lệ mới dựng danh sách, hash table, trie, BST và dữ liệu báo cáo trong bộ nhớ.
+
+Thứ tự khởi động ứng dụng là: lấy khóa độc quyền bộ dữ liệu, phục hồi giao dịch dang dở, đọc và kiểm tra file, dựng chỉ mục rồi mới hiển thị đăng nhập. Khóa phải dựa trên cơ chế khóa của hệ điều hành hoặc có kiểm tra tiến trình sở hữu; không chỉ dựa vào sự tồn tại của một file lock. Khi thoát bình thường, ứng dụng hoàn tất ghi rồi nhả khóa.
 
 File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng, tạo các file có schema, bộ đếm bắt đầu từ 1 và tài khoản Admin đầu tiên; không quy định mật khẩu mặc định trong tài liệu.
 

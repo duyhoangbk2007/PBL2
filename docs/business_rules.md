@@ -6,9 +6,9 @@
 
 - Admin quản lý danh mục, nhân viên, toàn bộ lịch sử, báo cáo, bán và hủy vé.
 - Staff bán vé, quản lý thông tin liên hệ thành viên, xem hóa đơn của mình trong ngày và tra cứu hóa đơn cũ của mình theo mã.
-- Service kiểm tra quyền mỗi nghiệp vụ. Tài khoản vô hiệu hóa không được đăng nhập. Chức năng sửa Staff không được đổi vai trò.
+- Mọi tài khoản dùng chung mô hình User với role ADMIN/STAFF; không cần lớp con Admin/Staff. Service kiểm tra quyền mỗi nghiệp vụ. Tài khoản vô hiệu hóa không được đăng nhập. Chức năng sửa Staff không được đổi vai trò.
 - Không quản lý ca, online, thanh toán điện tử, hạng thẻ hoặc đổi điểm.
-- Giữ khóa độc quyền bộ dữ liệu suốt phiên ứng dụng, từ chối phiên ghi thứ hai.
+- Giữ khóa độc quyền bộ dữ liệu suốt phiên ứng dụng, từ chối phiên ghi thứ hai. Phải lấy khóa trước khi phục hồi/tải dữ liệu và nhả khóa khi thoát; khóa treo sau sự cố phải được nhận diện an toàn, không chỉ kiểm tra một file có tồn tại hay không.
 
 ## 2. Phim, phòng và suất chiếu
 
@@ -17,6 +17,7 @@
 - Nhân viên xác nhận khách đủ tuổi tại quầy trước thanh toán; không lưu ngày sinh khách trong bản PBL2.
 - Phòng dùng mảng hai chiều, ô không có ghế là ô rỗng. Ghế có mã duy nhất trong phòng, hàng, cột và loại STANDARD/VIP/COUPLE; không lưu trạng thái đã bán.
 - Ghế đôi là một vị trí cho hai người, một vé nguyên cặp. Số vị trí bán vé khác số chỗ ngồi thực tế.
+- Trong dữ liệu, ghế đôi có đúng một seatId và một vị trí logic `(row, column)`; không tách thành hai mã ghế. UI hiển thị ô ghế đôi rộng hơn. Một vé ghế đôi được tính là một vé nhưng hai người khi thống kê số người.
 - Suất có trạng thái SCHEDULED/CANCELLED; trạng thái đã kết thúc suy ra từ thời gian.
 - Khi tạo/sửa suất: phim/phòng hoạt động, bắt đầu ở tương lai, ngày chiếu thuộc khoảng phát hành phim.
 - Kết thúc = bắt đầu + thời lượng phim khi tạo/sửa suất. Lưu thời điểm kết thúc riêng; đổi thời lượng phim không tự đổi lịch cũ.
@@ -44,6 +45,7 @@
 - Thành viên có mã, họ tên, số điện thoại duy nhất và điểm không âm; khởi tạo 0 điểm. Không chỉnh điểm trực tiếp.
 - Chỉ cộng điểm khi giao dịch lưu thành công. Không xóa thành viên đã có hóa đơn.
 - Lưu giá gốc, tiền giảm, thực trả và điểm trên vé tại thời điểm bán; đổi cấu hình không làm thay đổi lịch sử.
+- Bản PBL2 chưa có đổi điểm nên số điểm luôn đủ để thu hồi khi dữ liệu hợp lệ. Nếu bổ sung đổi điểm sau này, phải thiết kế sổ giao dịch điểm hoặc quy tắc số dư điều chỉnh trước khi giữ cơ chế chặn hủy do thiếu điểm.
 
 ## 4. Bán vé và undo
 
@@ -63,7 +65,7 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 - Cho phép hủy từng vé trong hóa đơn. Hoàn toàn bộ giá thực trả; lưu thời điểm, người hủy, lý do và tiền hoàn.
 - Chuyển vé sang CANCELLED, trả ghế cho suất đó và thu hồi đúng điểm đã cộng; lưu cùng giao dịch.
 - Không xóa vé, không đổi tổng tiền ban đầu của hóa đơn, không hủy lần hai.
-- Trạng thái hóa đơn suy ra từ vé: còn nguyên/hủy một phần/hủy toàn bộ. Tiền còn lại = tổng tiền ban đầu − tổng tiền hoàn.
+- Trạng thái hóa đơn không lưu lặp mà suy ra bằng một hàm nghiệp vụ dùng chung: ACTIVE nếu mọi vé còn SOLD, PARTIALLY_CANCELLED nếu có cả SOLD và CANCELLED, CANCELLED nếu mọi vé đã hủy. Tiền còn lại = tổng tiền ban đầu − tổng tiền hoàn.
 - Giữ pointsEarned ban đầu trên vé để đối chiếu dù đã thu hồi điểm. Nếu điểm thành viên không đủ thu hồi, chặn và báo dữ liệu không nhất quán, không ép về 0.
 
 ## 6. Lịch sử và báo cáo
@@ -81,5 +83,6 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 - Phim/phòng còn suất tương lai chưa hủy thì chưa được ngừng hoạt động. Sửa ngày phát hành không được làm suất tương lai nằm ngoài khoảng mới.
 - Nhân viên đã lập hóa đơn chỉ vô hiệu hóa, giữ mã. Không xóa/vô hiệu hóa Admin cuối cùng hoạt động nếu bổ sung chức năng quản lý Admin.
 - Giá, thời gian suất và mã liên kết lịch sử được giữ nguyên. Tên phim/phòng/nhân viên hiển thị theo danh mục hiện tại; bản đầu chưa lưu lịch sử đổi tên.
+- movieId là danh tính bất biến của một phim. Chỉ sửa thông tin của cùng phim; không biến bản ghi cũ thành một phim khác để tái sử dụng mã. Phim khác phải được tạo với movieId mới.
 - Lỗi dữ liệu hoặc tham chiếu mất phải báo file/dòng và chặn ghi, không bỏ qua dòng lỗi rồi ghi đè.
 - Phục hồi giao dịch dang dở trước khi tải dữ liệu. Xem [định dạng dữ liệu](data_format.md).

@@ -41,7 +41,7 @@ Tài liệu mô tả thiết kế mục tiêu, không khẳng định chức nă
 
 ### 2.4. Phạm vi thống nhất
 
-- Một hóa đơn chứa một hoặc nhiều vé của cùng một suất chiếu, gắn tối đa một thành viên.
+- Một hóa đơn chứa một hoặc nhiều vé của cùng một suất chiếu, lưu `showtimeId` và gắn tối đa một thành viên. Mọi vé trong hóa đơn phải tham chiếu đúng suất này.
 - Một vé ứng với một vị trí ghế. Ghế đôi bán nguyên cặp bằng một vé dành cho hai người.
 - Ghế đã bán xác định theo **mã suất chiếu + mã ghế**, không lưu trong sơ đồ phòng.
 - Loại vé thường/học sinh độc lập với loại ghế và thành viên. Ưu đãi không cộng dồn; lấy mức giảm cao nhất đủ điều kiện.
@@ -69,13 +69,13 @@ Core là C++ thuần, không phụ thuộc Qt. Dự kiến build bằng CMake; c
 | --- | --- |
 | Mảng hai chiều | Sơ đồ ghế phòng chiếu |
 | Danh sách liên kết đôi | Danh sách phim, suất chiếu, vé, hóa đơn và các tập thực thể cần thiết |
-| Hash table | Tra cứu tài khoản theo `userId` và hóa đơn theo `invoiceId` |
+| Hash table | Tra cứu tài khoản theo `userId`, đăng nhập theo `username` và hóa đơn theo `invoiceId` |
 | Stack | Hoàn tác trước thanh toán |
 | Trie | Gợi ý tên phim theo tiền tố |
 | BST | Chỉ mục hóa đơn theo khóa `(thời điểm lập, mã hóa đơn)` |
 | Max heap | Top phim theo doanh thu hoặc số vé hợp lệ |
 
-Các cấu trúc trên phải tự cài đặt, không thay bằng container STL. Quy ước dự án cho phép `std::string`, stream đọc/ghi file và tiện ích chuẩn; cần đối chiếu quy định giảng viên trước khi triển khai. Kiểu và container Qt chỉ dùng ở tầng UI.
+Chỉ cần cài đặt 2 đến 3 cấu trúc dữ liệu, còn lại có thể dùng thư viện. Quy ước dự án cho phép `std::string`, stream đọc/ghi file và tiện ích chuẩn; cần đối chiếu quy định giảng viên trước khi triển khai. Kiểu và container Qt chỉ dùng ở tầng UI.
 
 ## 5. Tài liệu
 
@@ -83,4 +83,3 @@ Các cấu trúc trên phải tự cài đặt, không thay bằng container STL
 - [Quy tắc nghiệp vụ](docs/business_rules.md)
 - [Định dạng dữ liệu và phục hồi](docs/data_format.md)
 - `docs/DS/`: tài liệu cấu trúc dữ liệu hiện có.
-

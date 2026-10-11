@@ -2,17 +2,17 @@
 using namespace std;
 
 template <typename T>
-struct Node
+struct StackNode
 {
     T data;
-    Node<T>* next;
-    Node(const T& x);
+    StackNode<T>* next;
+    StackNode(const T& x);
 };
 
 template <typename T>
 class Stack {
     private:
-        Node<T> *topNode;
+        StackNode<T> *topNode;
         int capacity;
         int count;
 
@@ -26,17 +26,17 @@ class Stack {
         int size() const;
         void push(const T& x);
         void pop();
-        Node<T> *top();
+        StackNode<T> *top();
 };
 
 //----
 
 template <typename T>
-Node<T>::Node(const T& x) : data(x), next(nullptr)
+StackNode<T>::StackNode(const T& x) : data(x), next(nullptr)
 {}
 
 template <typename T>
-Stack<T>::Stack(int capacity) : topNode(nullptr), capacity(capacity), count(0)
+Stack<T>::Stack(int capacity) : topNode(nullptr), capacity(capacity < 0 ? 0 : capacity), count(0)
 {}
 
 template <typename T>
@@ -58,7 +58,7 @@ bool Stack<T>::isFull() const {
 
 template <typename T>
 void Stack<T>::show() const {
-    Node<T>* temp = this->topNode;
+    StackNode<T>* temp = this->topNode;
     while (temp != nullptr) {
         cout << temp->data << " ";
         temp = temp->next;
@@ -75,7 +75,7 @@ template <typename T>
 void Stack<T>::push(const T& x) {
     if (this->isFull())
         return;
-    Node<T> *newNode = new Node<T>(x);
+    StackNode<T> *newNode = new StackNode<T>(x);
     newNode->next = this->topNode;
     this->topNode = newNode;
     this->count++;
@@ -86,13 +86,13 @@ void Stack<T>::pop() {
     if (this->isEmpty())
         return;
 
-    Node<T> *temp = this->topNode;
+    StackNode<T> *temp = this->topNode;
     this->topNode = this->topNode->next;
     delete temp;
     this->count--;
 }
 
 template <typename T>
-Node<T> *Stack<T>::top() {
+StackNode<T> *Stack<T>::top() {
     return this->topNode;
 }
