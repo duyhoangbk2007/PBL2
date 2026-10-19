@@ -5,7 +5,7 @@ File này theo dõi 15 bước trong lộ trình ở `AGENTS.md`. Trạng thái 
 | Bước | Nội dung | Trạng thái | Nhật ký |
 | --- | --- | --- | --- |
 | 01 | Khởi tạo Project và cấu trúc thư mục | Đang thực hiện; chưa có bản build được xác minh | [Buoc01_KhoiTaoDuAn.md](Buoc01_KhoiTaoDuAn.md) |
-| 02 | Xây dựng Models | Chưa xác minh | Chưa tạo |
+| 02 | Xây dựng Models | Đang thực hiện; tám model đã qua kiểm tra cú pháp, chưa liên kết/chạy thử | [Buoc02_XayDungModels.md](Buoc02_XayDungModels.md) |
 | 03 | Xây dựng cấu trúc dữ liệu | Chưa xác minh | Chưa tạo |
 | 04 | Xây dựng Repository và lưu trữ file | Chưa xác minh | Chưa tạo |
 | 05 | Quản lý phim | Chưa xác minh | Chưa tạo |

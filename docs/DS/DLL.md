@@ -32,3 +32,11 @@ Theo thiết kế, danh sách có thể lưu những tập thực thể trong b�
 
 - Lớp tự quản lý bộ nhớ động nhưng chưa định nghĩa hoặc vô hiệu hóa copy constructor/copy assignment. Sao chép mặc định sẽ sao chép `head`, có nguy cơ hai danh sách cùng sở hữu node và giải phóng lặp. Cần xử lý trước khi sao chép đối tượng.
 - Chưa có kiểm thử thực tế trong lần ghi tài liệu này. Nên kiểm tra danh sách rỗng, một node, chèn/xóa đầu–giữa–cuối và chỉ số ngoài phạm vi khi đến bước CTDL.
+
+## Vai trò cụ thể trong dự án rạp chiếu phim
+
+Theo `README.md`, danh sách liên kết đôi dự kiến giữ các tập dữ liệu như phim, suất chiếu, vé và hóa đơn **trong bộ nhớ** sau khi đọc từ file. Một repository có thể thêm đối tượng mới bằng `pushBack()`, đi tới vị trí bằng `getAt()`, thay dữ liệu bằng `update()` hoặc xóa bằng `erase()` khi quy tắc nghiệp vụ cho phép. Ví dụ, tập phim dùng để duyệt và hiển thị danh sách phim; mỗi node giữ một `Movie`, không phải một dòng văn bản thô.
+
+Danh sách giúp quản lý thứ tự các phần tử và chèn/xóa node mà không phải dời cả dãy. Tuy nhiên, lớp hiện chỉ giữ `head`, nên `pushBack()` và tìm theo vị trí/mã vẫn phải duyệt danh sách; để tìm nhanh theo mã có thể dựng thêm `HashTable` làm chỉ mục. `search(x)` hiện so sánh **toàn bộ giá trị `T` bằng `==`**, không tự hiểu `movieId` hay `invoiceId`; cách tra theo mã phải được thiết kế khi nối với model/repository.
+
+Đây là **vai trò dự kiến**, chưa có repository nào dùng `DoublyLinkedList<T>` và chưa kiểm thử cấu trúc này. Dữ liệu bền vững vẫn nằm trong `data/*.txt`; danh sách chỉ là bản làm việc trong bộ nhớ, được dựng lại sau khi tải file.

@@ -8,18 +8,18 @@
 - Không cho phép `|`, xuống dòng hoặc ký tự điều khiển trong trường văn bản; bản đầu không dùng escape.
 - Trường tùy chọn để rỗng, giữ dấu phân cách và cả trường rỗng cuối dòng khi parse; không dùng chữ null.
 - Ngày `YYYY-MM-DD`; thời điểm `YYYY-MM-DDTHH:mm:ss`, thống nhất giờ Việt Nam UTC+07:00.
-- Tiền là số nguyên 64-bit VND, không dấu phân cách hàng nghìn; boolean 0/1; enum chữ hoa.
+- Tiền dùng `double` theo đơn vị VND, cho phép phần thập phân; khi ghi file dùng dấu chấm `.` làm dấu thập phân, không có dấu phân cách hàng nghìn và không ghi `NaN`/`Infinity`. Boolean dùng 0/1; enum chữ hoa.
 - Mã gồm tiền tố và số tăng dần tối thiểu sáu chữ số: USR000001, MOV000001, ROM000001, SHW000001, TKT000001, INV000001, MEM000001. Không giới hạn ở sáu chữ số và không tái sử dụng mã.
 - seatId duy nhất trong phòng, ví dụ A01; hàng/cột bắt đầu từ 1.
 - Username phân biệt hoa/thường, không có khoảng trắng đầu/cuối. Điện thoại là chuỗi 10 chữ số bắt đầu bằng 0, duy nhất trong danh sách thành viên.
-- Không lưu mật khẩu rõ. passwordHash là chuỗi hash có salt, định danh thuật toán và tham số từ thư viện chuyên dụng, phải tương thích quy tắc ký tự file. Ưu tiên Argon2id; nếu môi trường môn học không hỗ trợ thì chọn bcrypt hoặc PBKDF2-HMAC-SHA-256 và ghi rõ trong tài liệu triển khai. Không tự viết thuật toán và không dùng hash table hoặc std::hash để bảo vệ mật khẩu.
+- Trong phiên bản môn học hiện tại, `password` được lưu dạng văn bản trong `users.txt` để đơn giản hóa phần đăng nhập. Trường này vẫn phải tuân thủ quy tắc ký tự của file (không chứa `|`, xuống dòng hoặc ký tự điều khiển). Nếu nâng cấp sang lưu hash, cần đổi đồng bộ model, định dạng file và dữ liệu tài khoản đã có; không dùng hash table hoặc `std::hash` như hàm bảo vệ mật khẩu.
 
 ## 2. Schema (thứ tự trường)
 
 ### users.txt
 
 ```text
-userId|username|passwordHash|fullName|role|active
+userId|username|password|fullName|role|active
 ```
 
 Trong bộ nhớ dựng hai chỉ mục tài khoản: một hash table theo `userId` cho quan hệ tham chiếu và một hash table theo `username` cho đăng nhập. Hash table hóa đơn dùng `invoiceId`. Username phải duy nhất và không thay thế `userId` làm mã bất biến của tài khoản.
@@ -64,7 +64,7 @@ status = SCHEDULED/CANCELLED. endAt > startAt, chốt theo thời lượng phim 
 invoiceId|showtimeId|staffId|memberId|createdAt|totalAmount
 ```
 
-showtimeId tham chiếu suất của hóa đơn; staffId tham chiếu userId người bán (Staff hoặc Admin); memberId tùy chọn. totalAmount bằng tổng paidAmount ban đầu của mọi vé thuộc hóa đơn, kể cả vé về sau hủy. Mỗi hóa đơn có ít nhất một vé; showtimeId trên mọi vé phải bằng showtimeId của hóa đơn. Không lưu lặp danh sách mã vé.
+showtimeId tham chiếu suất của hóa đơn; staffId tham chiếu userId người bán (Staff hoặc Admin); memberId tùy chọn. totalAmount bằng tổng paidAmount ban đầu của mọi vé thuộc hóa đơn, kể cả vé về sau hủy; khi kiểm tra giá trị `double`, cần tính đến sai số số thực. Mỗi hóa đơn có ít nhất một vé; showtimeId trên mọi vé phải bằng showtimeId của hóa đơn. Không lưu lặp danh sách mã vé.
 
 ### tickets.txt
 
@@ -74,7 +74,7 @@ ticketId|invoiceId|showtimeId|seatId|ticketType|basePrice|discountAmount|paidAmo
 
 - ticketType = REGULAR/STUDENT; status = SOLD/CANCELLED.
 - Phòng suy ra từ suất chiếu; ghế phải tồn tại trong phòng đó.
-- paidAmount = basePrice − discountAmount; tiền và điểm không âm; giảm không vượt giá gốc.
+- paidAmount = basePrice − discountAmount; tiền và điểm không âm; giảm không vượt giá gốc. Khi đối chiếu các số `double`, cần tính đến sai số số thực.
 - Vé SOLD: ba trường thời điểm/người/lý do hủy rỗng, refundAmount = 0.
 - Vé CANCELLED: đủ thông tin hủy, cancelledBy tham chiếu Admin, refundAmount = paidAmount; createdAt của hóa đơn <= cancelledAt < startAt.
 - Tối đa một vé SOLD cho `(showtimeId, seatId)`; được có nhiều vé CANCELLED lịch sử cùng cặp.

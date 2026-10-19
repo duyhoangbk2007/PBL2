@@ -37,10 +37,10 @@
 | Giảm thành viên | 5% |
 | Tích điểm | 1 điểm/10.000 VND thực trả trên từng vé |
 
-- Tiền dùng số nguyên 64-bit VND, không dùng số thực.
+- Tiền dùng `double` theo đơn vị VND, có thể có phần thập phân theo quyết định hiện tại của dự án. Cần xử lý sai số số thực khi đối chiếu tổng tiền và khi đọc/ghi dữ liệu.
 - Loại vé REGULAR/STUDENT độc lập với loại ghế và thành viên.
 - Nhân viên kiểm tra giấy tờ học sinh; ghế đôi loại học sinh yêu cầu cả hai người đủ điều kiện.
-- Lấy tỷ lệ giảm cao nhất đủ điều kiện, không cộng dồn. Tiền giảm = phần nguyên `(giá gốc × tỷ lệ) / 100`; thực trả = giá gốc − tiền giảm.
+- Lấy tỷ lệ giảm cao nhất đủ điều kiện, không cộng dồn. Tiền giảm = `(giá gốc × tỷ lệ) / 100` và giữ phần thập phân; thực trả = giá gốc − tiền giảm.
 - Điểm mỗi vé = phần nguyên `thực trả / 10000` nếu có thành viên, ngược lại bằng 0. Điểm hóa đơn là tổng điểm từng vé.
 - Thành viên có mã, họ tên, số điện thoại duy nhất và điểm không âm; khởi tạo 0 điểm. Không chỉnh điểm trực tiếp.
 - Chỉ cộng điểm khi giao dịch lưu thành công. Không xóa thành viên đã có hóa đơn.

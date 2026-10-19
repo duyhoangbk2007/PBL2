@@ -31,3 +31,11 @@ Theo thiết kế, hash table phục vụ tra cứu `userId`, `username`, `invoi
 - Lớp sở hữu mảng và node cấp phát động nhưng chưa định nghĩa hoặc vô hiệu hóa copy constructor/copy assignment; sao chép mặc định có nguy cơ giải phóng bộ nhớ lặp.
 - `search()` trả con trỏ tới node nội bộ; con trỏ mất hiệu lực khi xóa khóa, `clear()` hoặc hủy bảng.
 - Chưa kiểm thử thực tế. Nên thử khóa trùng, khóa không có, va chạm, `capacity <= 0`, `clear()` rồi thêm lại khi đến bước CTDL.
+
+## Vai trò cụ thể trong dự án rạp chiếu phim
+
+Theo thiết kế, bảng băm là **chỉ mục tra cứu trong bộ nhớ** theo khóa chuỗi. Ví dụ có thể tạo một bảng với khóa `userId` để tìm tài khoản theo mã, một bảng khác với khóa `username` để hỗ trợ đăng nhập, và bảng khóa `invoiceId` để tìm hóa đơn. Sau khi repository tải các bản ghi hợp lệ từ `users.txt` hoặc `invoices.txt`, nó sẽ đưa khóa và giá trị tương ứng vào bảng; service tra cứu qua repository thay vì đọc tuần tự file mỗi lần.
+
+`HashTable<T>` hiện lưu đúng **một giá trị cho mỗi khóa**. Gọi `insert()` với khóa đã có sẽ ghi đè giá trị cũ, nên việc phát hiện `username` trùng hoặc mã trùng phải được kiểm tra trước khi thêm, không được coi `insert()` là phép kiểm tra duy nhất. Bảng không tự đồng bộ với danh sách thực thể hoặc file: khi sửa/xóa một bản ghi, repository phải cập nhật chỉ mục tương ứng sau khi giao dịch thành công. Nếu một `User` được tra bằng cả `userId` và `username`, hai cách tra đó cần hai khóa/chỉ mục riêng; đổi username phải xử lý khóa cũ và mới.
+
+Hàm băm chỉ quyết định bucket để tra cứu nhanh; **không phải hàm băm mật khẩu**. Đây là cách dùng dự kiến, chưa có repository/đăng nhập dùng bảng băm và chưa có kiểm thử thực tế.

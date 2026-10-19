@@ -6,6 +6,9 @@
 - [x] Tạo nhật ký Bước 01 và xác định việc còn làm.
 - [x] Ghi vai trò các thư mục hiện có và đối chiếu với cấu trúc mục tiêu.
 - [x] Ghi tổng quan ba CTDL đã có vào `docs/DS/`; chưa kiểm thử mã CTDL.
+- [x] Bổ sung phần trách nhiệm cụ thể của các thư mục vào cuối `docs/cauTrucThuMuc.md` theo yêu cầu người học (2026-10-19); đã phân biệt cấu trúc mục tiêu với hiện trạng.
+- [x] Bổ sung vai trò cụ thể của ba cấu trúc dữ liệu đã cài vào cuối `docs/DS/DLL.md`, `HashTable.md`, `Stack.md` (2026-10-19); chưa triển khai nơi dùng hoặc kiểm thử CTDL.
+- [x] Bổ sung bảng tra cứu ý nghĩa từng file theo thư mục vào `docs/TongQuan/cauTrucThuMuc.md` (2026-10-19); phân biệt file đã có và file dự kiến.
 - [ ] Xác minh bộ công cụ C++17 và CMake dùng trên Windows.
 - [ ] Thống nhất và hoàn thiện cấu trúc thư mục tối thiểu cho bước khởi tạo.
 - [ ] Viết chương trình C++17 tối thiểu trong `main.cpp` và cấu hình build trong `CMakeLists.txt`.
@@ -33,6 +36,12 @@
 | `tests/` | Nơi dự kiến đặt bài kiểm tra cấu trúc dữ liệu, repository, service và dữ liệu mẫu. | Chưa có thư mục; chưa chạy kiểm thử. |
 
 **Cập nhật 2026-10-11:** Đã viết tài liệu tổng quan trong `docs/DS/DLL.md`, `HashTable.md`, `Stack.md` dựa trên ba header hiện có. Không sửa `.h`, `.cpp`, `main.cpp` hoặc `CMakeLists.txt`. Kiến thức ghi nhận: thư mục thể hiện trách nhiệm của từng tầng; template CTDL được cài trong header để trình biên dịch thấy phần định nghĩa khi dùng kiểu cụ thể. Chưa build hoặc chạy test nên chưa xác nhận tính đúng của ba CTDL.
+
+**Cập nhật 2026-10-19:** Đã bổ sung mục "Trách nhiệm cụ thể của từng thư mục" ở cuối `docs/cauTrucThuMuc.md`: giải thích gốc dự án, các thư mục trong `core/`, `ui/`, `data/`, `tests/`, `docs/`, giới hạn trách nhiệm và ví dụ luồng bán vé dự kiến. Đã sửa mô tả `Room` trong cây mục tiêu để không hàm ý model đang giữ mảng ghế hai chiều; `Room` hiện giữ kích thước, ghế nằm ở `Seat`. Không chỉnh mã nguồn; không chạy build/test vì đây là thay đổi tài liệu. Các việc khởi tạo và build còn lại giữ nguyên.
+
+**Cập nhật tài liệu CTDL 2026-10-19:** Đã đọc lại ba header và thêm mục "Vai trò cụ thể trong dự án rạp chiếu phim" ở cuối `docs/DS/DLL.md`, `HashTable.md`, `Stack.md`. DLL dự kiến giữ các tập thực thể trong bộ nhớ; HashTable làm chỉ mục theo `userId`, `username`, `invoiceId`; Stack giữ thứ tự ghế vừa chọn để Undo trước thanh toán. Đã ghi rõ giới hạn API hiện tại (DLL tìm bằng `==` của `T`; HashTable ghi đè khóa trùng; Stack không có `clear()` và `push()` không báo thất bại), phân biệt dữ liệu trong bộ nhớ với file bền vững và Undo với hủy vé. Chưa sửa mã nguồn, chưa có repository/service dùng ba cấu trúc, chưa build hoặc kiểm thử CTDL trong lần cập nhật này.
+
+**Cập nhật tra cứu file 2026-10-19:** Tài liệu `cauTrucThuMuc.md` hiện nằm trong `docs/TongQuan/` theo cách tổ chức mới của người học. Đã bổ sung mục "Ý nghĩa từng file theo thư mục" vào file đó, giải thích từng model, cấu trúc dữ liệu, repository, service, tiện ích, cấu hình, màn hình Qt, file dữ liệu và tài liệu hiện có. Đồng thời cập nhật cây `docs/` trong tài liệu để phản ánh đường dẫn thực tế. Đây là bổ sung tài liệu; không tạo các file mã/dữ liệu dự kiến, không đổi trạng thái bước, không build/kiểm thử chương trình.
 
 ## Lỗi và vướng mắc
 

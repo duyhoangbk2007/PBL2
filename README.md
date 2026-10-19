@@ -79,7 +79,8 @@ Chỉ cần cài đặt 2 đến 3 cấu trúc dữ liệu, còn lại có thể
 
 ## 5. Tài liệu
 
-- [Cấu trúc thư mục mục tiêu](docs/cauTrucThuMuc.md)
-- [Quy tắc nghiệp vụ](docs/business_rules.md)
-- [Định dạng dữ liệu và phục hồi](docs/data_format.md)
+- [Tổng quan đề tài và luồng chức năng](docs/TongQuan/TongQuanDeTai.md)
+- [Cấu trúc thư mục mục tiêu](docs/TongQuan/cauTrucThuMuc.md)
+- [Quy tắc nghiệp vụ](docs/TongQuan/business_rules.md)
+- [Định dạng dữ liệu và phục hồi](docs/TongQuan/data_format.md)
 - `docs/DS/`: tài liệu cấu trúc dữ liệu hiện có.
