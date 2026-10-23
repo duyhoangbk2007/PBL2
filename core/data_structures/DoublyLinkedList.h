@@ -7,7 +7,6 @@ struct ListNode
     T data;
     ListNode<T>* next;
     ListNode<T>* prev;
-    
     ListNode(const T& x);
 };
 
