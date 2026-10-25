@@ -92,6 +92,7 @@ PBL2/
 └── docs/                        # Tài liệu thiết kế và nhật ký phát triển
     ├── TongQuan/
     │   ├── TongQuanDeTai.md
+    │   ├── QuanHeModels.md
     │   ├── cauTrucThuMuc.md
     │   ├── business_rules.md
     │   └── data_format.md
@@ -296,6 +297,7 @@ Các file sau **chưa có trong cây làm việc**; tên và thứ tự trườn
 | File tài liệu hiện có | Dùng để xem gì? |
 | --- | --- |
 | `docs/TongQuan/TongQuanDeTai.md` | Tổng quan đề tài, quyền Admin/Staff và luồng UI → Service → Repository của từng chức năng. |
+| `docs/TongQuan/QuanHeModels.md` | Bảng quan hệ giữa tám model và các quyết định cần chốt trước khi thêm con trỏ. |
 | `docs/TongQuan/cauTrucThuMuc.md` | Cây thư mục mục tiêu và ý nghĩa các file; chính là tài liệu này. |
 | `docs/TongQuan/business_rules.md` | Ai được làm gì và các điều kiện nghiệp vụ khi quản lý/bán/hủy vé. |
 | `docs/TongQuan/data_format.md` | Cách ghi từng file dữ liệu, kiểm tra dữ liệu và phục hồi giao dịch. |

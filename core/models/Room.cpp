@@ -1,4 +1,5 @@
 #include "Room.h"
+#include "Seat.h"
 using namespace std;
 
 Room::Room()
@@ -55,4 +56,38 @@ void Room::setColumnCount(int columnCount) {
 
 void Room::setActive(bool active) {
     this->active = active;
+}
+
+bool Room::linkSeat(Seat* seat) {
+    if (seat == nullptr) return false;
+    if (seat->getRoomId() != this->roomId) return false;
+    if (seat->getRow() < 1 || seat->getRow() > this->rowCount || seat->getColumn() < 1 || seat->getColumn() > this->columnCount)
+        return false;
+
+    int n = this->seats.nodeCount();
+    for (int i = 0; i < n; i++)
+    {
+        Seat* current = this->seats.getAt(i)->data;
+
+        if (current->getSeatId() == seat->getSeatId()) return false;
+        if (current->getRow() == seat->getRow() && current->getColumn() == seat->getColumn())
+            return false;
+    }   
+    this->seats.pushBack(seat);
+    return true;
+}
+
+Seat* Room::findSeat(const string& seatId) {
+    int n = this->seats.nodeCount();
+
+    for (int i = 0; i < n; i++)
+    {
+        Seat* seat = this->seats.getAt(i)->data;
+        if (seat->getSeatId() == seatId) return seat;
+    }
+    return nullptr;
+}
+
+int Room::getSeatCount() const {
+    return this->seats.nodeCount();
 }

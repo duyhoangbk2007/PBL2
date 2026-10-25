@@ -37,3 +37,6 @@ void Member::setFullName(const string& fullName) {
 void Member::setPhone(const string& phone) {
 	this->phone = phone;
 }
+void Member::setPoints(const int& points) {
+	this->points = points;
+}

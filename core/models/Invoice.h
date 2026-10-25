@@ -2,6 +2,12 @@
 #define PBL2_CORE_MODELS_INVOICE_H
 
 #include <string>
+#include "../data_structures/DoublyLinkedList.h"
+
+class Showtime;
+class User;
+class Member;
+class Ticket;
 
 class Invoice {
 private:
@@ -11,6 +17,10 @@ private:
     std::string memberId;
     std::string createdAt;
     double totalAmount;
+    Showtime* showtime = nullptr;
+    User* seller = nullptr;
+    Member* member = nullptr;
+    DoublyLinkedList<Ticket*> tickets;
 
 public:
     Invoice();
@@ -27,6 +37,17 @@ public:
     const std::string& getMemberId() const;
     const std::string& getCreatedAt() const;
     double getTotalAmount() const;
+    const Showtime* getShowtime() const;
+    const User* getSeller() const;
+    const Member* getMember() const;
+
+    bool linkShowtime(Showtime* showtime);
+    bool linkSeller(User* seller);
+    bool linkMember(Member* member);
+
+    bool addTicket(Ticket* ticket);
+    int getTicketCount() const;
+    Ticket* getTicketAt(int index);
 };
 
 #endif

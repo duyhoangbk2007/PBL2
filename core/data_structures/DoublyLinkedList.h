@@ -1,3 +1,6 @@
+#ifndef PBL2_CORE_DATA_STRUCTURES_DOUBLY_LINKED_LIST_H
+#define PBL2_CORE_DATA_STRUCTURES_DOUBLY_LINKED_LIST_H
+
 #include <iostream>
 using namespace std;
 
@@ -211,3 +214,5 @@ ListNode<T>* DoublyLinkedList<T>::getAt(int k) {
     }
     return nullptr;
 }
+
+#endif

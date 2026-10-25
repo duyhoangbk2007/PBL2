@@ -24,6 +24,7 @@ public:
 
 	void setFullName(const std::string& fullName);
 	void setPhone(const std::string& phone);
+	void setPoints(const int& points);
 };
 
 #endif

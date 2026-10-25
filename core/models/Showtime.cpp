@@ -1,4 +1,6 @@
 #include "Showtime.h"
+#include "Movie.h"
+#include "Room.h"
 using namespace std;
 
 Showtime::Showtime()
@@ -55,4 +57,32 @@ void Showtime::setEndAt(const string& endAt) {
 }
 void Showtime::setStatus(ShowtimeStatus status) {
 	this->status = status;
+}
+
+bool Showtime::linkMovie(Movie* movie) {
+    if (movie == nullptr ||
+        movie->getMovieId() != this->movieId) {
+        return false;
+    }
+
+    this->movie = movie;
+    return true;
+}
+
+bool Showtime::linkRoom(Room* room) {
+    if (room == nullptr ||
+        room->getRoomId() != this->roomId) {
+        return false;
+    }
+
+    this->room = room;
+    return true;
+}
+
+Movie* Showtime::getMovie() const {
+    return this->movie;
+}
+
+Room* Showtime::getRoom() const {
+    return this->room;
 }

@@ -1,3 +1,6 @@
+#ifndef PBL2_CORE_DATA_STRUCTURES_STACK_H
+#define PBL2_CORE_DATA_STRUCTURES_STACK_H
+
 #include <iostream>
 using namespace std;
 
@@ -96,3 +99,5 @@ template <typename T>
 StackNode<T> *Stack<T>::top() {
     return this->topNode;
 }
+
+#endif

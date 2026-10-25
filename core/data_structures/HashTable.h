@@ -1,3 +1,6 @@
+#ifndef PBL2_CORE_DATA_STRUCTURES_HASH_TABLE_H
+#define PBL2_CORE_DATA_STRUCTURES_HASH_TABLE_H
+
 #include <iostream>
 #include <string>
 using namespace std;
@@ -154,3 +157,5 @@ void HashTable<T>::clear() {
     }
     this->count = 0;
 }
+
+#endif

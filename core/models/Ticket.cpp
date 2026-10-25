@@ -1,4 +1,6 @@
 #include "Ticket.h"
+#include "Seat.h"
+#include "Showtime.h"
 using namespace std;
 
 Ticket::Ticket()
@@ -102,6 +104,35 @@ const string& Ticket::getCancelReason() const {
 
 double Ticket::getRefundAmount() const {
     return this->refundAmount;
+}
+
+const Showtime* Ticket::getShowtime() const {
+    return this->showtime;
+}
+
+const Seat* Ticket::getSeat() const {
+    return this->seat;
+}
+
+bool Ticket::linkShowtime(Showtime* showtime) {
+    if (showtime == nullptr || showtime->getShowtimeId() != this->showtimeId ||
+        (this->seat != nullptr && this->seat->getRoomId() != showtime->getRoomId())) {
+        return false;
+    }
+
+    this->showtime = showtime;
+    return true;
+}
+
+bool Ticket::linkSeat(Seat* seat) {
+    if (seat == nullptr || this->showtime == nullptr ||
+        seat->getSeatId() != this->seatId ||
+        seat->getRoomId() != this->showtime->getRoomId()) {
+        return false;
+    }
+
+    this->seat = seat;
+    return true;
 }
 
 void Ticket::markCancelled(const string& cancelledAt,

@@ -3,6 +3,9 @@
 
 #include <string>
 
+class Showtime;
+class Seat;
+
 enum class TicketType {
     REGULAR,
     STUDENT
@@ -29,6 +32,8 @@ private:
     std::string cancelledBy;  
     std::string cancelReason; 
     double refundAmount;              
+    Showtime* showtime = nullptr;
+    Seat* seat = nullptr;
 
 public:
     Ticket();
@@ -61,6 +66,11 @@ public:
     const std::string& getCancelledBy() const;
     const std::string& getCancelReason() const;
     double getRefundAmount() const;
+    const Showtime* getShowtime() const;
+    const Seat* getSeat() const;
+
+    bool linkShowtime(Showtime* showtime);
+    bool linkSeat(Seat* seat);
 
     void markCancelled(const std::string& cancelledAt,
                        const std::string& cancelledBy,
