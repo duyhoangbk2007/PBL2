@@ -3,23 +3,6 @@
 #include "Showtime.h"
 using namespace std;
 
-Ticket::Ticket()
-    : ticketId(""),
-      invoiceId(""),
-      showtimeId(""),
-      seatId(""),
-      ticketType(TicketType::REGULAR),
-      basePrice(0.0),
-      discountAmount(0.0),
-      paidAmount(0.0),
-      pointsEarned(0),
-      status(TicketStatus::SOLD),
-      cancelledAt(""),
-      cancelledBy(""),
-      cancelReason(""),
-      refundAmount(0.0)
-{}
-
 Ticket::Ticket(const string& ticketId,
                const string& invoiceId,
                const string& showtimeId,

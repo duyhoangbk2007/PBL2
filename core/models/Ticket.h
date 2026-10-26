@@ -36,7 +36,6 @@ private:
     Seat* seat = nullptr;
 
 public:
-    Ticket();
     Ticket(const std::string& ticketId,
            const std::string& invoiceId,
            const std::string& showtimeId,
@@ -72,9 +71,7 @@ public:
     bool linkShowtime(Showtime* showtime);
     bool linkSeat(Seat* seat);
 
-    void markCancelled(const std::string& cancelledAt,
-                       const std::string& cancelledBy,
-                       const std::string& cancelReason);
+    void markCancelled(const std::string& cancelledAt, const std::string& cancelledBy, const std::string& cancelReason);
 };
 
 #endif

@@ -11,7 +11,6 @@ private:
 	int points;
 
 public:
-	Member();
 	Member(const std::string& memberId,
 		   const std::string& fullName,
 		   const std::string& phone,

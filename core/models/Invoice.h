@@ -23,7 +23,6 @@ private:
     DoublyLinkedList<Ticket*> tickets;
 
 public:
-    Invoice();
     Invoice(const std::string& invoiceId,
             const std::string& showtimeId,
             const std::string& staffId,

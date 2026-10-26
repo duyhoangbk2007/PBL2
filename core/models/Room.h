@@ -15,7 +15,7 @@ private:
     bool active;
 
 public:
-    Room();
+
     Room(const std::string& roomId, const std::string& name, int rowCount, int columnCount, bool active);
 
     const std::string& getRoomId() const;

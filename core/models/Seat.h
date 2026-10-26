@@ -16,7 +16,6 @@ private:
     int column;
     SeatType seatType;
 public:
-    Seat();
     Seat(const std::string& roomId, const std::string& seatId, int row, int column, SeatType seatType);
 
     const std::string& getRoomId() const;

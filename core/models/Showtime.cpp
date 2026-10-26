@@ -3,15 +3,6 @@
 #include "Room.h"
 using namespace std;
 
-Showtime::Showtime()
-	: showtimeId(""),
-	  movieId(""),
-	  roomId(""),
-	  startAt(""),
-	  endAt(""),
-	  status(ShowtimeStatus::SCHEDULED)
-{}
-
 Showtime::Showtime(const string& showtimeId,
 				   const string& movieId,
 				   const string& roomId,

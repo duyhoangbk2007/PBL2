@@ -1,13 +1,6 @@
 #include "Member.h"
 using namespace std;
 
-Member::Member()
-	: memberId(""),
-	  fullName(""),
-	  phone(""),
-	  points(0)
-{}
-
 Member::Member(const string& memberId,
 			   const string& fullName,
 			   const string& phone,

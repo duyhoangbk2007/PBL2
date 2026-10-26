@@ -14,7 +14,6 @@ private:
     std::string endDate;
     bool active;
 public:
-    Movie();
     Movie(const std::string& movieId,
           const std::string& title,
           const std::string& genre,

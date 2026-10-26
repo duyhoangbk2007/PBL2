@@ -2,14 +2,6 @@
 #include "Seat.h"
 using namespace std;
 
-Room::Room()
-    : roomId(""),
-      name(""),
-      rowCount(0),
-      columnCount(0),
-      active(false)
-{}
-
 Room::Room(const string& roomId,
            const string& name,
            int rowCount,

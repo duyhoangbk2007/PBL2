@@ -1,16 +1,6 @@
 #include "Movie.h"
 using namespace std;
 
-Movie::Movie()
-    : movieId(""),
-      title(""),
-      genre(""),
-      durationMinutes(0),
-      minAge(0),
-      releaseDate(""),
-      endDate(""),
-      active(false) 
-{}
 Movie::Movie(const string& movieId,
              const string& title,
              const string& genre,

@@ -1,15 +1,6 @@
 #include "User.h"
 using namespace std;
 
-User::User()
-    : userId(""),
-      username(""),
-      password(""),
-      fullName(""),
-      role(UserRole::STAFF),
-      active(false)
-{}
-
 User::User(const string& userId,
            const string& username,
            const string& password,

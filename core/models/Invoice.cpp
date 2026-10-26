@@ -5,15 +5,6 @@
 #include "User.h"
 using namespace std;
 
-Invoice::Invoice()
-    : invoiceId(""),
-      showtimeId(""),
-      staffId(""),
-      memberId(""),
-      createdAt(""),
-      totalAmount(0.0)
-{}
-
 Invoice::Invoice(const string& invoiceId,
                  const string& showtimeId,
                  const string& staffId,

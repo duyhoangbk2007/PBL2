@@ -23,7 +23,6 @@ private:
 	Room* room = nullptr;
 
 public:
-	Showtime();
 	Showtime(const std::string& showtimeId,
 			 const std::string& movieId,
 			 const std::string& roomId,

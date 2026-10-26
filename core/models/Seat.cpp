@@ -1,14 +1,5 @@
 #include "Seat.h"
 using namespace std;
-
-Seat::Seat()
-    : roomId(""),
-      seatId(""),
-      row(0),
-      column(0),
-      seatType(SeatType::STANDARD) 
-{}
-
 Seat::Seat(const string& roomId,
            const string& seatId,
            int row,
