@@ -22,7 +22,7 @@ public:
           const std::string& releaseDate,
           const std::string& endDate,
           bool active);
-    //getter
+    
     const std::string& getMovieId() const;
     const std::string& getTitle() const;
     const std::string& getGenre() const;
@@ -31,7 +31,7 @@ public:
     const std::string& getReleaseDate() const;
     const std::string& getEndDate() const;
     bool isActive() const;
-    //setter
+
     void setTitle(const std::string& title);
     void setGenre(const std::string& genre);
     void setDurationMinutes(int durationMinutes);

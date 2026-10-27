@@ -1,23 +1,30 @@
-# Tổng quan tiến độ PBL2
+# Tổng quan tiến độ PBL2 — hai thành viên
 
-File này theo dõi 15 bước trong lộ trình ở `AGENTS.md`. Trạng thái chỉ được xác nhận sau khi đối chiếu tài liệu, mã nguồn và kết quả kiểm thử thực tế. Nhật ký của một bước chỉ được tạo khi người dùng thực sự bắt đầu bước đó.
+Theo [phân công](PhanCongCongViec.md), Hoàng phụ trách quản lý rạp và Kiệt phụ trách tài khoản/bán vé. Bảng ghi trạng thái **thực tế**; nhiệm vụ được giao chưa phải bằng chứng đã làm. Đối chiếu code, nhật ký và kiểm thử trước khi đổi trạng thái.
 
-| Bước | Nội dung | Trạng thái | Nhật ký |
-| --- | --- | --- | --- |
-| 01 | Khởi tạo Project và cấu trúc thư mục | Đang thực hiện; chưa có bản build được xác minh | [Buoc01_KhoiTaoDuAn.md](Buoc01_KhoiTaoDuAn.md) |
-| 02 | Xây dựng Models | Đang thực hiện; tám model đã qua kiểm tra cú pháp, chưa liên kết/chạy thử | [Buoc02_XayDungModels.md](Buoc02_XayDungModels.md) |
-| 03 | Xây dựng cấu trúc dữ liệu | Chưa xác minh | Chưa tạo |
-| 04 | Xây dựng Repository và lưu trữ file | Chưa xác minh | Chưa tạo |
-| 05 | Quản lý phim | Chưa xác minh | Chưa tạo |
-| 06 | Quản lý phòng và ghế | Chưa xác minh | Chưa tạo |
-| 07 | Quản lý suất chiếu | Chưa xác minh | Chưa tạo |
-| 08 | Đăng nhập và quản lý nhân viên | Chưa xác minh | Chưa tạo |
-| 09 | Quản lý thành viên và giá vé | Chưa xác minh | Chưa tạo |
-| 10 | Bán vé | Chưa xác minh | Chưa tạo |
-| 11 | Hủy vé, lịch sử hóa đơn và thống kê | Chưa xác minh | Chưa tạo |
-| 12 | Xây dựng giao diện Qt cơ bản | Chưa xác minh | Chưa tạo |
-| 13 | Xây dựng giao diện các chức năng | Chưa xác minh | Chưa tạo |
-| 14 | Kiểm thử và sửa lỗi | Chưa xác minh | Chưa tạo |
-| 15 | Đóng gói và hoàn thiện tài liệu | Chưa xác minh | Chưa tạo |
+| Bước | Nội dung | Hoàng | Kiệt | Trạng thái chung | Nhật ký |
+| --- | --- | --- | --- | --- | --- |
+| 01 | Khởi tạo dự án | Cấu trúc thư mục, `CMakeLists.txt`, `main.cpp`, build C++ | `README.md`, `.gitignore`, tài liệu, quy trình GitHub | Đang thực hiện: đã có khung thư mục và Git; `main.cpp` rỗng, chưa có `CMakeLists.txt` hoặc bản build được xác minh. Chưa nghiệm thu riêng Hoàng/Kiệt. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
+| 02 | Xây dựng Models | `Movie`, `Room`, `Seat`, `Showtime` | `User`, `Member`, `Ticket`, `Invoice` | Đang thực hiện: đủ 8 cặp `.h/.cpp`; đã kiểm tra cú pháp và thử riêng Ticket/Showtime, chưa thử tích hợp cả 8 model hoặc vòng đời con trỏ/DLL. | [Bước 02](Buoc02_XayDungModels.md) |
+| 03 | Cấu trúc dữ liệu | `DoublyLinkedList`, `Trie`, `MaxHeap` | `HashTable`, `Stack`, `BST` | Chưa bắt đầu bước: có DLL, HashTable, Stack và tài liệu `docs/DS/`; include guard đã được thử, chưa kiểm thử hành vi/ nghiệm thu Bước 03. | Chưa tạo |
+| 04 | Hạ tầng lưu trữ | `FileHandler`, `Validator`, định dạng dữ liệu | `TransactionManager`, `IdGenerator`, `DateTime`, giao dịch | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 05 | Repositories | `MovieRepository`, `RoomRepository`, `ShowtimeRepository` | `AuthRepository`, `StaffRepository`, `MemberRepository`, `TicketRepository`, `InvoiceRepository` | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 06 | Đăng nhập và phân quyền | Quy tắc phân quyền Admin/Staff, kiểm thử và tích hợp | `AuthService`, `StaffService`, đăng nhập và nhân viên | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 07 | Quản lý phim và thành viên | `MovieService`, thêm/sửa/xóa/tìm phim | `MemberService`, thành viên và điểm | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 08 | Quản lý phòng và ghế | `RoomService`, cấu trúc phòng và loại ghế | Sơ đồ ghế hai chiều, test dữ liệu phòng/ghế | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 09 | Suất chiếu và giá vé | `ShowtimeService`, trùng lịch và ràng buộc | `PricingConfig`, quy tắc và kiểm thử giá vé | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 10 | Chọn ghế, đặt vé | Dữ liệu trạng thái ghế theo suất, kiểm thử khả dụng | `BookingService`, chọn ghế, kiểm tra vé đã bán, Undo | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 11 | Thanh toán và lưu vé | Kiểm thử tích hợp lưu vé/hóa đơn, phục hồi lỗi giao dịch | `BookingService`, tạo `Ticket`/`Invoice`, lưu giao dịch | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 12 | Hủy vé, lịch sử, báo cáo | `ReportService`, thống kê doanh thu, vé và phim | Hủy vé, truy vấn lịch sử vé/hóa đơn | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 13 | Xây dựng nền tảng Qt | `MainWindow`, `AdminDashboard`, tài nguyên và bố cục chung | `LoginView`, `StaffDashboard`, luồng đăng nhập | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 14 | Giao diện chức năng | View phim/phòng/suất/báo cáo, `MovieTableModel` | View nhân viên/thành viên/đặt vé/sơ đồ ghế/lịch sử, `TicketTableModel` | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 15 | Kiểm thử, đóng gói, báo cáo | Kiểm thử quản trị, build/đóng gói, kiến trúc | Kiểm thử bán vé/giao dịch, hướng dẫn sử dụng, báo cáo | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
 
-Khi thực sự bắt đầu một bước, khảo sát lại toàn bộ dự án, tạo một file nhật ký riêng cho bước đó và cập nhật trạng thái ở đây. Khi quay lại bước cũ, tiếp tục ghi vào file đã có. Nhật ký dùng ba phần: checklist công việc; lỗi và vướng mắc; các phần tiếp theo cần làm. Trong ba phần đó, tiếp tục lưu tiến độ, kiến thức đã học, thay đổi code, cách khắc phục và kết quả build/kiểm thử để khôi phục ngữ cảnh.
+## Bằng chứng và điểm còn mở khi đổi lộ trình
+
+- Bước 01: [nhật ký](Buoc01_KhoiTaoDuAn.md) ghi đã khảo sát thư mục và tài liệu CTDL; chưa có build. Git có `main` theo dõi `origin/main`, nhưng quy trình hai người chưa được nghiệm thu.
+- Bước 02: [nhật ký](Buoc02_XayDungModels.md) giữ các mốc kiểm tra cũ. Code hiện đã có `Member::setPoints(const int&)` và con trỏ quan hệ ở Room, Showtime, Invoice, Ticket; đoạn nhật ký nói chưa có là lịch sử, không phản ánh code mới nhất. Chưa có kiểm thử tích hợp đầy đủ. Xem [QuanHeModels.md](QuanHeModels.md).
+- Bước 03: DLL, HashTable, Stack đã tồn tại; include guard được thử trong Bước 02, chưa có kiểm thử hành vi. Trie, BST, MaxHeap chưa có. Chưa tạo nhật ký Bước 03.
+- `docs/BookingService.md` đang bị xóa trong working tree; `QuanHeModels.md` đang được chuyển từ `docs/TongQuan/` sang `docs/development/`. Một số liên kết trong tài liệu cũ có thể sai; lần cập nhật này không phục hồi hoặc di chuyển chúng.
+
+Chỉ tạo một nhật ký cho bước khi thực sự bắt đầu; khi quay lại, cập nhật file đã có. Nhật ký ghi việc Hoàng, việc Kiệt, tích hợp, checklist nghiệm thu, lỗi/cách khắc phục/kết quả thử và phần việc tiếp theo; lưu cả kiến thức, thay đổi code và bằng chứng để khôi phục ngữ cảnh.
