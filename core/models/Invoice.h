@@ -44,7 +44,7 @@ public:
     bool linkSeller(User* seller);
     bool linkMember(Member* member);
 
-    bool addTicket(Ticket* ticket);
+    bool linkTicket(Ticket* ticket);
     int getTicketCount() const;
     Ticket* getTicketAt(int index);
 };

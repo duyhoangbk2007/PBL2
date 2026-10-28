@@ -91,7 +91,7 @@ bool Invoice::linkMember(Member* member) {
     return true;
 }
 
-bool Invoice::addTicket(Ticket* ticket) {
+bool Invoice::linkTicket(Ticket* ticket) {
     if (ticket == nullptr || ticket->getInvoiceId() != this->invoiceId ||
         ticket->getShowtimeId() != this->showtimeId) {
         return false;
