@@ -1,5 +1,7 @@
 # Tổng quan Doubly Linked List
 
+> Yêu cầu hiện hành: chỉ `DoublyLinkedList<T>` bắt buộc tự cài đặt. Giữ nguyên thuật toán trong lần refactor này; chưa kiểm thử hành vi DLL trong lần này.
+
 Nguồn đối chiếu: `core/data_structures/DoublyLinkedList.h`. Tài liệu mô tả mã hiện có, chưa phải kết quả kiểm thử.
 
 ## Ý tưởng và cấu tạo

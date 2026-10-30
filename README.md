@@ -50,18 +50,18 @@ Tài liệu mô tả thiết kế mục tiêu, không khẳng định chức nă
 
 ## 3. Kiến trúc
 
-Luồng chính: **UI → Services → Repositories → file dữ liệu**.
+Luồng mục tiêu: **GUI → BLL → DAL → DB**; kết quả trả về theo chiều ngược lại. Không bỏ qua tầng trung gian.
 
-- `core/models/`: thực thể dữ liệu C++.
-- `core/data_structures/`: cấu trúc tự cài đặt, header-only.
-- `core/services/`: nghiệp vụ, phân quyền, điều phối giao dịch.
-- `core/repositories/`: đọc/ghi và tra cứu dữ liệu.
+- `core/dal/models/`: kiểu dữ liệu C++ trao đổi giữa các tầng; không tự đọc/ghi TXT hoặc quản lý CRUD toàn tập.
+- `core/data_structures/`: `DoublyLinkedList<T>` tự cài đặt.
+- `core/bll/`: kiểm tra dữ liệu, quyền và quy tắc nghiệp vụ; gọi DALC, không đọc/ghi TXT.
+- `core/dal/dalc/`: quản lý tập Model, tra cứu và đọc/ghi TXT; không quyết định nghiệp vụ.
 - `core/utils/`: file, ngày giờ, kiểm tra đầu vào và phục hồi giao dịch.
 - `core/config/`: giá vé, ưu đãi, tích điểm và khoảng nghỉ giữa suất.
 - `ui/`: Qt Widgets; gọi service, không đọc/ghi file nghiệp vụ trực tiếp.
 - `data/`: dữ liệu bền vững và vùng phục hồi giao dịch.
 
-Core là C++ thuần, không phụ thuộc Qt. Dự kiến build bằng CMake; chưa có cấu hình và hướng dẫn build hoàn chỉnh ở giai đoạn hiện tại.
+Core là C++ thuần, không phụ thuộc Qt. Hiện mới có tám cặp Model và `DoublyLinkedList.h`; BLL, DALC, GUI, dữ liệu TXT, `main.cpp` và CMake chưa có trong cây làm việc.
 
 ## 4. Cấu trúc dữ liệu
 
@@ -75,7 +75,7 @@ Core là C++ thuần, không phụ thuộc Qt. Dự kiến build bằng CMake; c
 | BST | Chỉ mục hóa đơn theo khóa `(thời điểm lập, mã hóa đơn)` |
 | Max heap | Top phim theo doanh thu hoặc số vé hợp lệ |
 
-Chỉ cần cài đặt 2 đến 3 cấu trúc dữ liệu, còn lại có thể dùng thư viện. Quy ước dự án cho phép `std::string`, stream đọc/ghi file và tiện ích chuẩn; cần đối chiếu quy định giảng viên trước khi triển khai. Kiểu và container Qt chỉ dùng ở tầng UI.
+Chỉ bắt buộc tự cài `DoublyLinkedList<T>`; không thay thuật toán của nó trong lần refactor này. Các CTDL khác có thể dùng STL (`std::unordered_map`, `std::stack`, `std::queue`, `std::map`, `std::priority_queue`, `std::vector`) khi phù hợp. `HashTable.h` và `Stack.h` hiện không có trong cây làm việc. Các quan hệ Model, kể cả con trỏ đã có, không thay đổi trong lần này.
 
 ## 5. Tài liệu
 

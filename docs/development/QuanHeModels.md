@@ -76,7 +76,7 @@ Mục tiêu của 2.3 là có **bản thiết kế quan hệ đủ rõ để cà
 
 ### 2.3.1. Tìm mọi quan hệ từ dữ liệu hiện có
 
-- [ ] Đọc 8 header trong `core/models/` và các mục `rooms.txt`, `seats.txt`, `showtimes.txt`, `invoices.txt`, `tickets.txt` của `data_format.md`.
+- [ ] Đọc 8 header trong `core/dal/models/` và các mục `rooms.txt`, `seats.txt`, `showtimes.txt`, `invoices.txt`, `tickets.txt` của `data_format.md`.
 - [ ] Với mỗi trường mã tham chiếu (`roomId`, `movieId`, `showtimeId`, `staffId`, `memberId`, `invoiceId`, `seatId`), trả lời: nó đang trỏ đến loại object nào? Ghi thành một cặp vào bảng Mục 2.
 - [ ] Kiểm tra các liên kết gián tiếp: `Ticket.seatId` phải được hiểu cùng `Showtime.roomId`; `Invoice.memberId` có thể rỗng.
 
@@ -151,7 +151,7 @@ Mục tiêu của 2.3 là có **bản thiết kế quan hệ đủ rõ để cà
 
 3. Khi danh sách chứa `Seat*`, destructor/`clear()` chỉ xóa **node danh sách**. Nó không được `delete node->data`, vì `Seat` thật do nơi khác sở hữu. Sau khi cấm sao chép DLL, `Room` chứa DLL cũng không sao chép được theo mặc định; Repository tương lai phải giữ `Room` ở nơi ổn định hoặc thiết kế lại cách sao chép trước khi dùng theo giá trị.
 
-### 7.2. `core/models/Room.h` và `Room.cpp` — phần cài thử ở 2.4
+### 7.2. `core/dal/models/Room.h` và `Room.cpp` — phần cài thử ở 2.4
 
 Trong `Room.h`, thêm include và khai báo trước `Seat`; chỉ cần khai báo trước vì ở đây ta giữ `Seat*`:
 

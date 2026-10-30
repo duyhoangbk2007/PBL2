@@ -15,17 +15,17 @@
 - [ ] Build, chạy thử và ghi lại kết quả thực tế.
 - [ ] Bổ sung hướng dẫn khởi động/build sau khi đã kiểm chứng.
 
-**Hiện trạng khi bắt đầu khảo sát:** `main.cpp` và `CMakeLists.txt` đều rỗng. Có `core/data_structures/DoublyLinkedList.h`, `HashTable.h`, `Stack.h`; đây là mã hiện có, chưa được kiểm thử trong Bước 01. Có `core/models/`, `core/repositories/`, `core/service/`, `core/utils/`, `data/`, `ui/`; chưa có file triển khai trong các thư mục đó. Ba file tài liệu trong `docs/DS/` lúc đầu đều rỗng và đã được bổ sung tổng quan ở lần cập nhật này. Tài liệu thiết kế mô tả cấu trúc mục tiêu và nghiệp vụ dự kiến, không xác nhận chức năng đã hoàn thành. Git có nhiều thay đổi sẵn; chưa sửa mã nguồn trong lần khảo sát này.
+**Hiện trạng khi bắt đầu khảo sát:** `main.cpp` và `CMakeLists.txt` đều rỗng. Có `core/data_structures/DoublyLinkedList.h`, `HashTable.h`, `Stack.h`; đây là mã hiện có, chưa được kiểm thử trong Bước 01. Có `core/dal/models/`, `core/dal/dalc/`, `core/bll/`, `core/utils/`, `data/`, `ui/`; chưa có file triển khai trong các thư mục đó. Ba file tài liệu trong `docs/DS/` lúc đầu đều rỗng và đã được bổ sung tổng quan ở lần cập nhật này. Tài liệu thiết kế mô tả cấu trúc mục tiêu và nghiệp vụ dự kiến, không xác nhận chức năng đã hoàn thành. Git có nhiều thay đổi sẵn; chưa sửa mã nguồn trong lần khảo sát này.
 
 **Vai trò các thư mục** (vai trò dự kiến theo kiến trúc; thư mục tồn tại chưa có nghĩa chức năng đã được lập trình):
 
 | Thư mục | Trách nhiệm | Hiện trạng |
 | --- | --- | --- |
 | `core/` | Chứa phần xử lý C++ thuần, không phụ thuộc Qt. UI sẽ gọi các service trong core thay vì tự xử lý nghiệp vụ. | Đã có các thư mục con, chưa có luồng ứng dụng hoàn chỉnh. |
-| `core/models/` | Định nghĩa đối tượng và dữ liệu của chúng, như phim, phòng, suất chiếu, vé, hóa đơn, tài khoản. Model không tự đọc file hay quyết định quyền. | Có thư mục, chưa có file model. |
+| `core/dal/models/` | Định nghĩa đối tượng và dữ liệu của chúng, như phim, phòng, suất chiếu, vé, hóa đơn, tài khoản. Model không tự đọc file hay quyết định quyền. | Có thư mục, chưa có file model. |
 | `core/data_structures/` | Chứa cấu trúc dữ liệu trong bộ nhớ để lưu, tra cứu hoặc hoàn tác thao tác. | Có ba header: `DoublyLinkedList.h`, `HashTable.h`, `Stack.h`. Chưa xác minh bằng kiểm thử. |
-| `core/repositories/` | Truy xuất dữ liệu: đọc/ghi qua tiện ích lưu trữ, chuyển bản ghi thành model, thêm/sửa/xóa/tìm. Quy tắc nghiệp vụ thuộc service. | Có thư mục, chưa có file repository. |
-| `core/service/` | Thư mục đang có nhưng chưa có mã. Theo thiết kế, tầng service sẽ kiểm tra đầu vào, quyền và quy tắc nghiệp vụ, rồi điều phối repository. | Tên hiện tại là số ít; tài liệu dùng `core/services/`. Chưa quyết định đổi tên. |
+| `core/dal/dalc/` | Truy xuất dữ liệu: đọc/ghi qua tiện ích lưu trữ, chuyển bản ghi thành model, thêm/sửa/xóa/tìm. Quy tắc nghiệp vụ thuộc service. | Có thư mục, chưa có file repository. |
+| `core/bll/` | Thư mục đang có nhưng chưa có mã. Theo thiết kế, tầng service sẽ kiểm tra đầu vào, quyền và quy tắc nghiệp vụ, rồi điều phối repository. | Tên hiện tại là số ít; tài liệu dùng `core/bll/`. Chưa quyết định đổi tên. |
 | `core/utils/` | Các tiện ích dùng chung như thao tác file, ngày giờ, kiểm tra dữ liệu và hỗ trợ giao dịch lưu nhiều file. | Có thư mục, chưa có file tiện ích. |
 | `core/config/` | Nơi dự kiến đặt hằng số cấu hình giá vé, ưu đãi và khoảng nghỉ giữa suất; tránh rải giá trị trong nhiều service. | Chưa có thư mục. |
 | `ui/` | Giao diện Qt Widgets dự kiến: nhận thao tác, hiển thị kết quả và gọi service; không trực tiếp đọc/ghi file nghiệp vụ. | Có thư mục, chưa có file giao diện; Qt chưa được thiết lập. |
@@ -47,7 +47,7 @@
 
 - Chưa có lỗi build được xác nhận vì chưa có cấu hình hoặc chương trình để build.
 - `g++` tìm thấy tại `C:\msys64\ucrt64\bin\g++.exe`, phiên bản 15.1.0. Chưa tìm thấy lệnh `cmake` trong PATH; cần xác minh cài đặt hoặc cấu hình môi trường.
-- `core/service/` khác tên `core/services/` trong tài liệu. Cần kiểm tra ảnh hưởng trước khi điều chỉnh.
+- `core/bll/` khác tên `core/bll/` trong tài liệu. Cần kiểm tra ảnh hưởng trước khi điều chỉnh.
 - Chưa có kết quả chạy thử chương trình. Đã đọc ba header ở mức tĩnh nhưng chưa biên dịch hoặc kiểm thử; cả ba lớp sở hữu con trỏ cấp phát động mà chưa kiểm soát thao tác sao chép, nên cần xem xét nguy cơ giải phóng lặp ở bước CTDL.
 
 ## Các phần tiếp theo cần làm

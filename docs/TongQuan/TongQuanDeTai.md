@@ -8,16 +8,24 @@ Rạp quản lý phim, phòng/ghế và suất chiếu; nhân viên dùng ứng 
 
 Một ví dụ xuyên suốt: Admin tạo phim → tạo phòng và ghế → xếp suất chiếu. Staff đăng nhập → chọn suất/ghế → xác nhận đã thu tiền → hệ thống lưu vé và hóa đơn. Nếu cần hủy vé đã bán, Admin thực hiện nghiệp vụ hủy riêng; Undo trong lúc chọn ghế chỉ dùng **trước khi thu tiền**.
 
-## 2. Bốn tầng chính và nơi đặt file
+## 2. Ba lớp ứng dụng và DB
+
+Kiến trúc mục tiêu là **GUI → BLL → DAL → DB** và kết quả trả về theo chiều ngược lại. GUI Qt Widgets chỉ gọi BLL, không gọi DAL hoặc đọc TXT. BLL kiểm tra dữ liệu, quyền và nghiệp vụ rồi gọi DALC, không tự đọc/ghi TXT. DAL gồm `core/dal/models/` (dữ liệu trao đổi, không tự truy cập DB) và `core/dal/dalc/` (quản lý tập Model, tìm kiếm, chuyển đổi và đọc/ghi TXT). DB là các file TXT trong `data/`. Các lớp Repository/Service nhắc bên dưới là tên dự kiến trong DALC/BLL, chưa có mã; không tạo chức năng mới trong lần đổi thư mục này.
+
+Chỉ `DoublyLinkedList<T>` cần tự cài. Hash table, stack, queue, map, heap và mảng động có thể dùng STL. Quan hệ Model có mã định danh và một số con trỏ hiện có; lần này không thay đổi con trỏ hoặc vòng đời đối tượng.
+
+### Ghi chú về bảng thiết kế cũ
+
+Bảng bên dưới ghi luồng thiết kế cũ để đối chiếu; đường đi thực thi mới phải tuân theo GUI → BLL → DAL → DB.
 
 | Tầng | Thư mục | Câu hỏi tầng đó trả lời |
 | --- | --- | --- |
 | UI | `ui/` (dự kiến) | Người dùng nhìn thấy gì và vừa bấm gì? Hiển thị form, bảng, sơ đồ ghế và kết quả. |
-| Service | Cây mục tiêu: `core/services/`; thư mục hiện có: `core/service/` | Thao tác có được phép không, dữ liệu có hợp lệ không và phải phối hợp những bước nào? |
-| Repository | `core/repositories/` | Tìm, thêm, sửa, xóa hoặc chuẩn bị lưu bản ghi nào? |
+| Service | Cây mục tiêu: `core/bll/`; thư mục hiện có: `core/bll/` | Thao tác có được phép không, dữ liệu có hợp lệ không và phải phối hợp những bước nào? |
+| Repository | `core/dal/dalc/` | Tìm, thêm, sửa, xóa hoặc chuẩn bị lưu bản ghi nào? |
 | File Storage | `data/*.txt`, qua `core/utils/` | Bản ghi được lưu bền vững và phục hồi khi ghi lỗi như thế nào? |
 
-`core/models/` chứa các **đối tượng dữ liệu** (`Movie`, `Room`, `Seat`, `Showtime`, `User`, `Member`, `Ticket`, `Invoice`) đi qua các tầng. `core/data_structures/` chứa cách giữ/tra cứu dữ liệu **trong bộ nhớ** như danh sách liên kết đôi, bảng băm và stack. Hai thư mục này hỗ trợ các tầng trên, không thay thế Service hay Repository.
+`core/dal/models/` chứa các **đối tượng dữ liệu** (`Movie`, `Room`, `Seat`, `Showtime`, `User`, `Member`, `Ticket`, `Invoice`) đi qua các tầng. `core/data_structures/` chứa cách giữ/tra cứu dữ liệu **trong bộ nhớ** như danh sách liên kết đôi, bảng băm và stack. Hai thư mục này hỗ trợ các tầng trên, không thay thế Service hay Repository.
 
 Ví dụ Admin thêm phim:
 
@@ -92,4 +100,4 @@ Xem [thiết kế BookingService](../BookingService.md) để đọc từng bư�
 4. **Tìm Repository theo loại dữ liệu:** nơi đọc/tìm/chuẩn bị cập nhật các bản ghi.
 5. **Xác định file dữ liệu bị ảnh hưởng:** một thao tác có thể đọc nhiều file nhưng chỉ ghi một số file. Nếu ghi nhiều file, cần cơ chế giao dịch như mô tả trong [định dạng dữ liệu](data_format.md).
 
-Các tên file dự kiến nằm trong [cấu trúc thư mục](cauTrucThuMuc.md). Hiện `core/repositories/` và `core/service/` chưa có mã; các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành.
+Các tên file dự kiến nằm trong [cấu trúc thư mục](cauTrucThuMuc.md). Hiện `core/dal/dalc/` và `core/bll/` chưa có mã; các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành.

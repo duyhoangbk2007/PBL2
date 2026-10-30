@@ -2,7 +2,7 @@
 #define PBL2_CORE_MODELS_ROOM_H
 
 #include <string>
-#include "../data_structures/DoublyLinkedList.h"
+#include "../../data_structures/DoublyLinkedList.h"
 
 class Seat;
 class Room {

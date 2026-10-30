@@ -6,6 +6,8 @@ Hai người dùng chung một repository. Hoàng phụ trách quản lý rạp;
 
 ## 2. Lộ trình 15 bước
 
+**Điều chỉnh 2026-10-30:** Giữ nguyên 15 bước và phân công lịch sử bên dưới. Chỉ `DoublyLinkedList<T>` phải tự cài; CTDL khác có thể dùng STL hoặc tìm tiền tố phù hợp. Model ở `core/dal/models/`; DALC dự kiến ở `core/dal/dalc/`, BLL ở `core/bll/`. Tên class cũ trong bảng là kế hoạch, chưa có mã hoặc nghiệm thu.
+
 | Bước | Nội dung | Hoàng | Kiệt |
 | --- | --- | --- | --- |
 | 01 | Khởi tạo dự án | Thiết lập cấu trúc thư mục, `CMakeLists.txt`, `main.cpp`, kiểm tra build C++ | Chuẩn bị `README.md`, `.gitignore`, tài liệu, thiết lập quy trình GitHub |
@@ -28,8 +30,8 @@ Hai người dùng chung một repository. Hoàng phụ trách quản lý rạp;
 
 | Người | File/module chính | Nhiệm vụ |
 | --- | --- | --- |
-| Hoàng | `core/models/{Movie,Room,Seat,Showtime}.h/.cpp`; `core/data_structures/{DoublyLinkedList,Trie,MaxHeap}.h`; `FileHandler`, `Validator`; Movie/Room/Showtime Repository và Service; `ReportService`; `MainWindow`, `AdminDashboard`, `MovieTableModel` và các giao diện quản lý | Quản lý phim, phòng/ghế, lịch suất; cung cấp trạng thái ghế; thống kê và kiểm thử phần quản trị. Chịu trách nhiệm chính `CMakeLists.txt`, `main.cpp`, build và đóng gói. |
-| Kiệt | `core/models/{User,Member,Ticket,Invoice}.h/.cpp`; `core/data_structures/{HashTable,Stack,BST}.h`; `TransactionManager`, `IdGenerator`, `DateTime`; Auth/Staff/Member/Ticket/Invoice Repository; Auth/Staff/Member/Booking Service; `PricingConfig`, `LoginView`, `StaffDashboard`, `TicketTableModel` và các giao diện bán vé | Quản lý tài khoản, thành viên, giá, chọn ghế và Undo, bán/hủy vé, hóa đơn; biểu diễn sơ đồ ghế hai chiều và kiểm thử dữ liệu phòng/ghế. Chịu trách nhiệm chính `README.md`, `.gitignore`, quy trình Git và hướng dẫn sử dụng. |
+| Hoàng | `core/dal/models/{Movie,Room,Seat,Showtime}.h/.cpp`; `core/data_structures/{DoublyLinkedList,Trie,MaxHeap}.h`; `FileHandler`, `Validator`; Movie/Room/Showtime Repository và Service; `ReportService`; `MainWindow`, `AdminDashboard`, `MovieTableModel` và các giao diện quản lý | Quản lý phim, phòng/ghế, lịch suất; cung cấp trạng thái ghế; thống kê và kiểm thử phần quản trị. Chịu trách nhiệm chính `CMakeLists.txt`, `main.cpp`, build và đóng gói. |
+| Kiệt | `core/dal/models/{User,Member,Ticket,Invoice}.h/.cpp`; `core/data_structures/{HashTable,Stack,BST}.h`; `TransactionManager`, `IdGenerator`, `DateTime`; Auth/Staff/Member/Ticket/Invoice Repository; Auth/Staff/Member/Booking Service; `PricingConfig`, `LoginView`, `StaffDashboard`, `TicketTableModel` và các giao diện bán vé | Quản lý tài khoản, thành viên, giá, chọn ghế và Undo, bán/hủy vé, hóa đơn; biểu diễn sơ đồ ghế hai chiều và kiểm thử dữ liệu phòng/ghế. Chịu trách nhiệm chính `README.md`, `.gitignore`, quy trình Git và hướng dẫn sử dụng. |
 
 Các tên Repository, Service, View và CTDL chưa có là **kế hoạch**, theo [cấu trúc mục tiêu](../TongQuan/cauTrucThuMuc.md). Kiệt cài `BST` để phục vụ truy vấn lịch sử; Hoàng cài `MaxHeap` cho thống kê. Hoàng quản lý `RoomService`, Kiệt phụ trách biểu diễn sơ đồ ghế hai chiều; hai người phải thống nhất dữ liệu đầu vào và đầu ra. Tài liệu và các file cấu hình chung cần cả hai review.
 
@@ -37,7 +39,7 @@ Các tên Repository, Service, View và CTDL chưa có là **kế hoạch**, the
 
 | Phụ thuộc | Cần thống nhất trước | Cách làm song song |
 | --- | --- | --- |
-| `CMakeLists.txt`, `main.cpp`, `README.md`, `.gitignore`, tài liệu và quy ước tên | Hoàng giữ build; Kiệt giữ README, Git và tài liệu hướng dẫn. Thống nhất target, tên thư mục `core/service/` hiện có hay `core/services/` theo thiết kế. | PR nhỏ; người kia review thay đổi chung. |
+| `CMakeLists.txt`, `main.cpp`, `README.md`, `.gitignore`, tài liệu và quy ước tên | Hoàng giữ build; Kiệt giữ README, Git và tài liệu hướng dẫn. Thống nhất target, tên thư mục `core/bll/` hiện có hay `core/bll/` theo thiết kế. | PR nhỏ; người kia review thay đổi chung. |
 | Model và `DoublyLinkedList.h` | ID là dữ liệu lưu file; con trỏ không sở hữu. Chốt nơi giữ object, địa chỉ ổn định, cách sao chép DLL, API `Room`–`Seat`, `Showtime`–`Movie`/`Room`, `Invoice`–`Ticket`. | Ghi chữ ký API trong [QuanHeModels.md](QuanHeModels.md) trước; mỗi người sửa model mình giữ. |
 | FileHandler/Validator của Hoàng; TransactionManager/IdGenerator/DateTime của Kiệt; schema `.txt` | Thứ tự đọc, lỗi tham chiếu, cấp mã, định dạng thời gian, ghi/rollback nhiều file theo `data_format.md`. | Chốt interface nhỏ trước Bước 04; phát triển với dữ liệu kiểm thử riêng rồi ghép. |
 | Ghế trống và BookingService | Hoàng cung cấp suất/phòng/ghế; Kiệt cung cấp vé SOLD và quy trình bán. | Chốt API đọc tối thiểu, thử bằng dữ liệu mẫu; tích hợp từng phần trước Bước 10–11. |

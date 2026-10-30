@@ -1,12 +1,14 @@
 # Tổng quan tiến độ PBL2 — hai thành viên
 
+**Rà soát 2026-10-30:** Đã chuyển tám cặp Model sang `core/dal/models/` và sửa include tương đối, không đổi thuật toán hay quan hệ Model. Hiện chỉ có `DoublyLinkedList.h`; `HashTable.h`, `Stack.h`, CMake, GUI, DALC, BLL và file dữ liệu không có trong cây làm việc. Bước 03 vẫn chưa nghiệm thu. Các mô tả về header hoặc working tree trước đây ở phần dưới là ghi chép lịch sử.
+
 Theo [phân công](PhanCongCongViec.md), Hoàng phụ trách quản lý rạp và Kiệt phụ trách tài khoản/bán vé. Bảng ghi trạng thái **thực tế**; nhiệm vụ được giao chưa phải bằng chứng đã làm. Đối chiếu code, nhật ký và kiểm thử trước khi đổi trạng thái.
 
 | Bước | Nội dung | Hoàng | Kiệt | Trạng thái chung | Nhật ký |
 | --- | --- | --- | --- | --- | --- |
 | 01 | Khởi tạo dự án | Cấu trúc thư mục, `CMakeLists.txt`, `main.cpp`, build C++ | `README.md`, `.gitignore`, tài liệu, quy trình GitHub | Đang thực hiện: đã có khung thư mục và Git; `main.cpp` rỗng, chưa có `CMakeLists.txt` hoặc bản build được xác minh. Chưa nghiệm thu riêng Hoàng/Kiệt. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
 | 02 | Xây dựng Models | `Movie`, `Room`, `Seat`, `Showtime` | `User`, `Member`, `Ticket`, `Invoice` | Đang thực hiện: đủ 8 cặp `.h/.cpp`; đã kiểm tra cú pháp và thử riêng Ticket/Showtime, chưa thử tích hợp cả 8 model hoặc vòng đời con trỏ/DLL. | [Bước 02](Buoc02_XayDungModels.md) |
-| 03 | Cấu trúc dữ liệu | `DoublyLinkedList`, `Trie`, `MaxHeap` | `HashTable`, `Stack`, `BST` | Chưa bắt đầu bước: có DLL, HashTable, Stack và tài liệu `docs/DS/`; include guard đã được thử, chưa kiểm thử hành vi/ nghiệm thu Bước 03. | Chưa tạo |
+| 03 | Cấu trúc dữ liệu | `DoublyLinkedList<T>` tự cài | CTDL khác dùng STL khi phù hợp | Chưa bắt đầu bước: hiện có DLL; `HashTable.h` và `Stack.h` không có trong cây làm việc; chưa kiểm thử hành vi/ nghiệm thu Bước 03. | Chưa tạo |
 | 04 | Hạ tầng lưu trữ | `FileHandler`, `Validator`, định dạng dữ liệu | `TransactionManager`, `IdGenerator`, `DateTime`, giao dịch | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
 | 05 | Repositories | `MovieRepository`, `RoomRepository`, `ShowtimeRepository` | `AuthRepository`, `StaffRepository`, `MemberRepository`, `TicketRepository`, `InvoiceRepository` | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
 | 06 | Đăng nhập và phân quyền | Quy tắc phân quyền Admin/Staff, kiểm thử và tích hợp | `AuthService`, `StaffService`, đăng nhập và nhân viên | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
