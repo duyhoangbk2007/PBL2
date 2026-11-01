@@ -1,32 +1,29 @@
-# Tổng quan tiến độ PBL2 — hai thành viên
+# Tổng quan tiến độ PBL2 — Hoàng và Kiệt
 
-**Rà soát 2026-10-30:** Đã chuyển tám cặp Model sang `core/dal/models/` và sửa include tương đối, không đổi thuật toán hay quan hệ Model. Hiện chỉ có `DoublyLinkedList.h`; `HashTable.h`, `Stack.h`, CMake, GUI, DALC, BLL và file dữ liệu không có trong cây làm việc. Bước 03 vẫn chưa nghiệm thu. Các mô tả về header hoặc working tree trước đây ở phần dưới là ghi chép lịch sử.
+Lộ trình dưới đây giữ **15 bước** theo [phân công mới](PhanCongCongViec.md). Bước 03 cũ về cấu trúc dữ liệu đã bỏ; Bước 03 mới là **Hạ tầng lưu trữ dữ liệu**. Chỉ `DoublyLinkedList<T>` bắt buộc tự cài. DLL được rà soát cùng Models ở Bước 02 và tích hợp/kiểm thử khi DALC dùng ở Bước 04; STL được dùng ở bước có chức năng cần đến. Không có bước riêng để tạo CTDL.
 
-Theo [phân công](PhanCongCongViec.md), Hoàng phụ trách quản lý rạp và Kiệt phụ trách tài khoản/bán vé. Bảng ghi trạng thái **thực tế**; nhiệm vụ được giao chưa phải bằng chứng đã làm. Đối chiếu code, nhật ký và kiểm thử trước khi đổi trạng thái.
+Kiến trúc áp dụng: **GUI → BLL → DAL → DB**. GUI ở `ui/`, BLL ở `core/bll/`, DAL gồm `core/dal/models/` và `core/dal/dalc/`, DB là `data/*.txt`. Model không tự truy cập TXT. Bảng dưới ghi **trạng thái thực tế**, không lấy tên file dự kiến làm bằng chứng hoàn thành. Checklist riêng nằm ở [Task Hoàng](tasks/Task_Hoang.md) và [Task Kiệt](tasks/Task_Kiet.md); [phân công](PhanCongCongViec.md) là nguồn chính. Chỉ đổi trạng thái chung sang hoàn thành khi hai người đã xong, tích hợp và kiểm thử đạt.
 
 | Bước | Nội dung | Hoàng | Kiệt | Trạng thái chung | Nhật ký |
 | --- | --- | --- | --- | --- | --- |
-| 01 | Khởi tạo dự án | Cấu trúc thư mục, `CMakeLists.txt`, `main.cpp`, build C++ | `README.md`, `.gitignore`, tài liệu, quy trình GitHub | Đang thực hiện: đã có khung thư mục và Git; `main.cpp` rỗng, chưa có `CMakeLists.txt` hoặc bản build được xác minh. Chưa nghiệm thu riêng Hoàng/Kiệt. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
-| 02 | Xây dựng Models | `Movie`, `Room`, `Seat`, `Showtime` | `User`, `Member`, `Ticket`, `Invoice` | Đang thực hiện: đủ 8 cặp `.h/.cpp`; đã kiểm tra cú pháp và thử riêng Ticket/Showtime, chưa thử tích hợp cả 8 model hoặc vòng đời con trỏ/DLL. | [Bước 02](Buoc02_XayDungModels.md) |
-| 03 | Cấu trúc dữ liệu | `DoublyLinkedList<T>` tự cài | CTDL khác dùng STL khi phù hợp | Chưa bắt đầu bước: hiện có DLL; `HashTable.h` và `Stack.h` không có trong cây làm việc; chưa kiểm thử hành vi/ nghiệm thu Bước 03. | Chưa tạo |
-| 04 | Hạ tầng lưu trữ | `FileHandler`, `Validator`, định dạng dữ liệu | `TransactionManager`, `IdGenerator`, `DateTime`, giao dịch | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 05 | Repositories | `MovieRepository`, `RoomRepository`, `ShowtimeRepository` | `AuthRepository`, `StaffRepository`, `MemberRepository`, `TicketRepository`, `InvoiceRepository` | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 06 | Đăng nhập và phân quyền | Quy tắc phân quyền Admin/Staff, kiểm thử và tích hợp | `AuthService`, `StaffService`, đăng nhập và nhân viên | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 07 | Quản lý phim và thành viên | `MovieService`, thêm/sửa/xóa/tìm phim | `MemberService`, thành viên và điểm | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 08 | Quản lý phòng và ghế | `RoomService`, cấu trúc phòng và loại ghế | Sơ đồ ghế hai chiều, test dữ liệu phòng/ghế | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 09 | Suất chiếu và giá vé | `ShowtimeService`, trùng lịch và ràng buộc | `PricingConfig`, quy tắc và kiểm thử giá vé | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 10 | Chọn ghế, đặt vé | Dữ liệu trạng thái ghế theo suất, kiểm thử khả dụng | `BookingService`, chọn ghế, kiểm tra vé đã bán, Undo | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 11 | Thanh toán và lưu vé | Kiểm thử tích hợp lưu vé/hóa đơn, phục hồi lỗi giao dịch | `BookingService`, tạo `Ticket`/`Invoice`, lưu giao dịch | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 12 | Hủy vé, lịch sử, báo cáo | `ReportService`, thống kê doanh thu, vé và phim | Hủy vé, truy vấn lịch sử vé/hóa đơn | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 13 | Xây dựng nền tảng Qt | `MainWindow`, `AdminDashboard`, tài nguyên và bố cục chung | `LoginView`, `StaffDashboard`, luồng đăng nhập | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 14 | Giao diện chức năng | View phim/phòng/suất/báo cáo, `MovieTableModel` | View nhân viên/thành viên/đặt vé/sơ đồ ghế/lịch sử, `TicketTableModel` | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
-| 15 | Kiểm thử, đóng gói, báo cáo | Kiểm thử quản trị, build/đóng gói, kiến trúc | Kiểm thử bán vé/giao dịch, hướng dẫn sử dụng, báo cáo | Chưa bắt đầu; mới là thiết kế. | Chưa tạo |
+| 01 | Khởi tạo dự án | Thư mục, CMake, `main.cpp`, build C++17 | README, `.gitignore`, `AGENTS.md`, Git/PR, tài liệu | Đang thực hiện: có mã Model/tài liệu và Git; chưa có CMake hoặc `main.cpp`, chưa xác minh build ứng dụng. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
+| 02 | Hoàn thiện Models và quan hệ con trỏ | `Movie`, `Room`, `Seat`, `Showtime`, DLL khi được dùng | `User`, `Member`, `Ticket`, `Invoice`, trạng thái/điểm | Đang thực hiện: có 8 cặp Model và một số quan hệ con trỏ; chưa có bằng chứng kiểm thử tích hợp, vòng đời/copy DLL đầy đủ. | [Bước 02](Buoc02_XayDungModels.md) |
+| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `Validator`, TXT | `TransactionManager`, `IdGenerator`, `DateTime`, phục hồi | Chưa bắt đầu; mới là kế hoạch, chưa có file triển khai. | Chưa tạo |
+| 04 | Xây dựng DALC | Movie/Room/Seat/Showtime DALC | User/Member/Ticket/Invoice/Sequence/Booking DALC | Chưa bắt đầu; tích hợp DLL/STL khi cần. | Chưa tạo |
+| 05 | Đăng nhập và phân quyền | Thử quyền Admin/Staff trong quản trị | `AuthService`, `UserManager` | Chưa bắt đầu. | Chưa tạo |
+| 06 | Quản lý phim và thành viên | `MovieManager` | `MemberManager` | Chưa bắt đầu. | Chưa tạo |
+| 07 | Quản lý phòng và ghế | `RoomManager`, `SeatManager` | Sơ đồ ghế hai chiều, thử vị trí/ghế đôi | Chưa bắt đầu. | Chưa tạo |
+| 08 | Quản lý suất chiếu và giá vé | `ShowtimeManager`, trùng lịch/khoảng nghỉ | `PricingConfig`, giá/ưu đãi/điểm | Chưa bắt đầu. | Chưa tạo |
+| 09 | Chọn ghế và Undo | Ghế trống/đã bán theo suất | `BookingService`, giỏ tạm, `std::stack` Undo | Chưa bắt đầu. | Chưa tạo |
+| 10 | Thanh toán và lưu vé/hóa đơn | Thử dữ liệu và rollback/phục hồi nhiều file | Hoàn thiện Booking, tạo vé/hóa đơn, điểm và lưu | Chưa bắt đầu. | Chưa tạo |
+| 11 | Hủy vé, lịch sử và báo cáo | `ReportService`, doanh thu/vé/top phim | Hủy, hoàn tiền, thu hồi điểm, lịch sử | Chưa bắt đầu. | Chưa tạo |
+| 12 | Nền tảng Qt | `MainWindow`, `AdminDashboard` | `LoginView`, `StaffDashboard` | Chưa bắt đầu. | Chưa tạo |
+| 13 | Giao diện các chức năng | View quản trị, báo cáo, `MovieTableModel` | View nhân viên/booking/lịch sử, `TicketTableModel` | Chưa bắt đầu. | Chưa tạo |
+| 14 | Kiểm thử tích hợp toàn hệ thống | Quản trị, dữ liệu và lỗi GUI | Staff, bán/hủy, dữ liệu lỗi, phục hồi | Chưa bắt đầu; cần thử luồng GUI → BLL → DAL → DB. | Chưa tạo |
+| 15 | Đóng gói và hoàn thiện | CMake, gói Windows, kiến trúc | Hướng dẫn, báo cáo, demo | Chưa bắt đầu. | Chưa tạo |
 
-## Bằng chứng và điểm còn mở khi đổi lộ trình
+## Bằng chứng hiện có và lịch sử
 
-- Bước 01: [nhật ký](Buoc01_KhoiTaoDuAn.md) ghi đã khảo sát thư mục và tài liệu CTDL; chưa có build. Git có `main` theo dõi `origin/main`, nhưng quy trình hai người chưa được nghiệm thu.
-- Bước 02: [nhật ký](Buoc02_XayDungModels.md) giữ các mốc kiểm tra cũ. Code hiện đã có `Member::setPoints(const int&)` và con trỏ quan hệ ở Room, Showtime, Invoice, Ticket; đoạn nhật ký nói chưa có là lịch sử, không phản ánh code mới nhất. Chưa có kiểm thử tích hợp đầy đủ. Xem [QuanHeModels.md](QuanHeModels.md).
-- Bước 03: DLL, HashTable, Stack đã tồn tại; include guard được thử trong Bước 02, chưa có kiểm thử hành vi. Trie, BST, MaxHeap chưa có. Chưa tạo nhật ký Bước 03.
-- `docs/BookingService.md` đang bị xóa trong working tree; `QuanHeModels.md` đang được chuyển từ `docs/TongQuan/` sang `docs/development/`. Một số liên kết trong tài liệu cũ có thể sai; lần cập nhật này không phục hồi hoặc di chuyển chúng.
-
-Chỉ tạo một nhật ký cho bước khi thực sự bắt đầu; khi quay lại, cập nhật file đã có. Nhật ký ghi việc Hoàng, việc Kiệt, tích hợp, checklist nghiệm thu, lỗi/cách khắc phục/kết quả thử và phần việc tiếp theo; lưu cả kiến thức, thay đổi code và bằng chứng để khôi phục ngữ cảnh.
+- Cây làm việc hiện có tám cặp Model ở `core/dal/models/`, `core/data_structures/DoublyLinkedList.h` và tài liệu. Chưa có CMake, `main.cpp`, DALC, BLL, GUI hoặc file TXT trong `data/`. Không coi việc có cấu trúc mục tiêu trong tài liệu là đã triển khai.
+- [Nhật ký Bước 01](Buoc01_KhoiTaoDuAn.md) và [Bước 02](Buoc02_XayDungModels.md) giữ các mốc lịch sử, kể cả nhận xét về cấu trúc cũ. Một số đoạn phản ánh cây làm việc tại thời điểm ghi, không phải hiện trạng của commit `9925283`.
+- Chưa có nhật ký Bước 03. Việc chỉ đổi kế hoạch không bắt đầu Bước 03, không đánh dấu bất kỳ bước nào hoàn thành. Khi thực sự bắt đầu một bước, tạo hoặc cập nhật nhật ký tương ứng và ghi lệnh thử, kết quả, lỗi, cách sửa và việc còn lại.
