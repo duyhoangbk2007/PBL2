@@ -3,17 +3,18 @@
 
 #include <string>
 #include "../../data_structures/DoublyLinkedList.h"
-
+class Showtime;
 class Seat;
 class Room {
 private:
-    DoublyLinkedList<Seat*> seats;  
     std::string roomId;
     std::string name;
     int rowCount;
     int columnCount;
     bool active;
 
+    DoublyLinkedList<Seat*> seats;  
+    DoublyLinkedList<Showtime*> showtimes;
 public:
 
     Room(const std::string& roomId, const std::string& name, int rowCount, int columnCount, bool active);
@@ -32,6 +33,9 @@ public:
     bool linkSeat(Seat* seat);
     Seat* findSeat(const std::string& seatId);
     int getSeatCount() const;
+    bool linkShowtime(Showtime* showtime);
+    Showtime* findShowtime(const std::string& showtimeId);
+    int getShowtimeCount() const;
 };
 
 #endif

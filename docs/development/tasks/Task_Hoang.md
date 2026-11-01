@@ -35,16 +35,18 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 - [x] Có đủ `Movie`, `Room`, `Seat`, `Showtime` ở `core/dal/models/`.
 - [x] Biên dịch cú pháp bốn Model và toàn bộ tám `.cpp` bằng C++17: đạt ở lần rà soát này.
-- [ ] Chốt quan hệ hai chiều Movie–Showtime, Room–Seat, Room–Showtime theo `models.md`.
-- [ ] Rà soát API, vòng đời và copy/move của `DoublyLinkedList<T>` khi Room dùng danh sách ghế.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [ ] Chốt phạm vi quan hệ hai chiều thuộc Hoàng theo `docs/CauTrucThuMuc/models.md`: `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime`. Phân biệt danh sách/con trỏ trong Model với chiều ngược tra cứu qua DALC.
+- [ ] Với `Room`–`Seat`, bổ sung chiều `Seat → Room` sau khi thống nhất nơi sở hữu `Seat`; kiểm tra mã phòng, ghế trùng mã/vị trí và nối/gỡ nhất quán hai phía.
+- [ ] Với `Movie`–`Showtime` và `Room`–`Showtime`, bổ sung chiều ngược đã chốt; kiểm tra mã tham chiếu, tránh trùng và gỡ liên kết trước khi xóa/tải lại object.
+- [ ] Rà soát địa chỉ ổn định, vòng đời và copy/move của `DoublyLinkedList<T>` cùng các Model thuộc Hoàng chứa danh sách con trỏ.
+- [ ] Viết và chạy kiểm thử các quan hệ thuộc Hoàng: mã đúng/sai, `nullptr`, trùng, hai chiều, gỡ liên kết và copy/move; ghi lệnh và kết quả.
 - [ ] Review và tích hợp với phần của Kiệt.
 
 **Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán, DLL an toàn khi dùng và có kiểm thử tích hợp tám Model. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Quan hệ hiện mới có một số chiều; cần thống nhất chủ sở hữu object với Kiệt trước khi thay mã.
+**Ghi chú:** Hiện `Room → Seat` và `Showtime → Movie/Room` đã có; các chiều ngược tương ứng chưa có. Con trỏ Model dự kiến không sở hữu object, mã ID tiếp tục dùng để lưu TXT. Cần thống nhất chủ sở hữu và địa chỉ ổn định với Kiệt trước khi triển khai; các quan hệ `Ticket`/`Invoice`/`User`/`Member` thuộc phần Kiệt, không đánh dấu trong checklist này.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 

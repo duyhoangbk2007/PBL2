@@ -1,4 +1,5 @@
 #include "Movie.h"
+#include "Showtime.h"
 using namespace std;
 
 Movie::Movie(const string& movieId,
@@ -79,4 +80,34 @@ void Movie::setEndDate(const string& endDate) {
 
 void Movie::setActive(bool active) {
     this->active = active;
+}
+
+bool Movie::linkShowtime(Showtime* showtime) {
+    if (showtime == nullptr) return false;
+    if (showtime->getMovieId() != this->movieId) return false;
+    if (showtime->getMovie() != nullptr) return false;
+    int n = this->showtimes.nodeCount();
+    for (int i = 0; i < n; i++)
+    {
+        Showtime* current = this->showtimes.getAt(i)->data;
+        if (current->getShowtimeId() == showtime->getShowtimeId())
+            return false;
+    }
+    this->showtimes.pushBack(showtime);
+    showtime->movie = this;
+    return true;
+}
+
+Showtime* Movie::findShowtime(const std::string& showtimeId) {
+    int n = this->showtimes.nodeCount();
+    for (int i = 0; i < n; i++)
+    {
+        Showtime* current = this->showtimes.getAt(i)->data;
+        if (current->getShowtimeId() == showtimeId)
+            return current;
+    }
+    return nullptr;
+}
+int Movie::getShowtimeCount() const {
+    return this->showtimes.nodeCount();
 }

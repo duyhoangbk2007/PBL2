@@ -2,15 +2,13 @@
 #define PBL2_CORE_MODELS_SHOWTIME_H
 
 #include <string>
-class Movie;
-class Room;
-
-
 enum class ShowtimeStatus {
 	SCHEDULED,
 	CANCELLED
 };
 
+class Movie;
+class Room;
 class Showtime {
 private:
 	std::string showtimeId;
@@ -19,6 +17,7 @@ private:
 	std::string startAt;
 	std::string endAt;
 	ShowtimeStatus status;
+
 	Movie* movie = nullptr;
 	Room* room = nullptr;
 
@@ -37,15 +36,17 @@ public:
 	const std::string& getEndAt() const;
 	ShowtimeStatus getStatus() const;
 	bool isEndAfterStart() const;
-	Movie* getMovie() const;
-	Room* getRoom() const;
 
 	void setStartAt(const std::string& startAt);
 	void setEndAt(const std::string& endAt);
 	void setStatus(ShowtimeStatus status);
+
+	Movie* getMovie() const;
+	Room* getRoom() const;
 	bool linkMovie(Movie* movie);
 	bool linkRoom(Room* room);
-	
+	friend class Movie;
+	friend class Room;
 };
 
 #endif

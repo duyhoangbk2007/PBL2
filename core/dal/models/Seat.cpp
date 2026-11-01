@@ -12,6 +12,10 @@ Seat::Seat(const string& roomId,
       seatType(seatType) 
 {}
 
+Room* Seat::getRoom() const {
+    return this->room;
+}
+
 const string& Seat::getRoomId() const {
     return this->roomId;
 }
