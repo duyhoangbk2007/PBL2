@@ -56,8 +56,7 @@ bool Showtime::linkMovie(Movie* movie) {
         return false;
     }
 
-    this->movie = movie;
-    return true;
+    return movie->linkShowtime(this);
 }
 
 bool Showtime::linkRoom(Room* room) {
@@ -66,8 +65,7 @@ bool Showtime::linkRoom(Room* room) {
         return false;
     }
 
-    this->room = room;
-    return true;
+    return room->linkShowtime(this);
 }
 
 Movie* Showtime::getMovie() const {
