@@ -70,7 +70,7 @@ bool Invoice::linkSeller(User* seller) {
         return false;
     }
 
-    if (!seller->addInvoiceReference(this)) {
+    if (!seller->linkInvoice(this)) {
         return false;
     }
 
@@ -93,7 +93,7 @@ bool Invoice::linkMember(Member* member) {
         return false;
     }
 
-    if (!member->addInvoiceReference(this)) {
+    if (!member->linkInvoice(this)) {
         return false;
     }
 

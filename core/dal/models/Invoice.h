@@ -30,6 +30,11 @@ public:
             const std::string& createdAt,
             double totalAmount);
 
+    Invoice(const Invoice&) = delete;
+    Invoice& operator=(const Invoice&) = delete;
+    Invoice(Invoice&&) = delete;
+    Invoice& operator=(Invoice&&) = delete;
+
     const std::string& getInvoiceId() const;
     const std::string& getShowtimeId() const;
     const std::string& getStaffId() const;

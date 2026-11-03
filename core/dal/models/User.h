@@ -21,7 +21,7 @@ private:
     bool active;
     DoublyLinkedList<Invoice*> invoices;
 
-    bool addInvoiceReference(Invoice* invoice);
+    bool linkInvoice(Invoice* invoice);
 
     friend class Invoice;
 

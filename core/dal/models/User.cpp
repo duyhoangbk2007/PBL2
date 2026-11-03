@@ -49,7 +49,7 @@ Invoice* User::getInvoiceAt(int index) {
     return node == nullptr ? nullptr : node->data;
 }
 
-bool User::addInvoiceReference(Invoice* invoice) {
+bool User::linkInvoice(Invoice* invoice) {
     if (invoice == nullptr || invoice->getStaffId() != this->userId) {
         return false;
     }

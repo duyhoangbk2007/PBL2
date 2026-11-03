@@ -32,7 +32,7 @@ Invoice* Member::getInvoiceAt(int index) {
 	return node == nullptr ? nullptr : node->data;
 }
 
-bool Member::addInvoiceReference(Invoice* invoice) {
+bool Member::linkInvoice(Invoice* invoice) {
 	if (invoice == nullptr || invoice->getMemberId().empty() ||
 		invoice->getMemberId() != this->memberId) {
 		return false;
