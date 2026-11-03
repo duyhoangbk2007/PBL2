@@ -1,4 +1,5 @@
 #include "Member.h"
+#include "Invoice.h"
 using namespace std;
 
 Member::Member(const string& memberId,
@@ -22,6 +23,33 @@ const string& Member::getPhone() const {
 }
 int Member::getPoints() const {
 	return this->points;
+}
+int Member::getInvoiceCount() const {
+	return this->invoices.nodeCount();
+}
+Invoice* Member::getInvoiceAt(int index) {
+	ListNode<Invoice*>* node = this->invoices.getAt(index);
+	return node == nullptr ? nullptr : node->data;
+}
+
+bool Member::addInvoiceReference(Invoice* invoice) {
+	if (invoice == nullptr || invoice->getMemberId().empty() ||
+		invoice->getMemberId() != this->memberId) {
+		return false;
+	}
+
+	for (int index = 0; index < this->invoices.nodeCount(); ++index) {
+		Invoice* current = this->invoices.getAt(index)->data;
+		if (current == invoice) {
+			return true;
+		}
+		if (current->getInvoiceId() == invoice->getInvoiceId()) {
+			return false;
+		}
+	}
+
+	this->invoices.pushBack(invoice);
+	return true;
 }
 
 void Member::setFullName(const string& fullName) {

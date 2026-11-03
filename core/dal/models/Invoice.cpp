@@ -65,7 +65,12 @@ bool Invoice::linkShowtime(Showtime* showtime) {
 }
 
 bool Invoice::linkSeller(User* seller) {
-    if (seller == nullptr || seller->getUserId() != this->staffId) {
+    if (seller == nullptr || seller->getUserId() != this->staffId ||
+        (this->seller != nullptr && this->seller != seller)) {
+        return false;
+    }
+
+    if (!seller->addInvoiceReference(this)) {
         return false;
     }
 
@@ -83,7 +88,12 @@ bool Invoice::linkMember(Member* member) {
         return true;
     }
 
-    if (member->getMemberId() != this->memberId) {
+    if (this->memberId.empty() || member->getMemberId() != this->memberId ||
+        (this->member != nullptr && this->member != member)) {
+        return false;
+    }
+
+    if (!member->addInvoiceReference(this)) {
         return false;
     }
 
@@ -93,18 +103,24 @@ bool Invoice::linkMember(Member* member) {
 
 bool Invoice::linkTicket(Ticket* ticket) {
     if (ticket == nullptr || ticket->getInvoiceId() != this->invoiceId ||
-        ticket->getShowtimeId() != this->showtimeId) {
+        ticket->getShowtimeId() != this->showtimeId ||
+        (ticket->invoice != nullptr && ticket->invoice != this)) {
         return false;
     }
 
     for (int index = 0; index < this->tickets.nodeCount(); ++index) {
         Ticket* current = this->tickets.getAt(index)->data;
+        if (current == ticket) {
+            ticket->invoice = this;
+            return true;
+        }
         if (current->getTicketId() == ticket->getTicketId()) {
             return false;
         }
     }
 
     this->tickets.pushBack(ticket);
+    ticket->invoice = this;
     return true;
 }
 

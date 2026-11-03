@@ -37,16 +37,17 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [x] Có đủ `User`, `Member`, `Ticket`, `Invoice` ở `core/dal/models/`.
 - [x] `Member::setPoints()` và `Ticket::markCancelled()` hiện có trong mã.
 - [x] Biên dịch cú pháp toàn bộ tám Model bằng C++17: đạt ở lần rà soát này.
-- [ ] Chốt quan hệ Invoice–Ticket, User/Member–Invoice và vòng đời con trỏ.
-- [ ] Kiểm tra trạng thái vé, điểm và tính nhất quán sau khi nối quan hệ.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [x] Chốt các quan hệ trong phạm vi Kiệt: Invoice–Ticket, User/Member–Invoice; rà soát trạng thái copy/move.
+- [ ] Xử lý rủi ro shallow-copy DLL còn lại ở `Invoice`; xác nhận vòng đời object tại DAL/Repository.
+- [x] Kiểm tra trạng thái vé, điểm và tính nhất quán sau khi nối quan hệ.
+- [x] Viết và chạy kiểm thử tích hợp tại `tests/model_relations_test.cpp`.
 - [ ] Review và tích hợp với phần của Hoàng.
 
 **Điều kiện hoàn thành:** Bốn Model tài khoản/giao dịch có quan hệ nhất quán và được thử tích hợp với bốn Model của Hoàng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Nhật ký Bước 02 có các mốc cũ; mã hiện có setter điểm và thao tác hủy. Chưa có thử tích hợp vòng đời/copy DLL.
+**Ghi chú:** Test C++17 cho bốn Model của Kiệt đã liên kết và chạy đạt. `User`/`Member` cấm copy/move; `Invoice` vẫn dùng copy/move mặc định nên còn rủi ro shallow-copy DLL. Bước 5 được bỏ qua theo yêu cầu, nên phối hợp với Hoàng và xác nhận vòng đời object tại DAL/Repository vẫn còn chờ; Bước 02 chưa hoàn tất.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
@@ -313,4 +314,3 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 **Pull Request:** Chưa có
 
 **Ghi chú:** Hoàng đóng gói Windows; cả hai kiểm bản cuối và chuẩn bị bảo vệ.
-
