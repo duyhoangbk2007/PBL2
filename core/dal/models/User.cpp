@@ -1,4 +1,5 @@
 #include "User.h"
+#include "Invoice.h"
 using namespace std;
 
 User::User(const string& userId,
@@ -37,6 +38,34 @@ UserRole User::getRole() const {
 
 bool User::isActive() const {
     return this->active;
+}
+
+int User::getInvoiceCount() const {
+    return this->invoices.nodeCount();
+}
+
+Invoice* User::getInvoiceAt(int index) {
+    ListNode<Invoice*>* node = this->invoices.getAt(index);
+    return node == nullptr ? nullptr : node->data;
+}
+
+bool User::linkInvoice(Invoice* invoice) {
+    if (invoice == nullptr || invoice->getStaffId() != this->userId) {
+        return false;
+    }
+
+    for (int index = 0; index < this->invoices.nodeCount(); ++index) {
+        Invoice* current = this->invoices.getAt(index)->data;
+        if (current == invoice) {
+            return true;
+        }
+        if (current->getInvoiceId() == invoice->getInvoiceId()) {
+            return false;
+        }
+    }
+
+    this->invoices.pushBack(invoice);
+    return true;
 }
 
 void User::setUsername(const string& username) {
