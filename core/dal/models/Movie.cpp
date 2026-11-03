@@ -83,16 +83,23 @@ void Movie::setActive(bool active) {
 }
 
 bool Movie::linkShowtime(Showtime* showtime) {
-    if (showtime == nullptr) return false;
-    if (showtime->getMovieId() != this->movieId) return false;
-    if (showtime->getMovie() != nullptr) return false;
+    if (showtime == nullptr) 
+        return false;
+    if (showtime->getMovieId() != this->movieId) 
+        return false;
+    if (showtime->getMovie() != nullptr && showtime->getMovie() != this)
+        return false;
     int n = this->showtimes.nodeCount();
     for (int i = 0; i < n; i++)
     {
         Showtime* current = this->showtimes.getAt(i)->data;
+        if (current == showtime)
+            return true;
         if (current->getShowtimeId() == showtime->getShowtimeId())
             return false;
     }
+    if (showtime->getMovie() == this)
+        return false;
     this->showtimes.pushBack(showtime);
     showtime->movie = this;
     return true;

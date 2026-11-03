@@ -27,6 +27,11 @@ public:
           const std::string& endDate,
           bool active);
     
+    Movie(const Movie&) = delete;
+    Movie& operator=(const Movie&) = delete;
+    Movie(Movie&&) = delete;
+    Movie& operator=(Movie&&) = delete;
+    
     const std::string& getMovieId() const;
     const std::string& getTitle() const;
     const std::string& getGenre() const;
