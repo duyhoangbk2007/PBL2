@@ -1,6 +1,6 @@
 # Task của Kiệt — lộ trình PBL2 15 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài khoản, bán vé, giao diện Staff và tài liệu sử dụng. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Kiệt. Chỉ đánh dấu `[x]` khi có bằng chứng trong mã/nhật ký. Các mục `[x]` ở Bước 01–02 xác nhận hiện vật hoặc kiểm tra đã đối chiếu, không xác nhận toàn bước hoàn thành hay quy tác giả của từng file. Lần rà soát này, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Chưa tạo branch hoặc PR.
+Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài khoản, bán vé, giao diện Staff và tài liệu sử dụng. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Kiệt. Chỉ đánh dấu `[x]` khi có bằng chứng trong mã/nhật ký. Các mục `[x]` ở Bước 01–02 xác nhận hiện vật hoặc kiểm tra đã đối chiếu, không xác nhận toàn bước hoàn thành hay quy tác giả của từng file. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Hiện ở branch `feature/b02-hoang-models-relation`; chưa có PR.
 
 **Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi cả Hoàng và Kiệt đã xong, tích hợp và kiểm thử đạt. Khi tiếp tục Bước XX của Kiệt, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Hoàng khi chỉ làm phần Kiệt.
 
@@ -8,13 +8,13 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 **Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b02-hoang-models-relation`
 
 **Checklist công việc:**
 
 - [x] Đối chiếu README và tài liệu hiện có với cấu trúc mới.
 - [ ] Hoàn thiện README với lệnh build/chạy đã kiểm chứng.
-- [ ] Tạo `.gitignore` phù hợp C++/Qt/CMake.
+- [x] Có `.gitignore` bỏ qua executable, object, thư mục build CMake và file tạm (commit `bf171f9`).
 - [ ] Soạn `AGENTS.md` và quy tắc GitHub, branch, Pull Request.
 - [ ] Tổ chức liên kết tài liệu và nhật ký cho lộ trình mới.
 - [ ] Viết và chạy kiểm thử liên quan.
@@ -24,30 +24,28 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** `README.md` và nhật ký đã có; `.gitignore`, `AGENTS.md` chưa có. Không coi việc có README là đã hoàn thiện hướng dẫn build.
+**Ghi chú:** `README.md` và nhật ký đã có; `.gitignore` được thêm ở commit `bf171f9`, đồng thời `integration_test.exe` và `pbl2_test.exe` được bỏ theo dõi. `AGENTS.md` chưa có. Không coi việc có README là đã hoàn thiện hướng dẫn build.
 
 ### Bước 02 – Hoàn thiện Models và quan hệ con trỏ
 
 **Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b02-hoang-models-relation`
 
 **Checklist công việc:**
 
 - [x] Có đủ `User`, `Member`, `Ticket`, `Invoice` ở `core/dal/models/`.
 - [x] `Member::setPoints()` và `Ticket::markCancelled()` hiện có trong mã.
 - [x] Biên dịch cú pháp toàn bộ tám Model bằng C++17: đạt ở lần rà soát này.
-- [x] Chốt các quan hệ trong phạm vi Kiệt: Invoice–Ticket, User/Member–Invoice; rà soát trạng thái copy/move.
-- [ ] Xử lý rủi ro shallow-copy DLL còn lại ở `Invoice`; xác nhận vòng đời object tại DAL/Repository.
+- [x] Nối các quan hệ `Invoice`–`Ticket`, `User/Member`–`Invoice`; cấm copy/move các Model chứa danh sách con trỏ.
 - [x] Kiểm tra trạng thái vé, điểm và tính nhất quán sau khi nối quan hệ.
-- [x] Viết và chạy kiểm thử tích hợp tại `tests/model_relations_test.cpp`.
-- [ ] Review và tích hợp với phần của Hoàng.
+- [ ] Khôi phục `tests/model_relations_test.cpp` vào cây hiện tại và chạy lại kiểm thử tích hợp.
 
 **Điều kiện hoàn thành:** Bốn Model tài khoản/giao dịch có quan hệ nhất quán và được thử tích hợp với bốn Model của Hoàng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Test C++17 cho bốn Model của Kiệt đã liên kết và chạy đạt. `User`/`Member` cấm copy/move; `Invoice` vẫn dùng copy/move mặc định nên còn rủi ro shallow-copy DLL. Bước 5 được bỏ qua theo yêu cầu, nên phối hợp với Hoàng và xác nhận vòng đời object tại DAL/Repository vẫn còn chờ; Bước 02 chưa hoàn tất.
+**Ghi chú:** Nhật ký Bước 02 ghi nhận test C++17 đã chạy đạt, nhưng `tests/model_relations_test.cpp` không có trong cây hiện tại nên chưa thể chạy lại. `User`/`Member`/`Invoice` đã cấm copy/move. Việc quản lý vòng đời object sẽ xử lý khi có DALC ở Bước 04; Bước 02 còn chờ test có thể chạy lại.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
