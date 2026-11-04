@@ -56,13 +56,19 @@ const Member* Invoice::getMember() const {
 }
 
 bool Invoice::linkShowtime(Showtime* showtime) {
-    if (showtime == nullptr || showtime->getShowtimeId() != this->showtimeId) {
+    if (showtime == nullptr)
         return false;
-    }
+
+    if (showtime->getShowtimeId() != this->showtimeId)
+        return false;
+
+    if (this->showtime != nullptr && this->showtime != showtime)
+        return false;
 
     this->showtime = showtime;
     return true;
 }
+
 
 bool Invoice::linkSeller(User* seller) {
     if (seller == nullptr || seller->getUserId() != this->staffId ||

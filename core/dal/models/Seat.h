@@ -28,6 +28,8 @@ public:
     int getColumn() const;
     SeatType getSeatType() const;
     void setSeatType(SeatType seatType);
+
+    bool linkRoom(Room* room);
     friend class Room;
 };
 

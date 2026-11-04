@@ -48,8 +48,8 @@ public:
     bool linkShowtime(Showtime* showtime);
     bool linkSeller(User* seller);
     bool linkMember(Member* member);
-
     bool linkTicket(Ticket* ticket);
+    
     int getTicketCount() const;
     Ticket* getTicketAt(int index);
 };
