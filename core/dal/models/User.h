@@ -2,6 +2,9 @@
 #define PBL2_CORE_MODELS_USER_H
 
 #include <string>
+#include "../../data_structures/DoublyLinkedList.h"
+
+class Invoice;
 
 enum class UserRole {
     ADMIN,
@@ -16,6 +19,11 @@ private:
     std::string fullName;
     UserRole role;
     bool active;
+    DoublyLinkedList<Invoice*> invoices;
+
+    bool linkInvoice(Invoice* invoice);
+
+    friend class Invoice;
 
 public:
     User(const std::string& userId,
@@ -25,12 +33,19 @@ public:
          UserRole role,
          bool active);
 
+    User(const User&) = delete;
+    User& operator=(const User&) = delete;
+    User(User&&) = delete;
+    User& operator=(User&&) = delete;
+
     const std::string& getUserId() const;
     const std::string& getUsername() const;
     const std::string& getPassword() const;
     const std::string& getFullName() const;
     UserRole getRole() const;
     bool isActive() const;
+    int getInvoiceCount() const;
+    Invoice* getInvoiceAt(int index);
 
     void setUsername(const std::string& username);
     void setPassword(const std::string& password);

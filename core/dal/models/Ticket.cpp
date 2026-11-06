@@ -97,6 +97,10 @@ const Seat* Ticket::getSeat() const {
     return this->seat;
 }
 
+Invoice* Ticket::getInvoice() const {
+    return this->invoice;
+}
+
 bool Ticket::linkShowtime(Showtime* showtime) {
     if (showtime == nullptr || showtime->getShowtimeId() != this->showtimeId ||
         (this->seat != nullptr && this->seat->getRoomId() != showtime->getRoomId())) {
