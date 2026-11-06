@@ -24,11 +24,6 @@ public:
 		   const std::string& phone,
 		   int points);
 
-	Member(const Member&) = delete;
-	Member& operator=(const Member&) = delete;
-	Member(Member&&) = delete;
-	Member& operator=(Member&&) = delete;
-
 	const std::string& getMemberId() const;
 	const std::string& getFullName() const;
 	const std::string& getPhone() const;

@@ -18,11 +18,6 @@ private:
 public:
 
     Room(const std::string& roomId, const std::string& name, int rowCount, int columnCount, bool active);
-
-    Room(const Room&) = delete;
-    Room& operator=(const Room&) = delete;
-    Room(Room&&) = delete;
-    Room& operator=(Room&&) = delete;
     
     const std::string& getRoomId() const;
     const std::string& getName() const;

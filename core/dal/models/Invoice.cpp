@@ -85,19 +85,18 @@ bool Invoice::linkSeller(User* seller) {
 }
 
 bool Invoice::linkMember(Member* member) {
-    if (member == nullptr) {
-        if (!this->memberId.empty()) {
-            return false;
-        }
-
-        this->member = nullptr;
-        return true;
+    if (this->memberId.empty()) {
+        return member == nullptr && this->member == nullptr;
     }
 
-    if (this->memberId.empty() || member->getMemberId() != this->memberId ||
-        (this->member != nullptr && this->member != member)) {
+    if (member == nullptr)
         return false;
-    }
+
+    if (member->getMemberId() != this->memberId)
+        return false;
+
+    if (this->member != nullptr && this->member != member)
+        return false;
 
     if (!member->linkInvoice(this)) {
         return false;

@@ -32,12 +32,7 @@ public:
          const std::string& fullName,
          UserRole role,
          bool active);
-
-    User(const User&) = delete;
-    User& operator=(const User&) = delete;
-    User(User&&) = delete;
-    User& operator=(User&&) = delete;
-
+         
     const std::string& getUserId() const;
     const std::string& getUsername() const;
     const std::string& getPassword() const;
