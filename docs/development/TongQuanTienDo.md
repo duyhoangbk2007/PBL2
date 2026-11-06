@@ -8,7 +8,7 @@ Kiến trúc áp dụng: **GUI → BLL → DAL → DB**. GUI ở `ui/`, BLL ở 
 | --- | --- | --- | --- | --- | --- |
 | 01 | Khởi tạo dự án | Thư mục, CMake, `main.cpp`, build C++17 | README, `.gitignore`, `AGENTS.md`, Git/PR, tài liệu | Đang thực hiện: có mã Model/tài liệu và Git; chưa có CMake hoặc `main.cpp`, chưa xác minh build ứng dụng. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
 | 02 | Hoàn thiện Models và quan hệ con trỏ | `Movie`, `Room`, `Seat`, `Showtime`, DLL khi được dùng | `User`, `Member`, `Ticket`, `Invoice`, trạng thái/điểm | Đang thực hiện: có 8 cặp Model, các quan hệ hai chiều đã ghi trong nhật ký và một số liên kết một chiều; kiểm thử/tích hợp còn mở. Quyết định không dùng `= delete` là chủ động; vòng đời object và gỡ liên kết xem xét ở DAL/Repository. PR #5 đã đóng, chưa merge; PR #4 đang mở. | [Bước 02](Buoc02_XayDungModels.md) |
-| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `Validator`, TXT | `TransactionManager`, `IdGenerator`, `DateTime`, phục hồi | Chưa bắt đầu; mới là kế hoạch, chưa có file triển khai. | Chưa tạo |
+| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `TransactionManager`, TXT, backup/rollback/phục hồi | `IdGenerator`, `DateTime` | Đang thực hiện phần Hoàng; `FileHandler` đã có, `Validator` hoãn sang DAL/Repository; phần Kiệt và tích hợp còn mở. | [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) |
 | 04 | Xây dựng DALC | Movie/Room/Seat/Showtime DALC | User/Member/Ticket/Invoice/Sequence/Booking DALC | Chưa bắt đầu; tích hợp DLL/STL khi cần. | Chưa tạo |
 | 05 | Đăng nhập và phân quyền | Thử quyền Admin/Staff trong quản trị | `AuthService`, `UserManager` | Chưa bắt đầu. | Chưa tạo |
 | 06 | Quản lý phim và thành viên | `MovieManager` | `MemberManager` | Chưa bắt đầu. | Chưa tạo |
@@ -26,4 +26,4 @@ Kiến trúc áp dụng: **GUI → BLL → DAL → DB**. GUI ở `ui/`, BLL ở 
 
 - Cây làm việc hiện có tám cặp Model ở `core/dal/models/`, `core/data_structures/DoublyLinkedList.h` và tài liệu. Chưa có CMake, `main.cpp`, DALC, BLL, GUI hoặc file TXT trong `data/`. Không coi việc có cấu trúc mục tiêu trong tài liệu là đã triển khai.
 - [Nhật ký Bước 01](Buoc01_KhoiTaoDuAn.md) và [Bước 02](Buoc02_XayDungModels.md) giữ các mốc lịch sử, kể cả nhận xét về cấu trúc cũ. Một số đoạn phản ánh cây làm việc tại thời điểm ghi, không phải hiện trạng của commit `9925283`.
-- Chưa có nhật ký Bước 03. Việc chỉ đổi kế hoạch không bắt đầu Bước 03, không đánh dấu bất kỳ bước nào hoàn thành. Khi thực sự bắt đầu một bước, tạo hoặc cập nhật nhật ký tương ứng và ghi lệnh thử, kết quả, lỗi, cách sửa và việc còn lại.
+- Đã có nhật ký Bước 03 cho phần Hoàng đang thực hiện; việc điều chỉnh kế hoạch không đánh dấu bước hoàn thành. Khi thực hiện, cập nhật nhật ký và ghi lệnh thử, kết quả, lỗi, cách sửa và việc còn lại.

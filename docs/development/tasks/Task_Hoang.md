@@ -47,15 +47,15 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
-**Trạng thái:** Chưa bắt đầu
+**Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b03-hoang-storage`
 
 **Checklist công việc:**
 
-- [ ] Thiết kế API `FileHandler` cho đọc/ghi TXT và lỗi I/O.
-- [ ] Cài `Validator` kiểm trường, kiểu và định dạng theo schema.
-- [ ] Thử file hợp lệ, sai định dạng, thiếu file và lỗi ghi.
+- [ ] Thống nhất API `FileHandler`–`TransactionManager` trước khi tích hợp; giữ nguyên code `FileHandler` hiện tại.
+- [ ] Cài `TransactionManager` cho giao dịch nhiều TXT, backup và rollback/phục hồi dữ liệu.
+- [ ] Thử đọc/ghi TXT, thiếu file, lỗi ghi giữa chừng và phục hồi.
 - [ ] Viết và chạy kiểm thử liên quan.
 - [ ] Review và tích hợp với phần của Kiệt.
 
@@ -63,7 +63,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Thống nhất hợp đồng file với `TransactionManager` của Kiệt; chưa bắt đầu Bước 03.
+**Ghi chú:** Hoàng phụ trách `TransactionManager`. Hoãn `Validator` sang DAL/Repository; chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
 
 ### Bước 04 – Xây dựng DALC
 
@@ -204,7 +204,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Phối hợp `BookingService`, `BookingDALC` và `TransactionManager` của Kiệt.
+**Ghi chú:** Phối hợp `BookingService`, `BookingDALC` của Kiệt với `TransactionManager` của Hoàng.
 
 ### Bước 11 – Hủy vé, lịch sử và báo cáo
 

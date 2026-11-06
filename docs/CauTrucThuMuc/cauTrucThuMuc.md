@@ -85,8 +85,6 @@ PBL2/
 │   │   ├── FileHandler.cpp
 │   │   ├── TransactionManager.h
 │   │   ├── TransactionManager.cpp
-│   │   ├── Validator.h
-│   │   ├── Validator.cpp
 │   │   ├── DateTime.h
 │   │   ├── DateTime.cpp
 │   │   ├── IdGenerator.h
@@ -283,7 +281,7 @@ Các file đều **dự kiến**. `utils/` chứa công cụ kỹ thuật dùng 
 | --- | --- |
 | `FileHandler.h/.cpp` | Mở, đọc, ghi file TXT và báo lỗi I/O ở mức kỹ thuật; không quyết định nghiệp vụ. |
 | `TransactionManager.h/.cpp` | Ghi/khôi phục nhóm file liên quan bằng dữ liệu tạm, bản sao và trạng thái giao dịch theo `data_format.md`. |
-| `Validator.h/.cpp` | Kiểm tra định dạng chung của chuỗi, số, trường văn bản; quy tắc nghiệp vụ vẫn thuộc BLL. |
+| `Validator.h/.cpp` | Hoãn sang DAL/Repository; chỉ tạo hàm kiểm tra thực sự cần khi đọc, chuyển đổi và kiểm tra dữ liệu TXT; quy tắc nghiệp vụ vẫn thuộc BLL. |
 | `DateTime.h/.cpp` | Parse, định dạng và so sánh ngày giờ theo quy ước dự án. |
 | `IdGenerator.h/.cpp` | Cấp mã từ `sequences.txt` theo quy tắc hiện có, không tái sử dụng mã đã cấp. |
 | `PricingConfig.h` | Giá ghế, mức giảm và quy tắc điểm mặc định để BLL sử dụng nhất quán. |

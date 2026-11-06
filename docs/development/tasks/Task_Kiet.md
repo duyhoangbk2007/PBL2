@@ -55,18 +55,17 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 **Checklist công việc:**
 
-- [ ] Cài `TransactionManager` ghi nhiều TXT như một giao dịch.
 - [ ] Cài `IdGenerator` đọc/cập nhật `sequences.txt` không tái dùng mã.
 - [ ] Cài `DateTime` parse/định dạng ngày giờ theo schema.
-- [ ] Thử lỗi ghi giữa chừng, rollback và phục hồi.
+- [ ] Thử mã và ngày giờ hợp lệ/không hợp lệ theo schema.
 - [ ] Viết và chạy kiểm thử liên quan.
 - [ ] Review và tích hợp với phần của Hoàng.
 
-**Điều kiện hoàn thành:** Giao dịch nhiều file phục hồi được, mã và ngày giờ đúng định dạng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+**Điều kiện hoàn thành:** Mã và ngày giờ đúng định dạng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Thống nhất API với `FileHandler`/`Validator` của Hoàng; Bước 03 chưa bắt đầu.
+**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`; phối hợp API với `FileHandler`/`TransactionManager` của Hoàng. `Validator` hoãn sang DAL/Repository, chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
 
 ### Bước 04 – Xây dựng DALC
 
