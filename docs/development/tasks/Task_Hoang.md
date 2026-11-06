@@ -41,9 +41,9 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán và có kiểm thử chạy đạt. Có bằng chứng biên dịch/chạy thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
-**Pull Request:** Chưa có
+**Pull Request:** [PR #5](https://github.com/duyhoangbk2007/PBL2/pull/5), `feature/b02-hoang-models-relation` → `main`: đã đóng, chưa merge (kiểm tra GitHub 2026-11-06).
 
-**Ghi chú:** Các hàm `link*` đã kiểm tra ID/trùng và cập nhật hai phía; `Movie`/`Room` đã cấm copy/move. Việc gỡ liên kết khi xóa hoặc tải lại object sẽ xử lý khi có DALC ở Bước 04. Các quan hệ `Ticket`/`Invoice`/`User`/`Member` thuộc phần Kiệt.
+**Ghi chú:** `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime` đã có liên kết hai chiều. Ghi chú cũ về việc cấm copy/move không còn đúng: người thực hiện dự án chủ động không dùng `= delete` trong cả tám Model. Quyền sở hữu object, gỡ liên kết và nạp lại dữ liệu sẽ xem xét ở DAL/Repository. Kiểm thử và tích hợp còn trong checklist chưa hoàn thành; các quan hệ giao dịch thuộc phần Kiệt.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 

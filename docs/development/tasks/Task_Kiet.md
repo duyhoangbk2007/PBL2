@@ -37,15 +37,15 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [x] Có đủ `User`, `Member`, `Ticket`, `Invoice` ở `core/dal/models/`.
 - [x] `Member::setPoints()` và `Ticket::markCancelled()` hiện có trong mã.
 - [x] Biên dịch cú pháp toàn bộ tám Model bằng C++17: đạt ở lần rà soát này.
-- [x] Nối các quan hệ `Invoice`–`Ticket`, `User/Member`–`Invoice`; cấm copy/move các Model chứa danh sách con trỏ.
+- [x] Nối các quan hệ `Invoice`–`Ticket`, `User/Member`–`Invoice`.
 - [x] Kiểm tra trạng thái vé, điểm và tính nhất quán sau khi nối quan hệ.
 - [ ] Khôi phục `tests/model_relations_test.cpp` vào cây hiện tại và chạy lại kiểm thử tích hợp.
 
 **Điều kiện hoàn thành:** Bốn Model tài khoản/giao dịch có quan hệ nhất quán và được thử tích hợp với bốn Model của Hoàng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
-**Pull Request:** Chưa có
+**Pull Request:** [PR #4](https://github.com/duyhoangbk2007/PBL2/pull/4), `feature/b02-kiet-model-relations` → `develop`: đang mở, chưa merge (kiểm tra GitHub 2026-11-06).
 
-**Ghi chú:** Nhật ký Bước 02 ghi nhận test C++17 đã chạy đạt, nhưng `tests/model_relations_test.cpp` không có trong cây hiện tại nên chưa thể chạy lại. `User`/`Member`/`Invoice` đã cấm copy/move. Việc quản lý vòng đời object sẽ xử lý khi có DALC ở Bước 04; Bước 02 còn chờ test có thể chạy lại.
+**Ghi chú:** `Invoice`–`Ticket`, `User`–`Invoice`, `Member`–`Invoice` đã có liên kết hai chiều; `Invoice::linkMember()` đã xử lý khách vãng lai và liên kết Member theo ID. `Invoice`–`Showtime`, `Ticket`–`Showtime` và `Ticket`–`Seat` hiện là một chiều. Người thực hiện dự án chủ động không dùng `= delete` trong cả tám Model; việc quản lý vòng đời object và gỡ liên kết sẽ xem xét ở DAL/Repository. Nhật ký cũ ghi test C++17 đã chạy đạt, nhưng `tests/model_relations_test.cpp` không có trong cây hiện tại; mục kiểm thử tích hợp vẫn chưa hoàn thành ở trạng thái hiện nay.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
