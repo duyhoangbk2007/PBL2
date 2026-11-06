@@ -1,5 +1,6 @@
 #include "Room.h"
 #include "Seat.h"
+#include "Showtime.h"
 using namespace std;
 
 Room::Room(const string& roomId,
@@ -51,8 +52,12 @@ void Room::setActive(bool active) {
 }
 
 bool Room::linkSeat(Seat* seat) {
-    if (seat == nullptr) return false;
-    if (seat->getRoomId() != this->roomId) return false;
+    if (seat == nullptr) 
+        return false;
+    if (seat->getRoomId() != this->roomId) 
+        return false;
+    if (seat->getRoom() != nullptr && seat->getRoom() != this)
+        return false;
     if (seat->getRow() < 1 || seat->getRow() > this->rowCount || seat->getColumn() < 1 || seat->getColumn() > this->columnCount)
         return false;
 
@@ -61,11 +66,18 @@ bool Room::linkSeat(Seat* seat) {
     {
         Seat* current = this->seats.getAt(i)->data;
 
-        if (current->getSeatId() == seat->getSeatId()) return false;
+        if (current == seat)
+            return true;
+        if (current->getSeatId() == seat->getSeatId()) 
+            return false;
         if (current->getRow() == seat->getRow() && current->getColumn() == seat->getColumn())
             return false;
-    }   
+    }
+    if (seat->getRoom() == this)
+        return false;
+   
     this->seats.pushBack(seat);
+    seat->room = this;
     return true;
 }
 
@@ -82,4 +94,42 @@ Seat* Room::findSeat(const string& seatId) {
 
 int Room::getSeatCount() const {
     return this->seats.nodeCount();
+}
+
+bool Room::linkShowtime(Showtime* showtime) {
+    if (showtime == nullptr) 
+        return false;
+    if (showtime->getRoomId() != this->roomId)
+        return false;
+   if (showtime->getRoom() != nullptr && showtime->getRoom() != this)
+        return false;
+
+    int n = this->showtimes.nodeCount();
+    for (int i = 0; i < n; i++) {
+        Showtime* current = this->showtimes.getAt(i)->data;
+        if (current == showtime)
+            return true;
+        if (current->getShowtimeId() == showtime->getShowtimeId())
+            return false;
+    }
+    if (showtime->getRoom() == this)
+        return false;
+    this->showtimes.pushBack(showtime);
+    showtime->room = this;
+
+    return true;
+}
+Showtime* Room::findShowtime(const std::string& showtimeId) {
+    int n = this->showtimes.nodeCount();
+    for (int i = 0; i < n; i++) {
+        Showtime* current = this->showtimes.getAt(i)->data;
+
+        if (current->getShowtimeId() == showtimeId)
+            return current;
+    }
+    return nullptr;
+}
+
+int Room::getShowtimeCount() const {
+    return this->showtimes.nodeCount();
 }

@@ -1,6 +1,6 @@
 # Task của Hoàng — lộ trình PBL2 15 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. Chỉ đánh dấu `[x]` khi có bằng chứng trong mã/nhật ký. Các mục `[x]` ở Bước 01–02 xác nhận hiện vật hoặc kiểm tra đã đối chiếu, không xác nhận toàn bước hoàn thành hay quy tác giả của từng file. Lần rà soát này, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Chưa tạo branch hoặc PR.
+Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. Chỉ đánh dấu `[x]` khi có bằng chứng trong mã/nhật ký. Các mục `[x]` ở Bước 01–02 xác nhận hiện vật hoặc kiểm tra đã đối chiếu, không xác nhận toàn bước hoàn thành hay quy tác giả của từng file. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Hiện ở branch `feature/b02-hoang-models-relation`; chưa có PR.
 
 **Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi cả Hoàng và Kiệt đã xong, tích hợp và kiểm thử đạt. Khi tiếp tục Bước XX của Hoàng, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Kiệt khi chỉ làm phần Hoàng.
 
@@ -8,14 +8,15 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b02-hoang-models-relation`
 
 **Checklist công việc:**
 
 - [x] Đối chiếu cây thư mục và tài liệu cấu trúc hiện có.
 - [ ] Hoàn thiện các thư mục tối thiểu phục vụ Bước 01.
 - [ ] Viết `CMakeLists.txt` cấu hình C++17 và nguồn hiện có.
-- [ ] Tạo `main.cpp` tối thiểu, build và chạy trên Windows.
+- [x] Có `main.cpp` tối thiểu trong cây hiện tại.
+- [ ] Build và chạy chương trình tối thiểu trên Windows.
 - [ ] Viết và chạy kiểm thử liên quan.
 - [ ] Review và tích hợp với phần của Kiệt.
 
@@ -23,28 +24,26 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Chưa có `CMakeLists.txt` hoặc `main.cpp` trong cây hiện tại; nhật ký Bước 01 chỉ xác nhận khảo sát.
+**Ghi chú:** Đã có `main.cpp`; chưa có `CMakeLists.txt` và chưa có bằng chứng build/chạy ứng dụng tối thiểu từ CMake. Commit `bf171f9` chỉ thêm `.gitignore` và bỏ theo dõi hai file `.exe`.
 
 ### Bước 02 – Hoàn thiện Models và quan hệ con trỏ
 
 **Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b02-hoang-models-relation`
 
 **Checklist công việc:**
 
 - [x] Có đủ `Movie`, `Room`, `Seat`, `Showtime` ở `core/dal/models/`.
 - [x] Biên dịch cú pháp bốn Model và toàn bộ tám `.cpp` bằng C++17: đạt ở lần rà soát này.
-- [ ] Chốt quan hệ hai chiều Movie–Showtime, Room–Seat, Room–Showtime theo `models.md`.
-- [ ] Rà soát API, vòng đời và copy/move của `DoublyLinkedList<T>` khi Room dùng danh sách ghế.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+- [x] Nối hai chiều và kiểm tra mã/trùng cho `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime`.
+- [ ] Viết và chạy kiểm thử các quan hệ trên, gồm mã sai, `nullptr`, trùng và kết quả ở cả hai phía.
 
-**Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán, DLL an toàn khi dùng và có kiểm thử tích hợp tám Model. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+**Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán và có kiểm thử chạy đạt. Có bằng chứng biên dịch/chạy thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
-**Pull Request:** Chưa có
+**Pull Request:** [PR #5](https://github.com/duyhoangbk2007/PBL2/pull/5), `feature/b02-hoang-models-relation` → `main`: đã đóng, chưa merge (kiểm tra GitHub 2026-11-06).
 
-**Ghi chú:** Quan hệ hiện mới có một số chiều; cần thống nhất chủ sở hữu object với Kiệt trước khi thay mã.
+**Ghi chú:** `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime` đã có liên kết hai chiều. Ghi chú cũ về việc cấm copy/move không còn đúng: người thực hiện dự án chủ động không dùng `= delete` trong cả tám Model. Quyền sở hữu object, gỡ liên kết và nạp lại dữ liệu sẽ xem xét ở DAL/Repository. Kiểm thử và tích hợp còn trong checklist chưa hoàn thành; các quan hệ giao dịch thuộc phần Kiệt.
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 

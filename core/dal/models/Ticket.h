@@ -5,6 +5,7 @@
 
 class Showtime;
 class Seat;
+class Invoice;
 
 enum class TicketType {
     REGULAR,
@@ -34,6 +35,7 @@ private:
     double refundAmount;              
     Showtime* showtime = nullptr;
     Seat* seat = nullptr;
+    Invoice* invoice = nullptr;
 
 public:
     Ticket(const std::string& ticketId,
@@ -67,11 +69,15 @@ public:
     double getRefundAmount() const;
     const Showtime* getShowtime() const;
     const Seat* getSeat() const;
+    Invoice* getInvoice() const;
 
     bool linkShowtime(Showtime* showtime);
     bool linkSeat(Seat* seat);
+    bool linkInvoice(Invoice* invoice);
 
     void markCancelled(const std::string& cancelledAt, const std::string& cancelledBy, const std::string& cancelReason);
+
+    friend class Invoice;
 };
 
 #endif

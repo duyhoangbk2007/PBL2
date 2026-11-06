@@ -1,4 +1,5 @@
 #include "Seat.h"
+#include "Room.h"
 using namespace std;
 Seat::Seat(const string& roomId,
            const string& seatId,
@@ -11,6 +12,10 @@ Seat::Seat(const string& roomId,
       column(column),
       seatType(seatType) 
 {}
+
+Room* Seat::getRoom() const {
+    return this->room;
+}
 
 const string& Seat::getRoomId() const {
     return this->roomId;
@@ -31,4 +36,15 @@ SeatType Seat::getSeatType() const {
 void Seat::setSeatType(SeatType seatType) {
     this->seatType = seatType;
 }
+
+bool Seat::linkRoom(Room* room) {
+    if (room == nullptr)
+        return false;
+
+    if (room->getRoomId() != this->roomId)
+        return false;
+
+    return room->linkSeat(this);
+}
+
 

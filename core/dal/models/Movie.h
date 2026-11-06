@@ -2,7 +2,9 @@
 #define PBL2_CORE_MODELS_MOVIE_H
 
 #include <string>
+#include "../../data_structures/DoublyLinkedList.h"
 
+class Showtime;
 class Movie {
 private:
     std::string movieId;
@@ -13,6 +15,8 @@ private:
     std::string releaseDate;
     std::string endDate;
     bool active;
+
+    DoublyLinkedList<Showtime *> showtimes;
 public:
     Movie(const std::string& movieId,
           const std::string& title,
@@ -39,6 +43,10 @@ public:
     void setReleaseDate(const std::string& releaseDate);
     void setEndDate(const std::string& endDate);
     void setActive(bool active);
+
+    bool linkShowtime(Showtime* showtime);
+    Showtime* findShowtime(const std::string& showtimeId);
+    int getShowtimeCount() const;
 };
 
 #endif

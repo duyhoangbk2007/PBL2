@@ -1,6 +1,7 @@
 #include "Ticket.h"
 #include "Seat.h"
 #include "Showtime.h"
+#include "Invoice.h"
 using namespace std;
 
 Ticket::Ticket(const string& ticketId,
@@ -97,25 +98,50 @@ const Seat* Ticket::getSeat() const {
     return this->seat;
 }
 
+Invoice* Ticket::getInvoice() const {
+    return this->invoice;
+}
+
 bool Ticket::linkShowtime(Showtime* showtime) {
-    if (showtime == nullptr || showtime->getShowtimeId() != this->showtimeId ||
-        (this->seat != nullptr && this->seat->getRoomId() != showtime->getRoomId())) {
+    if (showtime == nullptr)
         return false;
-    }
+    if (showtime->getShowtimeId() != this->showtimeId)
+        return false;
+    if (this->showtime != nullptr && this->showtime != showtime)
+        return false;
+
+    if (this->seat != nullptr && this->seat->getRoomId() != showtime->getRoomId())
+        return false;
 
     this->showtime = showtime;
     return true;
 }
 
 bool Ticket::linkSeat(Seat* seat) {
-    if (seat == nullptr || this->showtime == nullptr ||
-        seat->getSeatId() != this->seatId ||
-        seat->getRoomId() != this->showtime->getRoomId()) {
+    if (seat == nullptr)
         return false;
-    }
+    if (this->showtime == nullptr)
+        return false;
+    if (seat->getSeatId() != this->seatId)
+        return false;
+    if (seat->getRoomId() != this->showtime->getRoomId())
+        return false;
+
+    if (this->seat != nullptr && this->seat != seat)
+        return false;
 
     this->seat = seat;
     return true;
+}
+
+bool Ticket::linkInvoice(Invoice* invoice) {
+    if (invoice == nullptr)
+        return false;
+
+    if (invoice->getInvoiceId() != this->invoiceId)
+        return false;
+
+    return invoice->linkTicket(this);
 }
 
 void Ticket::markCancelled(const string& cancelledAt,
