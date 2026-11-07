@@ -1,0 +1,2 @@
+#schema=1
+MEM000001|Nguyen Van An|0123456789|30
