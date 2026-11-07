@@ -49,24 +49,24 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
-**Trạng thái:** Chưa bắt đầu
+**Trạng thái:** Đang thực hiện
 
-**Branch:** Chưa tạo
+**Branch:** `feature/b3-Kiet-storage`
 
 **Checklist công việc:**
 
-- [ ] Cài `TransactionManager` ghi nhiều TXT như một giao dịch.
-- [ ] Cài `IdGenerator` đọc/cập nhật `sequences.txt` không tái dùng mã.
-- [ ] Cài `DateTime` parse/định dạng ngày giờ theo schema.
-- [ ] Thử lỗi ghi giữa chừng, rollback và phục hồi.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [x] Cài `TransactionManager` ghi nhiều TXT như một giao dịch.
+- [x] Cài `IdGenerator` đọc/cập nhật `sequences.txt` không tái dùng mã.
+- [x] Cài `DateTime` parse/định dạng ngày giờ theo schema.
+- [x] Thử lỗi ghi giữa chừng, rollback và phục hồi.
+- [x] Viết và chạy kiểm thử liên quan cho `TransactionManager`, luồng cấp/lưu mã và `DateTime`.
 - [ ] Review và tích hợp với phần của Hoàng.
 
 **Điều kiện hoàn thành:** Giao dịch nhiều file phục hồi được, mã và ngày giờ đúng định dạng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Thống nhất API với `FileHandler`/`Validator` của Hoàng; Bước 03 chưa bắt đầu.
+**Ghi chú:** Đã cài `TransactionManager::recover()`/`commit()` trên Windows, manifest PREPARED/COMMITTED, backup và chặn ghi khi phục hồi lỗi. `IdGenerator` chuẩn bị mã/nội dung `sequences.txt` với `#schema=1`; `TransactionManager` lưu cùng dữ liệu nghiệp vụ. `DateTime` parse/định dạng đúng schema, kiểm tra ngày thực tế, năm nhuận và giờ hợp lệ. Rà soát và chạy đạt cả ba bộ kiểm thử C++17 ngày 2026-11-07; đã siết định dạng bộ đếm, báo file/dòng lỗi, cố định định dạng ngày khi đổi locale và bỏ yêu cầu backup thừa cho COMMITTED. Chi tiết và lệnh chạy tại [nhật ký Bước 03](../Buoc03_HaTangLuuTru.md). API còn cần review với `FileHandler`/`Validator` của Hoàng và tích hợp DALC ở Bước 04.
 
 ### Bước 04 – Xây dựng DALC
 

@@ -8,7 +8,7 @@ Kiến trúc áp dụng: **GUI → BLL → DAL → DB**. GUI ở `ui/`, BLL ở 
 | --- | --- | --- | --- | --- | --- |
 | 01 | Khởi tạo dự án | Thư mục, CMake, `main.cpp`, build C++17 | README, `.gitignore`, `AGENTS.md`, Git/PR, tài liệu | Đang thực hiện: có mã Model/tài liệu và Git; chưa có CMake hoặc `main.cpp`, chưa xác minh build ứng dụng. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
 | 02 | Hoàn thiện Models và quan hệ con trỏ | `Movie`, `Room`, `Seat`, `Showtime`, DLL khi được dùng | `User`, `Member`, `Ticket`, `Invoice`, trạng thái/điểm | Đang thực hiện: có 8 cặp Model, các quan hệ hai chiều đã ghi trong nhật ký và một số liên kết một chiều; kiểm thử/tích hợp còn mở. Quyết định không dùng `= delete` là chủ động; vòng đời object và gỡ liên kết xem xét ở DAL/Repository. PR #5 đã đóng, chưa merge; PR #4 đang mở. | [Bước 02](Buoc02_XayDungModels.md) |
-| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `Validator`, TXT | `TransactionManager`, `IdGenerator`, `DateTime`, phục hồi | Chưa bắt đầu; mới là kế hoạch, chưa có file triển khai. | Chưa tạo |
+| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `Validator`, TXT | `TransactionManager`, `IdGenerator`, `DateTime`, phục hồi | Đang thực hiện: Kiệt đã cài ba tiện ích và kiểm thử đạt trên Windows; chưa có `FileHandler`/`Validator` của Hoàng để tích hợp. | [Bước 03](Buoc03_HaTangLuuTru.md) |
 | 04 | Xây dựng DALC | Movie/Room/Seat/Showtime DALC | User/Member/Ticket/Invoice/Sequence/Booking DALC | Chưa bắt đầu; tích hợp DLL/STL khi cần. | Chưa tạo |
 | 05 | Đăng nhập và phân quyền | Thử quyền Admin/Staff trong quản trị | `AuthService`, `UserManager` | Chưa bắt đầu. | Chưa tạo |
 | 06 | Quản lý phim và thành viên | `MovieManager` | `MemberManager` | Chưa bắt đầu. | Chưa tạo |
