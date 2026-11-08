@@ -16,7 +16,7 @@ public:
     static void recover(); //phục hồi giao dịch đang dở khi khởi động ứng dụng
 private:
     static void prepareFiles(const std::vector<TransactionFile>& files, const std::string& transactionPath);
-    static void writeManifest(const std::string& transactionPath, const std::string& status);
+    static void writeManifest(const std::vector<TransactionFile>& files, const std::string& transactionPath, const std::string& status);
     static void replaceFiles(const std::vector<TransactionFile>& files, const std::string& transactionPath);
     static void rollback(const std::string& transactionPath);
 };
