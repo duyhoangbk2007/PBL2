@@ -13,7 +13,7 @@ class TransactionManager
 {
 public:
     static void execute(const std::vector<TransactionFile>& files); //thực hiện giao dịch lưu nhiều file txt
-    static void recover(); //phục hồi giao dịch đang dở khi khởi động ứng dụng
+    static void recover(const std::string& transactionDir = "data/transactions"); //phục hồi giao dịch đang dở khi khởi động ứng dụng
 private:
     static void prepareFiles(const std::vector<TransactionFile>& files, const std::string& transactionPath);
     static void writeManifest(const std::vector<TransactionFile>& files, const std::string& transactionPath, const std::string& status);
