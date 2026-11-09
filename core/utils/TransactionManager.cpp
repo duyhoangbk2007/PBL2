@@ -207,12 +207,9 @@ void TransactionManager::execute(const vector<TransactionFile> &files)
     try
     {
         prepareFiles(files, transactionPath);
-
         writeManifest(files, transactionPath, "PREPARED");
         prepared = true;
-
         replaceFiles(files, transactionPath);
-
         writeManifest(files, transactionPath, "COMMITTED");
     }
     catch (...)
@@ -228,12 +225,13 @@ void TransactionManager::execute(const vector<TransactionFile> &files)
                 throw runtime_error("Rollback that bai, can kiem tra du lieu");
             }
         }
-
+        std::error_code cleanupError;
+        filesystem::remove_all(transactionPath, cleanupError);
         throw;
     }
+    std::error_code cleanupError;
+    filesystem::remove_all(transactionPath, cleanupError);
 }
-
-
 
 void TransactionManager::recover(const string& transactionDir) {
     if (!filesystem::exists(transactionDir)) {
@@ -279,6 +277,8 @@ void TransactionManager::recover(const string& transactionDir) {
         else {
             throw runtime_error("Trang thai manifest khong hop le");
         }
+        std::error_code cleanupError;
+        filesystem::remove_all(transactionPath, cleanupError);
     }
 }
 

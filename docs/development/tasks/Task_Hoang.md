@@ -47,23 +47,34 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
-**Trạng thái:** Đang thực hiện
+**Trạng thái:** Đã triển khai và kiểm thử các chức năng chính của Hoàng; chờ tích hợp với phần Kiệt.
 
 **Branch:** `feature/b03-hoang-storage`
 
 **Checklist công việc:**
 
-- [ ] Thống nhất API `FileHandler`–`TransactionManager` trước khi tích hợp; giữ nguyên code `FileHandler` hiện tại.
-- [ ] Cài `TransactionManager` cho giao dịch nhiều TXT, backup và rollback/phục hồi dữ liệu.
-- [ ] Thử đọc/ghi TXT, thiếu file, lỗi ghi giữa chừng và phục hồi.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+- [x] Tích hợp `FileHandler` với `TransactionManager` để đọc/ghi dữ liệu TXT.
+- [x] Cài `TransactionManager` hỗ trợ giao dịch nhiều file, backup và rollback.
+- [x] Cài `execute()` để thực hiện giao dịch và xử lý ngoại lệ.
+- [x] Cài `recover()` xử lý giao dịch PREPARED và COMMITTED.
+- [x] Bổ sung dọn thư mục giao dịch sau commit và rollback thành công.
+- [x] Kiểm thử execute thành công và rollback khi giả lập lỗi.
+- [x] Kiểm thử recovery với PREPARED và COMMITTED.
+- [ ] Review và tích hợp với `IdGenerator`, `DateTime` của Kiệt.
+- [ ] Kiểm tra tích hợp sau khi merge.
 
-**Điều kiện hoàn thành:** DALC có thể dùng tiện ích đọc/ghi TXT và nhận lỗi rõ ràng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+**Điều kiện hoàn thành:** Các chức năng lưu trữ chính hoạt động trong những trường hợp đã kiểm thử. Bước 03 chung chỉ hoàn thành sau khi tích hợp phần Kiệt và kiểm tra lại.
 
-**Pull Request:** Chưa có
+**Pull Request:** Chưa tạo PR cho Bước 03.
 
-**Ghi chú:** Hoàng phụ trách `TransactionManager`. Hoãn `Validator` sang DAL/Repository; chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
+**Ghi chú:**
+- `FileHandler` cung cấp hàm đọc/ghi file TXT.
+- `TransactionManager` thực hiện chuẩn bị file mới, backup, manifest, thay file, rollback và recovery.
+- Đã kiểm tra các luồng chính bằng chương trình test C++17.
+- Các bài test được sử dụng trong quá trình phát triển; dự kiến kiểm thử tích hợp lại sau khi ghép code.
+- Chưa bảo đảm đầy đủ tính bền vững khi mất điện đột ngột hoặc lỗi hệ điều hành.
+- `Validator` được hoãn sang bước DAL/Repository.
+- Chưa tích hợp code của Kiệt.
 
 ### Bước 04 – Xây dựng DALC
 
