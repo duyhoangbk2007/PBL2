@@ -4,17 +4,20 @@
 
 ## 1. Quy ước
 
-- UTF-8, một bản ghi mỗi dòng, trường cách nhau bằng `|`. Dòng đầu bắt buộc `#schema=1`; không có dòng tên cột trong file thực tế.
+- Dữ liệu lưu bằng UTF-8, mỗi bản ghi nằm trên một dòng, các trường cách nhau bằng ký tự |.
+- Không sử dụng dòng #schema=1 hoặc dòng tiêu đề cột. Dữ liệu bắt đầu ngay từ dòng đầu tiên.
+- Thứ tự và số lượng trường của mỗi loại file tuân theo định dạng quy định trong tài liệu này.
 - Không cho phép `|`, xuống dòng hoặc ký tự điều khiển trong trường văn bản; bản đầu không dùng escape.
 - Trường tùy chọn để rỗng, giữ dấu phân cách và cả trường rỗng cuối dòng khi parse; không dùng chữ null.
 - Ngày `YYYY-MM-DD`; thời điểm `YYYY-MM-DDTHH:mm:ss`, thống nhất giờ Việt Nam UTC+07:00.
 - Tiền dùng `double` theo đơn vị VND, cho phép phần thập phân; khi ghi file dùng dấu chấm `.` làm dấu thập phân, không có dấu phân cách hàng nghìn và không ghi `NaN`/`Infinity`. Boolean dùng 0/1; enum chữ hoa.
-- Mã gồm tiền tố và số tăng dần tối thiểu sáu chữ số: USR000001, MOV000001, ROM000001, SHW000001, TKT000001, INV000001, MEM000001. Không giới hạn ở sáu chữ số và không tái sử dụng mã.
+- Mã gồm tiền tố và đúng 4 chữ số: `USR0001`, `MOV0001`, `ROM0001`, `SHW0001`, `TKT0001`, `INV0001`, `MEM0001`.
+- Số thứ tự hợp lệ từ 1 đến 9999. Khi hết số thứ tự phải báo lỗi, không cấp lại mã đã sử dụng.
 - seatId duy nhất trong phòng, ví dụ A01; hàng/cột bắt đầu từ 1.
 - Username phân biệt hoa/thường, không có khoảng trắng đầu/cuối. Điện thoại là chuỗi 10 chữ số bắt đầu bằng 0, duy nhất trong danh sách thành viên.
 - Trong phiên bản môn học hiện tại, `password` được lưu dạng văn bản trong `users.txt` để đơn giản hóa phần đăng nhập. Trường này vẫn phải tuân thủ quy tắc ký tự của file (không chứa `|`, xuống dòng hoặc ký tự điều khiển). Nếu nâng cấp sang lưu hash, cần đổi đồng bộ model, định dạng file và dữ liệu tài khoản đã có; không dùng hash table hoặc `std::hash` như hàm bảo vệ mật khẩu.
 
-## 2. Schema (thứ tự trường)
+## 2. Cấu trúc các file dữ liệu (thứ tự trường)
 
 ### users.txt
 
@@ -99,14 +102,14 @@ Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dươn
 ## 3. Tải và kiểm tra
 
 1. Phục hồi giao dịch dang dở trước khi đọc dữ liệu nghiệp vụ.
-2. Kiểm tra schema, số trường, kiểu, enum và mã trùng.
+2. Kiểm tra số lượng trường, số trường, kiểu, enum và mã trùng.
 3. Tải danh mục rồi kiểm tra tham chiếu suất/hóa đơn/vé; showtimeId của từng vé phải trùng showtimeId trên hóa đơn tương ứng.
 4. Kiểm tra hóa đơn không rỗng, ghế bán trùng, tổng tiền, điểm thành viên và bộ đếm mã.
 5. Chỉ sau khi hợp lệ mới dựng danh sách, hash table, trie, BST và dữ liệu báo cáo trong bộ nhớ.
 
 Thứ tự khởi động ứng dụng là: lấy khóa độc quyền bộ dữ liệu, phục hồi giao dịch dang dở, đọc và kiểm tra file, dựng chỉ mục rồi mới hiển thị đăng nhập. Khóa phải dựa trên cơ chế khóa của hệ điều hành hoặc có kiểm tra tiến trình sở hữu; không chỉ dựa vào sự tồn tại của một file lock. Khi thoát bình thường, ứng dụng hoàn tất ghi rồi nhả khóa.
 
-File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng, tạo các file có schema, bộ đếm bắt đầu từ 1 và tài khoản Admin đầu tiên; không quy định mật khẩu mặc định trong tài liệu.
+File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng, tạo các file TXT theo định dạng đã thống nhất (không có dòng schema), bộ đếm bắt đầu từ 1
 
 ## 4. Lưu nhiều file và phục hồi
 

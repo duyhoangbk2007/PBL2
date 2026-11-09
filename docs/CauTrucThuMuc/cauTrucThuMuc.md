@@ -169,7 +169,7 @@ PBL2/
     ├── TongQuan/
     │   ├── TongQuanDeTai.md         [Có] Phạm vi và luồng chức năng
     │   ├── business_rules.md        [Có] Quy tắc nghiệp vụ
-    │   └── data_format.md           [Có] Schema TXT và phục hồi
+    │   └── data_format.md           
     ├── CauTrucThuMuc/
     │   ├── cauTrucThuMuc.md         [Có] Cây thư mục chi tiết
     │   └── models.md                [Có] Đề xuất quan hệ Model hai chiều
@@ -337,7 +337,7 @@ Các file đều **dự kiến**; chưa có dữ liệu thật trong cây làm v
 | `CauTrucThuMuc/cauTrucThuMuc.md` | Cây thư mục và trách nhiệm; file này. |
 | `CauTrucThuMuc/models.md` | Đề xuất quan hệ Model hai chiều. |
 | `TongQuan/business_rules.md` | Quy tắc nghiệp vụ. |
-| `TongQuan/data_format.md` | Schema TXT và quy tắc lưu. |
+| `TongQuan/data_format.md` | cấu trúc file TXT và quy tắc lưu. |
 | `DS/DLL.md` | Giải thích Doubly Linked List. |
 | `development/QuanHeModels.md` | Rà soát quan hệ Model trước đây. |
 | `development/PhanCongCongViec.md` | Phân công và phối hợp. |
