@@ -25,7 +25,7 @@ if (!transactions.recover(error)) {
 
 // Tải dữ liệu, kiểm tra schema và chuẩn bị nội dung mới.
 std::string movieId, newSequences;
-if (!IdGenerator::generateNextId("MOV", "data/sequences.txt",
+if (!IdGenerator::taoMaTiepTheo("MOV", "data/sequences.txt",
                                 movieId, newSequences, error)) {
     return;
 }
@@ -70,9 +70,26 @@ Các ca gồm: lưu nhiều file; khóa file thứ hai để gây lỗi sau khi 
 
 Các ca gián đoạn mô phỏng trạng thái file còn lại khi tiến trình dừng; chưa thử mất điện thực tế. Bộ kiểm thử chỉ dùng thư mục riêng dưới thư mục tạm.
 
+## IdGenerator — cập nhật ngày 2026-11-09
+
+Viết lại theo cách dùng mảng, vòng lặp và chuỗi cơ bản. `taoMaTiepTheo` thực hiện bốn bước: mở file bộ đếm, đọc từng dòng, tạo mã rồi tăng bộ đếm, ghép nội dung mới. Tên hàm và biến dùng tiếng Việt không dấu.
+
+- `timViTriLoaiMa`: tìm vị trí của loại mã trong mảng 7 loại được hỗ trợ.
+- `docSoDuong`: đọc từng chữ số, từ chối ký tự lạ, số 0 và số vượt giới hạn `long long`.
+- `boDem[i]` lưu số tiếp theo của `CAC_LOAI_MA[i]`; số 0 đánh dấu loại chưa có trong file và giúp phát hiện dòng trùng.
+
+Chỉ dùng thư viện chuẩn `string`, `fstream`. Hằng số `GIOI_HAN_BO_DEM = 9223372036854775807LL` dùng để kiểm tra giới hạn số trước khi nhân, cộng và tăng bộ đếm. Hàm trả mã và nội dung mới để `TransactionManager` lưu; không tự ghi file.
+
+Kiểm thử phiên bản này bằng C++17 với `-Wall -Wextra -pedantic` đạt, không có cảnh báo. Các ca gồm định dạng mã, tăng bộ đếm sau khi lưu, không tự lưu file, CRLF, dòng trống, số sai định dạng, dòng trùng, loại mã lạ, thiếu bộ đếm và giới hạn `long long`.
+
+```powershell
+g++ -std=c++17 -Wall -Wextra -pedantic tests/id_generator_test.cpp core/utils/IdGenerator.cpp -o "$env:TEMP/pbl2_id_generator_test.exe"
+& "$env:TEMP/pbl2_id_generator_test.exe" "$env:TEMP/pbl2_id_generator_fixture.txt"
+```
+
 ## DateTime
 
-`DateTime` có bốn hàm: `parseDate`/`parseDateTime` chuyển chuỗi thành `std::tm`; `formatDate`/`formatDateTime` chuyển ngược về chuỗi. Hai hàm phụ `matches` kiểm tra chữ số/dấu phân cách và `validDate` kiểm tra ngày thực tế/năm nhuận. Parse lỗi trả false và giữ nguyên kết quả; format lỗi trả chuỗi rỗng.
+`DateTime` có bốn hàm: `chuoiThanhNgay`/`chuoiThanhNgayGio` chuyển chuỗi thành `std::tm`; `ngayThanhChuoi`/`ngayGioThanhChuoi` chuyển ngược về chuỗi. Hai hàm phụ `matches` kiểm tra chữ số/dấu phân cách và `validDate` kiểm tra ngày thực tế/năm nhuận. Parse lỗi trả false và giữ nguyên kết quả; format lỗi trả chuỗi rỗng.
 
 Ngày dùng `YYYY-MM-DD`, thời điểm dùng `YYYY-MM-DDTHH:mm:ss`, năm 0001–9999. Các trường biểu diễn giờ Việt Nam UTC+07:00, không chuyển đổi múi giờ hay dùng `mktime`. Trong `std::tm`, `tm_year` là năm trừ 1900, `tm_mon` từ 0 đến 11; phần parse chỉ điền các trường ngày/giờ, không tính thứ trong tuần/ngày thứ mấy trong năm.
 
