@@ -2,7 +2,7 @@
 
 **Mã nguồn:** `core/utils/IdGenerator.h`, `core/utils/IdGenerator.cpp`.
 
-`IdGenerator` đọc bộ đếm trong `sequences.txt` và **tính** mã kế tiếp cùng nội dung bộ đếm mới. File này chỉ chứa các dòng `entity|nextValue`, không có `#schema=1` hoặc dòng tiêu đề; quy định schema của các file dữ liệu nghiệp vụ không áp dụng cho nó. Hàm hiện tại không tự ghi `sequences.txt`: bên gọi phải lưu nội dung được trả về cùng bản ghi mới trong một giao dịch phù hợp. Nếu chỉ lấy mã mà không lưu bộ đếm, lần gọi sau có thể cấp lại mã đó.
+`IdGenerator` đọc bộ đếm trong `sequences.txt` và **tính** mã kế tiếp cùng nội dung bộ đếm mới. File này chỉ chứa các dòng `entity|nextValue`, không có `#schema=1` hoặc dòng tiêu đề, giống các file TXT dữ liệu khác. Hàm hiện tại không tự ghi `sequences.txt`: bên gọi phải lưu nội dung được trả về cùng bản ghi mới trong một giao dịch phù hợp. Nếu chỉ lấy mã mà không lưu bộ đếm, lần gọi sau có thể cấp lại mã đó.
 
 ## `generateNextId(entity, sequencesPath, id, updatedSequences)`
 

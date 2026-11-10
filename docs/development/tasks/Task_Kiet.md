@@ -65,29 +65,34 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`; phối hợp API với `FileHandler`/`TransactionManager` của Hoàng. `IdGenerator` chỉ tính nội dung bộ đếm mới, chưa tự ghi file; việc lưu cùng bản ghi mới thuộc luồng DALC/giao dịch sau này. `DateTime` hiện chỉ có `getCurrentDateTime()`, chưa parse hoặc kiểm tra đầu vào ngày giờ; vì vậy mục thử ngày giờ hợp lệ/không hợp lệ theo schema vẫn mở. Bốn tiện ích đã cùng có mặt trong cây mã, nhưng review/merge chính thức chưa được xác nhận. `Validator` hoãn sang DAL/Repository, chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
+**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`; phối hợp API với `FileHandler`/`TransactionManager` của Hoàng. `IdGenerator` chỉ tính nội dung bộ đếm mới, chưa tự ghi file; việc lưu cùng bản ghi mới thuộc luồng DALC/giao dịch sau này. `DateTime` hiện chỉ có `getCurrentDateTime()`, chưa parse hoặc kiểm tra đầu vào ngày giờ; vì vậy mục thử ngày giờ hợp lệ/không hợp lệ theo định dạng ngày giờ vẫn mở. Bốn tiện ích đã cùng có mặt trong cây mã, nhưng review/merge chính thức chưa được xác nhận. `Validator` hoãn sang DAL/Repository, chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
 
 ### Bước 04 – Xây dựng DALC
 
-**Trạng thái:** Chưa bắt đầu
+**Trạng thái:** Đang chuẩn bị tài liệu; chưa triển khai hoặc kiểm thử DALC.
 
 **Branch:** Chưa tạo
 
 **Checklist công việc:**
 
+- [ ] Khảo sát API/quan hệ hiện có của `User`, `Member`, `Ticket`, `Invoice`, `IdGenerator` và các tiện ích file; chốt phụ thuộc với phần Hoàng.
+- [ ] Thiết kế API sáu DALC, quyền sở hữu object, chỉ mục tra cứu và cách báo lỗi file/dòng.
 - [ ] Cài `UserDALC` và `MemberDALC` cho tài khoản/thành viên.
 - [ ] Cài `TicketDALC` và `InvoiceDALC`, giữ dữ liệu lịch sử.
 - [ ] Cài `SequenceDALC` cho bộ đếm mã.
 - [ ] Cài `BookingDALC` phối hợp ghi vé/hóa đơn/điểm/bộ đếm.
+- [ ] Nạp/chuyển đổi và chuẩn bị ghi `users.txt`, `members.txt`, `tickets.txt`, `invoices.txt`, `sequences.txt` theo định dạng không có dòng schema.
+- [ ] Quản lý tập object/chỉ mục trong RAM; dựng/gỡ quan hệ hóa đơn–người bán/thành viên/suất và vé–hóa đơn/suất/ghế.
+- [ ] Thống nhất cách chuyển `updatedSequences` sang các dòng ghi và lưu bộ đếm cùng bản ghi mới trong giao dịch, không cập nhật RAM trước khi lưu thành công.
 - [ ] Dùng STL khi cần tra cứu; thử mã trùng và dữ liệu sai.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [ ] Viết và chạy kiểm thử C++17 cho file hợp lệ/sai, bộ đếm, tham chiếu, giao dịch nhiều file và phục hồi; ghi lệnh/kết quả thực tế.
 - [ ] Review và tích hợp với phần của Hoàng.
 
 **Điều kiện hoàn thành:** Sáu DALC quản lý đúng bản ghi TXT và giao dịch, cung cấp dữ liệu cho BLL. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Phối hợp DALC phim/phòng/suất/ghế của Hoàng và hạ tầng Bước 03.
+**Ghi chú:** Phối hợp DALC phim/phòng/suất/ghế của Hoàng và hạ tầng Bước 03. Xem [nhật ký Bước 04](../Buoc04_XayDungDALC.md) và [thiết kế DALC](../../CauTrucThuMuc/dal/dalc.md); các mục trên là kế hoạch, chưa có mã DALC.
 
 ### Bước 05 – Đăng nhập và phân quyền
 

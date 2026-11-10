@@ -82,24 +82,28 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 04 – Xây dựng DALC
 
-**Trạng thái:** Chưa bắt đầu
+**Trạng thái:** Đã có bản nháp `MovieDALC`; chưa hoàn thành hoặc kiểm thử Bước 04. Các DALC còn lại chưa triển khai.
 
 **Branch:** Chưa tạo
 
 **Checklist công việc:**
 
+- [ ] Khảo sát API/quan hệ hiện có của `Movie`, `Room`, `Seat`, `Showtime`, `DoublyLinkedList<T>` và các tiện ích file; chốt phụ thuộc với phần Kiệt.
+- [ ] Thiết kế API bốn DALC, quyền sở hữu object, chỉ mục tra cứu và cách báo lỗi file/dòng.
 - [ ] Cài `MovieDALC` đọc/ghi, tìm và kiểm mã phim.
 - [ ] Cài `RoomDALC` và `SeatDALC`, đối chiếu ghế với phòng.
 - [ ] Cài `ShowtimeDALC`, kiểm mã phim/phòng tham chiếu.
+- [ ] Nạp/chuyển đổi và chuẩn bị ghi `movies.txt`, `rooms.txt`, `seats.txt`, `showtimes.txt` theo định dạng không có dòng schema; xử lý bản ghi sai, mã trùng và tham chiếu thiếu.
+- [ ] Quản lý tập object và chỉ mục trong RAM; dựng/gỡ quan hệ phim–suất, phòng–ghế, phòng–suất an toàn khi cập nhật hoặc nạp lại.
 - [ ] Tích hợp DLL hoặc STL khi cần và thử nạp/lưu lại dữ liệu.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [ ] Viết và chạy kiểm thử C++17 cho dữ liệu hợp lệ/sai, quan hệ, đọc/ghi và lỗi I/O; ghi lệnh/kết quả thực tế.
 - [ ] Review và tích hợp với phần của Kiệt.
 
-**Điều kiện hoàn thành:** Bốn DALC quản lý được bản ghi TXT đúng schema và trả dữ liệu cho BLL. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+**Điều kiện hoàn thành:** Bốn DALC quản lý được bản ghi TXT đúng định dạng không có dòng schema và trả dữ liệu cho BLL. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Cần API lưu file Bước 03 và thống nhất quan hệ Model với DALC của Kiệt.
+**Ghi chú:** Cần API lưu file Bước 03 và thống nhất quan hệ Model với DALC của Kiệt. Xem [nhật ký Bước 04](../Buoc04_XayDungDALC.md) và [thiết kế DALC](../../CauTrucThuMuc/dal/dalc.md). `MovieDALC` đang có mã nháp; `load()` hiện bỏ qua dòng đầu và cần được đối chiếu với quyết định không có schema trước khi nghiệm thu. Checklist chưa đánh dấu hoàn thành.
 
 ### Bước 05 – Đăng nhập và phân quyền
 

@@ -172,7 +172,9 @@ PBL2/
     │   └── data_format.md           
     ├── CauTrucThuMuc/
     │   ├── cauTrucThuMuc.md         [Có] Cây thư mục chi tiết
-    │   └── models.md                [Có] Đề xuất quan hệ Model hai chiều
+    │   └── dal/
+    │       ├── models.md            [Có] Đề xuất quan hệ Model hai chiều
+    │       └── dalc.md              [Có] Thiết kế DALC cho Bước 04
     ├── DS/
     │   └── DLL.md                   [Có] Giải thích DLL hiện tại
     └── development/
@@ -232,7 +234,7 @@ Mỗi cặp `.h/.cpp` hiện có. Model giữ thuộc tính, constructor, getter
 
 ### `core/dal/dalc/` — truy xuất dữ liệu
 
-DALC quản lý tập Model, đọc/ghi TXT và dùng tiện ích file; không quyết định quyền hoặc giá vé. Các cặp file sau đều dự kiến.
+DALC quản lý tập Model, đọc/ghi TXT và dùng tiện ích file; không quyết định quyền hoặc giá vé. Xem [thiết kế DALC](dal/dalc.md) để biết ranh giới và các điểm cần thống nhất trước khi cài đặt. Các cặp file sau đều dự kiến.
 
 | Cặp file | Ý nghĩa |
 | --- | --- |
@@ -314,7 +316,7 @@ Toàn bộ file dưới đây **dự kiến**. `ui/` chỉ nhận thao tác, g�
 
 ### `data/` — DB dạng TXT
 
-Các file đều **dự kiến**; chưa có dữ liệu thật trong cây làm việc. Tên trường, thứ tự, mã và quy trình ghi theo [data_format.md](../TongQuan/data_format.md), không tự đổi schema hoặc tạo dữ liệu giả vào DB thật.
+Các file đều **dự kiến**; chưa có dữ liệu thật trong cây làm việc. Tên trường, thứ tự, mã và quy trình ghi theo [data_format.md](../TongQuan/data_format.md); mọi file TXT dữ liệu không có dòng schema hoặc tiêu đề. Không tạo dữ liệu giả vào DB thật.
 
 | File/thư mục | Ý nghĩa |
 | --- | --- |
@@ -335,7 +337,8 @@ Các file đều **dự kiến**; chưa có dữ liệu thật trong cây làm v
 | --- | --- |
 | `TongQuan/TongQuanDeTai.md` | Tổng quan hệ thống và chức năng. |
 | `CauTrucThuMuc/cauTrucThuMuc.md` | Cây thư mục và trách nhiệm; file này. |
-| `CauTrucThuMuc/models.md` | Đề xuất quan hệ Model hai chiều. |
+| `CauTrucThuMuc/dal/models.md` | Đề xuất quan hệ Model hai chiều. |
+| `CauTrucThuMuc/dal/dalc.md` | Thiết kế DALC và các điểm cần thống nhất ở Bước 04. |
 | `TongQuan/business_rules.md` | Quy tắc nghiệp vụ. |
 | `TongQuan/data_format.md` | cấu trúc file TXT và quy tắc lưu. |
 | `DS/DLL.md` | Giải thích Doubly Linked List. |
@@ -344,8 +347,9 @@ Các file đều **dự kiến**; chưa có dữ liệu thật trong cây làm v
 | `development/TongQuanTienDo.md` | Tiến độ 15 bước. |
 | `development/Buoc01_KhoiTaoDuAn.md` | Nhật ký Bước 01. |
 | `development/Buoc02_XayDungModels.md` | Nhật ký Bước 02. |
+| `development/Buoc04_XayDungDALC.md` | Nhật ký chuẩn bị Bước 04. |
 
-Các file trên hiện có. `BookingService.md`, `DS/HashTable.md` và `DS/Stack.md` được nhắc trong thiết kế cũ nhưng hiện không có trong cây làm việc. Nhật ký Bước 03–15 chỉ tạo khi bước thật sự bắt đầu.
+Các file trên hiện có. `BookingService.md`, `DS/HashTable.md` và `DS/Stack.md` được nhắc trong thiết kế cũ nhưng hiện không có trong cây làm việc. Nhật ký các bước tiếp theo chỉ tạo khi bước tương ứng bắt đầu.
 
 ## 5. Ví dụ luồng xử lý theo mô hình 3 lớp
 

@@ -5,7 +5,7 @@
 ## 1. Quy ước
 
 - Dữ liệu lưu bằng UTF-8, mỗi bản ghi nằm trên một dòng, các trường cách nhau bằng ký tự |.
-- Các file dữ liệu nghiệp vụ dùng dòng `#schema=1` ở đầu file; riêng `sequences.txt` không dùng schema. Không dùng dòng tiêu đề cột.
+- Mọi file TXT dữ liệu, kể cả `sequences.txt`, không có dòng `#schema=1` hoặc dòng tiêu đề cột; bản ghi đầu tiên nằm ngay ở dòng đầu file.
 - Thứ tự và số lượng trường của mỗi loại file tuân theo định dạng quy định trong tài liệu này.
 - Không cho phép `|`, xuống dòng hoặc ký tự điều khiển trong trường văn bản; bản đầu không dùng escape.
 - Trường tùy chọn để rỗng, giữ dấu phân cách và cả trường rỗng cuối dòng khi parse; không dùng chữ null.
@@ -18,6 +18,8 @@
 - Trong phiên bản môn học hiện tại, `password` được lưu dạng văn bản trong `users.txt` để đơn giản hóa phần đăng nhập. Trường này vẫn phải tuân thủ quy tắc ký tự của file (không chứa `|`, xuống dòng hoặc ký tự điều khiển). Nếu nâng cấp sang lưu hash, cần đổi đồng bộ model, định dạng file và dữ liệu tài khoản đã có; không dùng hash table hoặc `std::hash` như hàm bảo vệ mật khẩu.
 
 ## 2. Cấu trúc các file dữ liệu (thứ tự trường)
+
+Các dòng tên trường trong khối ví dụ dưới đây chỉ mô tả thứ tự cột; không ghi chúng thành dòng tiêu đề trong file TXT.
 
 ### users.txt
 
@@ -103,7 +105,7 @@ INV|1
 MEM|1
 ```
 
-`sequences.txt` không có dòng `#schema=1` hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Tăng và lưu cùng giao dịch tạo dữ liệu; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
+`sequences.txt` cũng tuân theo quy ước không có schema hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Tăng và lưu cùng giao dịch tạo dữ liệu; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
 
 ## 3. Tải và kiểm tra
 
@@ -115,7 +117,7 @@ MEM|1
 
 Thứ tự khởi động ứng dụng là: lấy khóa độc quyền bộ dữ liệu, phục hồi giao dịch dang dở, đọc và kiểm tra file, dựng chỉ mục rồi mới hiển thị đăng nhập. Khóa phải dựa trên cơ chế khóa của hệ điều hành hoặc có kiểm tra tiến trình sở hữu; không chỉ dựa vào sự tồn tại của một file lock. Khi thoát bình thường, ứng dụng hoàn tất ghi rồi nhả khóa.
 
-File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: các file dữ liệu nghiệp vụ có dòng `#schema=1`; `sequences.txt` không có schema và bộ đếm bắt đầu từ 1.
+File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: tạo mọi file TXT không có dòng schema hoặc tiêu đề; bộ đếm trong `sequences.txt` bắt đầu từ 1.
 
 ## 4. Lưu nhiều file và phục hồi
 
