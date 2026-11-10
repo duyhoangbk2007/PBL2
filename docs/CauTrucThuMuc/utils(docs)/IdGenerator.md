@@ -2,7 +2,7 @@
 
 **Mã nguồn:** `core/utils/IdGenerator.h`, `core/utils/IdGenerator.cpp`.
 
-`IdGenerator` đọc bộ đếm trong `sequences.txt` và **tính** mã kế tiếp cùng nội dung bộ đếm mới. Hàm hiện tại không tự ghi `sequences.txt`: bên gọi phải lưu nội dung được trả về cùng bản ghi mới trong một giao dịch phù hợp. Nếu chỉ lấy mã mà không lưu bộ đếm, lần gọi sau có thể cấp lại mã đó.
+`IdGenerator` đọc bộ đếm trong `sequences.txt` và **tính** mã kế tiếp cùng nội dung bộ đếm mới. File này chỉ chứa các dòng `entity|nextValue`, không có `#schema=1` hoặc dòng tiêu đề; quy định schema của các file dữ liệu nghiệp vụ không áp dụng cho nó. Hàm hiện tại không tự ghi `sequences.txt`: bên gọi phải lưu nội dung được trả về cùng bản ghi mới trong một giao dịch phù hợp. Nếu chỉ lấy mã mà không lưu bộ đếm, lần gọi sau có thể cấp lại mã đó.
 
 ## `generateNextId(entity, sequencesPath, id, updatedSequences)`
 
@@ -18,7 +18,7 @@ static void generateNextId(const std::string& entity,
 | `entity` | Tiền tố loại đối tượng: `USR`, `MOV`, `ROM`, `SHW`, `TKT`, `INV` hoặc `MEM`. |
 | `sequencesPath` | Đường dẫn file bộ đếm hiện có; đường dẫn tương đối tính từ thư mục làm việc của tiến trình. |
 | `id` | Đầu ra: mã mới ở dạng tiền tố + bốn chữ số, ví dụ `MOV0007`. |
-| `updatedSequences` | Đầu ra: toàn bộ nội dung bộ đếm sau khi tăng dòng tương ứng, đã có `\n` cuối mỗi dòng được xử lý. |
+| `updatedSequences` | Đầu ra: toàn bộ nội dung bộ đếm sau khi tăng dòng tương ứng, chỉ gồm các dòng `entity|nextValue` và có `\n` cuối mỗi dòng được xử lý; không có schema. |
 
 Hàm xóa rỗng hai tham số đầu ra ngay khi bắt đầu. Nếu xử lý thành công, nó gán đồng thời mã và nội dung bộ đếm mới; nếu ném lỗi trước đó, hai tham số vẫn rỗng.
 

@@ -71,3 +71,41 @@ Các bài kiểm thử trên sử dụng dữ liệu TXT giả lập, chưa ph�
 - [ ] Cập nhật tiến độ chung Bước 03.
 
 **Kết luận:** Các chức năng lưu trữ chính của Hoàng đã hoạt động trong các trường hợp kiểm thử cơ bản. Bước 03 chung chưa hoàn thành vì còn chờ phần Kiệt và kiểm tra tích hợp.
+
+## 2026-11-10 — Rà soát tiến độ bốn tiện ích trước Bước 04
+
+**Trạng thái hiện tại:** Đã kiểm thử chức năng cơ bản – sẵn sàng chuyển sang Bước 04; còn một số giới hạn cần kiểm tra bổ sung. Mục ngày 2026-11-06 và 2026-11-09 phía trên là lịch sử tại thời điểm ghi; trạng thái mới không thay thế kết quả thử cũ.
+
+### 1. Checklist hiện tại
+
+- [x] Hoàng: `FileHandler` và `TransactionManager` đã có mã đọc/ghi TXT, chuẩn bị file mới, backup, manifest, execute, rollback và recover.
+- [x] Kiệt: `IdGenerator` đã có mã đọc `sequences.txt`, cấp ID và trả nội dung bộ đếm mới; `DateTime` đã có `getCurrentDateTime()`.
+- [x] Quyết định định dạng: `sequences.txt` chỉ gồm `entity|nextValue`, không có `#schema=1`; tài liệu định dạng đã cập nhật, mã `IdGenerator` hiện đọc đúng dạng này.
+- [x] Người dùng xác nhận đã chạy `test_all_utils.cpp` bản thông thường và kết quả không có FAILED. Đây là kết quả **người dùng báo cáo**, không phải lần chạy kiểm thử của Codex khi cập nhật nhật ký.
+- [ ] Chạy và ghi kết quả riêng bản biên dịch `-DTEST_ROLLBACK`; chưa có bằng chứng PASS cho nhánh giả lập lỗi này.
+- [ ] Kiểm tra thêm các tình huống lỗi lưu trữ và phục hồi; bài thử chức năng cơ bản chưa chứng minh độ bền vững khi gián đoạn hoặc mất điện.
+- [ ] Review/merge phần việc hai người và kiểm tra tích hợp sau merge.
+- [ ] Hoàn thiện, kiểm thử phần parse/kiểm tra ngày giờ nếu vẫn thuộc API `DateTime` cần cho DALC; API hiện tại mới lấy thời gian hiện tại.
+
+### 2. Bằng chứng kiểm thử và phạm vi
+
+`tests/test_all_utils.cpp` hiện có trong cây làm việc, gọi cả bốn tiện ích. Bản thông thường thử đọc/ghi file, định dạng thời gian hiện tại, cấp ID từ file không có schema và một số dữ liệu ID sai, execute thành công, phục hồi PREPARED/COMMITTED với dữ liệu giả lập. Người dùng báo cáo đã chạy file này và không có FAILED; không có lệnh build hoặc log đầu ra được cung cấp để ghi kết quả chi tiết từng ca. Codex chỉ đọc mã test trong lần cập nhật tài liệu này.
+
+Trong mã test, nhánh kiểm tra lỗi cố ý sau khi thay file đầu tiên nằm dưới `#ifdef TEST_ROLLBACK`. Bản chạy thông thường không thực hiện nhánh này. Kết quả rollback ghi ở mốc 2026-11-09 là kết quả kiểm thử trước đó trong nhật ký; không được dùng thay cho bằng chứng đã chạy riêng `test_all_utils.cpp` với `-DTEST_ROLLBACK`.
+
+### 3. Giới hạn và vướng mắc còn lại
+
+- `TransactionManager` sao chép đè từng file, chưa có xác nhận ghi bền vững bằng cơ chế đồng bộ xuống đĩa; mất điện giữa giao dịch chưa được kiểm chứng.
+- Backup đặt theo tên file cuối đường dẫn, nên hai file trùng tên trong một giao dịch có thể xung đột.
+- `recover()` hiện báo lỗi khi thư mục giao dịch thiếu manifest; lỗi ghi manifest và backup thiếu/hỏng vẫn cần thử riêng.
+- Chưa có bằng chứng review/merge và kiểm tra lại sau merge. Bài test Utils chưa phải luồng lưu vé/hóa đơn/điểm thật.
+- `DateTime` chưa có hàm parse/kiểm tra ngày giờ; `IdGenerator` trả `updatedSequences` nhưng chưa tự lưu bộ đếm, nên DALC cần phối hợp lưu cùng dữ liệu mới.
+
+### 4. Công việc tiếp theo
+
+- [ ] Chạy riêng bản `-DTEST_ROLLBACK` và lưu lệnh/kết quả; mở rộng thử lỗi manifest, backup, thư mục giao dịch dở và mất điện theo khả năng môi trường.
+- [ ] Review API bốn tiện ích, tích hợp chính thức và chạy lại kiểm thử sau merge.
+- [ ] Thống nhất nhu cầu parse/kiểm tra ngày giờ khi thiết kế DALC; chỉ cài các hàm thật sự cần, giữ `Validator` theo kế hoạch hoãn hiện tại.
+- [ ] Bắt đầu Bước 04 – DALC theo phân công đã chốt, dùng `IdGenerator` và `TransactionManager` qua tầng DALC; chưa triển khai Bước 04 trong lần cập nhật này.
+
+**Kết luận hiện tại:** Bước 03 đủ kết quả chức năng cơ bản để bắt đầu Bước 04. Việc kiểm tra độ bền vững, nhánh `-DTEST_ROLLBACK` và tích hợp chính thức vẫn là việc còn mở.

@@ -47,7 +47,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
-**Trạng thái:** Đã triển khai và kiểm thử các chức năng chính của Hoàng; chờ tích hợp với phần Kiệt.
+**Trạng thái:** Đã triển khai `FileHandler`, `TransactionManager` và kiểm thử chức năng cơ bản; sẵn sàng chuyển sang Bước 04, còn kiểm tra độ bền vững và tích hợp chính thức.
 
 **Branch:** `feature/b03-hoang-storage`
 
@@ -60,6 +60,8 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [x] Bổ sung dọn thư mục giao dịch sau commit và rollback thành công.
 - [x] Kiểm thử execute thành công và rollback khi giả lập lỗi.
 - [x] Kiểm thử recovery với PREPARED và COMMITTED.
+- [x] Kiểm thử cơ bản `FileHandler` và `TransactionManager` trong `test_all_utils.cpp` bản chạy thông thường; người dùng xác nhận đã chạy và không có FAILED.
+- [ ] Chạy và ghi kết quả riêng bản biên dịch `-DTEST_ROLLBACK`; chưa có bằng chứng PASS cho bản này.
 - [ ] Review và tích hợp với `IdGenerator`, `DateTime` của Kiệt.
 - [ ] Kiểm tra tích hợp sau khi merge.
 
@@ -71,10 +73,12 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - `FileHandler` cung cấp hàm đọc/ghi file TXT.
 - `TransactionManager` thực hiện chuẩn bị file mới, backup, manifest, thay file, rollback và recovery.
 - Đã kiểm tra các luồng chính bằng chương trình test C++17.
-- Các bài test được sử dụng trong quá trình phát triển; dự kiến kiểm thử tích hợp lại sau khi ghép code.
+- Các bài test được sử dụng trong quá trình phát triển. `test_all_utils.cpp` hiện có trong cây làm việc và người dùng báo cáo bản chạy thông thường không có FAILED; Codex chưa chạy lại bài test này trong lần cập nhật tài liệu.
+- Bốn tiện ích đã cùng có mặt trong cây mã và được bài test chung gọi; việc review/merge và kiểm tra tích hợp sau merge vẫn còn mở.
 - Chưa bảo đảm đầy đủ tính bền vững khi mất điện đột ngột hoặc lỗi hệ điều hành.
+- Cần kiểm tra thêm lỗi ghi manifest, backup thiếu/hỏng, vùng giao dịch thiếu manifest và các đường dẫn trùng tên file trước khi dựa vào phục hồi trong nghiệp vụ thật.
 - `Validator` được hoãn sang bước DAL/Repository.
-- Chưa tích hợp code của Kiệt.
+- Ghi chú trước đây “chưa tích hợp code của Kiệt” phản ánh thời điểm cũ; hiện `IdGenerator` và `DateTime` đã có trong cây làm việc, còn tích hợp chính thức chưa được xác nhận.
 
 ### Bước 04 – Xây dựng DALC
 

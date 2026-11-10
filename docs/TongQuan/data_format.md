@@ -5,7 +5,7 @@
 ## 1. Quy ước
 
 - Dữ liệu lưu bằng UTF-8, mỗi bản ghi nằm trên một dòng, các trường cách nhau bằng ký tự |.
-- Không sử dụng dòng #schema=1 hoặc dòng tiêu đề cột. Dữ liệu bắt đầu ngay từ dòng đầu tiên.
+- Các file dữ liệu nghiệp vụ dùng dòng `#schema=1` ở đầu file; riêng `sequences.txt` không dùng schema. Không dùng dòng tiêu đề cột.
 - Thứ tự và số lượng trường của mỗi loại file tuân theo định dạng quy định trong tài liệu này.
 - Không cho phép `|`, xuống dòng hoặc ký tự điều khiển trong trường văn bản; bản đầu không dùng escape.
 - Trường tùy chọn để rỗng, giữ dấu phân cách và cả trường rỗng cuối dòng khi parse; không dùng chữ null.
@@ -94,10 +94,16 @@ memberId|fullName|phone|points
 ### sequences.txt
 
 ```text
-entity|nextValue
+USR|1
+MOV|1
+ROM|1
+SHW|1
+TKT|1
+INV|1
+MEM|1
 ```
 
-Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Tăng và lưu cùng giao dịch tạo dữ liệu; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
+`sequences.txt` không có dòng `#schema=1` hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Tăng và lưu cùng giao dịch tạo dữ liệu; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
 
 ## 3. Tải và kiểm tra
 
@@ -109,7 +115,7 @@ Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dươn
 
 Thứ tự khởi động ứng dụng là: lấy khóa độc quyền bộ dữ liệu, phục hồi giao dịch dang dở, đọc và kiểm tra file, dựng chỉ mục rồi mới hiển thị đăng nhập. Khóa phải dựa trên cơ chế khóa của hệ điều hành hoặc có kiểm tra tiến trình sở hữu; không chỉ dựa vào sự tồn tại của một file lock. Khi thoát bình thường, ứng dụng hoàn tất ghi rồi nhả khóa.
 
-File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng, tạo các file TXT theo định dạng đã thống nhất (không có dòng schema), bộ đếm bắt đầu từ 1
+File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: các file dữ liệu nghiệp vụ có dòng `#schema=1`; `sequences.txt` không có schema và bộ đếm bắt đầu từ 1.
 
 ## 4. Lưu nhiều file và phục hồi
 

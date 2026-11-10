@@ -49,23 +49,23 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 ### Bước 03 – Hạ tầng lưu trữ dữ liệu
 
-**Trạng thái:** Chưa bắt đầu
+**Trạng thái:** Đã triển khai `IdGenerator` và chức năng lấy thời gian hiện tại của `DateTime`; kiểm thử cơ bản được người dùng xác nhận, còn parse ngày giờ và tích hợp chính thức.
 
-**Branch:** Chưa tạo
+**Branch:** Mã hiện có trên nhánh `feature/b03-hoang-storage`; chưa xác nhận nhánh/PR riêng của Kiệt.
 
 **Checklist công việc:**
 
-- [ ] Cài `IdGenerator` đọc/cập nhật `sequences.txt` không tái dùng mã.
-- [ ] Cài `DateTime` parse/định dạng ngày giờ theo schema.
-- [ ] Thử mã và ngày giờ hợp lệ/không hợp lệ theo schema.
-- [ ] Viết và chạy kiểm thử liên quan.
+- [x] Cài `IdGenerator` đọc `sequences.txt`, tạo mã và trả `updatedSequences` để bên gọi lưu cùng giao dịch; file bộ đếm không có dòng `#schema=1`.
+- [x] Cài `DateTime::getCurrentDateTime()` lấy và định dạng thời gian hiện tại.
+- [x] Kiểm thử cơ bản `IdGenerator` và định dạng đầu ra `DateTime` trong `test_all_utils.cpp` bản chạy thông thường; người dùng xác nhận đã chạy và không có FAILED.
+- [x] Viết và chạy kiểm thử liên quan cho API hiện có (`test_all_utils.cpp`); kết quả chạy do người dùng báo cáo, Codex chưa chạy lại trong lần cập nhật tài liệu.
 - [ ] Review và tích hợp với phần của Hoàng.
 
 **Điều kiện hoàn thành:** Mã và ngày giờ đúng định dạng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`; phối hợp API với `FileHandler`/`TransactionManager` của Hoàng. `Validator` hoãn sang DAL/Repository, chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
+**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`; phối hợp API với `FileHandler`/`TransactionManager` của Hoàng. `IdGenerator` chỉ tính nội dung bộ đếm mới, chưa tự ghi file; việc lưu cùng bản ghi mới thuộc luồng DALC/giao dịch sau này. `DateTime` hiện chỉ có `getCurrentDateTime()`, chưa parse hoặc kiểm tra đầu vào ngày giờ; vì vậy mục thử ngày giờ hợp lệ/không hợp lệ theo schema vẫn mở. Bốn tiện ích đã cùng có mặt trong cây mã, nhưng review/merge chính thức chưa được xác nhận. `Validator` hoãn sang DAL/Repository, chỉ cài hàm kiểm tra khi đọc, chuyển đổi và kiểm tra TXT cần dùng.
 
 ### Bước 04 – Xây dựng DALC
 
