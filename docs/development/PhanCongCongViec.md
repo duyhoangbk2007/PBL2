@@ -14,7 +14,7 @@ Các tên class dưới đây là **kế hoạch**, chưa xác nhận đã tri�
 | --- | --- | --- | --- | --- |
 | 01 | Khởi tạo dự án | Cấu trúc thư mục, `CMakeLists.txt`, `main.cpp`, C++17 và build. | `README.md`, `.gitignore`, `AGENTS.md`, quy tắc GitHub/PR, tài liệu và nhật ký. | Kiểm tra cấu hình và build thật. |
 | 02 | Hoàn thiện Models và quan hệ con trỏ | `Movie`, `Room`, `Seat`, `Showtime`; quan hệ phim/phòng/ghế/suất; kiểm DLL khi Model dùng. | `User`, `Member`, `Ticket`, `Invoice`; quan hệ hóa đơn/vé/người bán/thành viên; trạng thái vé và điểm. | Chốt chủ sở hữu object, vòng đời, copy/move; thử tích hợp 8 Model. |
-| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `Validator`, đọc/ghi TXT và kiểm định dạng. | `TransactionManager`, `IdGenerator`, `DateTime`, ghi nhiều file và phục hồi. | Thống nhất API và schema TXT. |
+| 03 | Hạ tầng lưu trữ dữ liệu | `FileHandler`, `TransactionManager`, đọc/ghi TXT, giao dịch, backup và rollback/phục hồi. | `IdGenerator`, `DateTime`. | Thống nhất API và schema TXT trước khi tích hợp; hoãn `Validator` sang DAL/Repository, chỉ cài hàm kiểm tra khi cần xử lý TXT. |
 | 04 | Xây dựng DALC | `MovieDALC`, `RoomDALC`, `SeatDALC`, `ShowtimeDALC`. | `UserDALC`, `MemberDALC`, `TicketDALC`, `InvoiceDALC`, `SequenceDALC`, `BookingDALC`. | Tích hợp DLL/STL khi cần; kiểm đọc/ghi và liên kết Model. |
 | 05 | Đăng nhập và phân quyền | Kiểm thử quyền Admin/Staff trong nghiệp vụ quản trị. | `AuthService`, `UserManager`, đăng nhập và quản lý nhân viên. | Quyền được BLL kiểm tra, không chỉ ẩn GUI. |
 | 06 | Quản lý phim và thành viên | `MovieManager`: thêm/sửa/xóa hợp lệ, tìm kiếm, ngừng phim. | `MemberManager`: thành viên và quy tắc điểm. | Thử CRUD và dữ liệu tham chiếu. |
@@ -42,8 +42,8 @@ Khi Hoàng/Kiệt hoàn thành một mục, chỉ cập nhật Task của ngư�
 
 ## 5. Git, nhật ký và nghiệm thu
 
-Nhánh đặt khi bắt đầu việc theo `feature/bXX-hoang-ten-viec` hoặc `feature/bXX-kiet-ten-viec`; ví dụ Bước 03 mới là `feature/b03-hoang-file-storage` và `feature/b03-kiet-transactions`, Bước 04 là `feature/b04-hoang-dalc` và `feature/b04-kiet-dalc`. Không tạo trước nhánh cho các bước chưa bắt đầu. Mỗi PR ghi file đổi, lệnh/kết quả thử và phụ thuộc; người kia review phần giao nhau. Không push trực tiếp hoặc force push `main`.
+Nhánh đặt khi bắt đầu việc theo `feature/bXX-hoang-ten-viec` hoặc `feature/bXX-kiet-ten-viec`; ví dụ Bước 03 mới là `feature/b03-hoang-storage` và `feature/b03-kiet-id-datetime`, Bước 04 là `feature/b04-hoang-dalc` và `feature/b04-kiet-dalc`. Không tạo trước nhánh cho các bước chưa bắt đầu. Mỗi PR ghi file đổi, lệnh/kết quả thử và phụ thuộc; người kia review phần giao nhau. Không push trực tiếp hoặc force push `main`.
 
-Nhật ký đặt trong `docs/development/`. Giữ nguyên lịch sử [Bước 01](Buoc01_KhoiTaoDuAn.md) và [Bước 02](Buoc02_XayDungModels.md); chỉ tạo nhật ký Bước 03–15 khi thực sự bắt đầu. Bước 03 **mới** là hạ tầng lưu trữ, không phải cấu trúc dữ liệu. Chưa có nhật ký Bước 03 trong cây hiện tại. Nếu sau này xuất hiện nhật ký Bước 03 cũ, phải đối chiếu và giữ lịch sử trước khi đổi tên/di chuyển.
+Nhật ký đặt trong `docs/development/`. Giữ nguyên lịch sử [Bước 01](Buoc01_KhoiTaoDuAn.md) và [Bước 02](Buoc02_XayDungModels.md); chỉ tạo nhật ký Bước 03–15 khi thực sự bắt đầu. Bước 03 **mới** là hạ tầng lưu trữ, không phải cấu trúc dữ liệu. [Nhật ký Bước 03](Buoc03_HaTangLuuTruDuLieu.md) đã được tạo khi Hoàng bắt đầu phần việc; các bước sau chưa bắt đầu thì chưa tạo nhật ký.
 
 Một bước chỉ hoàn thành khi có kết quả biên dịch/chạy hoặc kiểm thử phù hợp cho phần Hoàng, phần Kiệt và tích hợp chung, đối chiếu quy tắc nghiệp vụ và schema. Nếu một bên xong trước, ghi phần đã xác minh nhưng không đánh dấu cả bước hoàn thành. Kiểm tra cú pháp một file không thay cho thử tích hợp. Ghi lỗi, cách sửa và việc còn lại vào nhật ký của bước đã bắt đầu.

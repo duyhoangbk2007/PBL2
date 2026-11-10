@@ -17,3 +17,8 @@ CMakeCache.txt
 # Temporary files
 *.tmp
 *.log
+# Transaction temporary data
+/data/transactions/
+
+# Test data
+/data/test_backup/
