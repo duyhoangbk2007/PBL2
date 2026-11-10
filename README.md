@@ -4,7 +4,7 @@
 
 Ứng dụng desktop C++/Qt mô phỏng bán vé offline tại quầy. Nhân viên thao tác thay khách; không có tài khoản khách hàng hoặc đặt vé online. Hai vai trò sử dụng là Admin và Staff. Dữ liệu lưu bằng file văn bản UTF-8.
 
-Tài liệu mô tả thiết kế mục tiêu, không khẳng định chức năng đã triển khai. Dự án hiện có khung thư mục và một số file cấu trúc dữ liệu. Bản PBL2 chỉ cho phép một phiên ứng dụng thao tác trên một bộ dữ liệu tại một thời điểm.
+Tài liệu mô tả thiết kế mục tiêu, không khẳng định các chức năng bên dưới đã triển khai. Hiện dự án có tám Model, `DoublyLinkedList<T>` và các tiện ích lưu trữ/ngày giờ/cấp mã; chưa có ứng dụng bán vé hoàn chỉnh. `main.cpp` chỉ là chương trình thử, chưa phải điểm khởi chạy giao diện. Bản PBL2 dự kiến chỉ cho phép một phiên ứng dụng thao tác trên một bộ dữ liệu tại một thời điểm.
 
 ## 2. Chức năng
 
@@ -56,12 +56,12 @@ Luồng mục tiêu: **GUI → BLL → DAL → DB**; kết quả trả về theo
 - `core/data_structures/`: `DoublyLinkedList<T>` tự cài đặt.
 - `core/bll/`: kiểm tra dữ liệu, quyền và quy tắc nghiệp vụ; gọi DALC, không đọc/ghi TXT.
 - `core/dal/dalc/`: quản lý tập Model, tra cứu và đọc/ghi TXT; không quyết định nghiệp vụ.
-- `core/utils/`: file, ngày giờ, kiểm tra đầu vào và phục hồi giao dịch.
+- `core/utils/`: đọc/ghi file, ngày giờ, cấp mã và phục hồi giao dịch; bộ kiểm tra đầu vào vẫn là phần dự kiến.
 - `core/config/`: giá vé, ưu đãi, tích điểm và khoảng nghỉ giữa suất.
 - `ui/`: Qt Widgets; gọi service, không đọc/ghi file nghiệp vụ trực tiếp.
 - `data/`: dữ liệu bền vững và vùng phục hồi giao dịch.
 
-Core là C++ thuần, không phụ thuộc Qt. Hiện mới có tám cặp Model và `DoublyLinkedList.h`; BLL, DALC, GUI, dữ liệu TXT, `main.cpp` và CMake chưa có trong cây làm việc.
+Core hiện là C++ thuần, không phụ thuộc Qt. Cây mã đã có tám cặp Model trong `core/dal/models/`, `DoublyLinkedList.h` và bốn cặp tiện ích `FileHandler`, `TransactionManager`, `IdGenerator`, `DateTime` trong `core/utils/`. `main.cpp` chỉ in thông báo để thử chương trình. Chưa có mã BLL, DALC, GUI Qt, file TXT nghiệp vụ hoặc cấu hình CMake. Hạ tầng lưu trữ ở Bước 03 đã có các chức năng chính nhưng chưa được nghiệm thu tích hợp toàn bước; xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
 
 ## 4. Cấu trúc dữ liệu
 
@@ -75,12 +75,12 @@ Core là C++ thuần, không phụ thuộc Qt. Hiện mới có tám cặp Model
 | BST | Chỉ mục hóa đơn theo khóa `(thời điểm lập, mã hóa đơn)` |
 | Max heap | Top phim theo doanh thu hoặc số vé hợp lệ |
 
-Chỉ bắt buộc tự cài `DoublyLinkedList<T>`; không thay thuật toán của nó trong lần refactor này. Các CTDL khác có thể dùng STL (`std::unordered_map`, `std::stack`, `std::queue`, `std::map`, `std::priority_queue`, `std::vector`) khi phù hợp. `HashTable.h` và `Stack.h` hiện không có trong cây làm việc. Các quan hệ Model, kể cả con trỏ đã có, không thay đổi trong lần này.
+Chỉ bắt buộc tự cài `DoublyLinkedList<T>`. Các CTDL khác có thể dùng STL (`std::unordered_map`, `std::stack`, `std::queue`, `std::map`, `std::priority_queue`, `std::vector`) khi phù hợp. `HashTable.h` và `Stack.h` hiện không có trong cây làm việc. Các quan hệ Model hiện có và đề xuất bổ sung được ghi trong [tài liệu Model](docs/CauTrucThuMuc/models.md).
 
 ## 5. Tài liệu
 
 - [Tổng quan đề tài và luồng chức năng](docs/TongQuan/TongQuanDeTai.md)
-- [Cấu trúc thư mục mục tiêu](docs/TongQuan/cauTrucThuMuc.md)
+- [Cấu trúc thư mục mục tiêu](docs/CauTrucThuMuc/cauTrucThuMuc.md)
 - [Quy tắc nghiệp vụ](docs/TongQuan/business_rules.md)
 - [Định dạng dữ liệu và phục hồi](docs/TongQuan/data_format.md)
 - `docs/DS/`: tài liệu cấu trúc dữ liệu hiện có.

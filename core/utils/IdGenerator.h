@@ -9,12 +9,7 @@ private:
     static std::string formatId(const std::string& entity, int number);
 
 public:
-    static void generateNextId(
-        const std::string& entity,
-        const std::string& sequencesPath,
-        std::string& id,
-        std::string& updatedSequences
-    );
+    static void generateNextId(const std::string& entity, const std::string& sequencesPath, std::string& id, std::string& updatedSequences);
 };
 
 #endif
