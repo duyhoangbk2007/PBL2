@@ -24,6 +24,7 @@ public:
     bool load();
     bool save();
     bool add(T* item);
+    bool removeById(const string& id);
     T* findById(const string& id);
     T* getAt(int index);
     int count();
@@ -191,5 +192,26 @@ bool Repository<T>::save()
     }
     return FileIO::writeLines(filePath, lines);
 }
+
+template <typename T>
+bool Repository<T>::removeById(const string& id)
+{
+    if (!loaded)
+    {
+        return false;
+    }
+    for (int i = 0; i < count(); i++)
+    {
+        T* item = getAt(i);
+        if (getId(item) == id)
+        {
+            items.erase(i);
+            delete item;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 #endif

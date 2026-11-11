@@ -1,174 +1,111 @@
 #include "MovieRepository.h"
-#include "../utils/FileIO.h"
-
-#include <memory>
+#include "../utils/Validator.h"
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 using namespace std;
 
 static bool isValidMovieId(const string& id)
 {
+    //kiểm tra độ dài và 3 kí tự đầu có phải là MOV k
     if (id.length() != 7 || id.substr(0, 3) != "MOV")
+    {
         return false;
-
+    }
+    //kí tự còn lại là chữ số
     for (int i = 3; i < 7; i++)
     {
         if (id[i] < '0' || id[i] > '9')
+        {
             return false;
+        }
     }
-
+    //có ít nhất 1 chữ khác 0
     return id.substr(3) != "0000";
 }
-// Khong cho phep chuoi rong hoac ky tu sai dinh dang TXT
-static bool isValidText(const string& text)
-{
-    if (text.empty())
-        return false;
 
-    for (unsigned char c : text)
-    {
-        if (c == '|' || c < 32 || c == 127)
-            return false;
-    }
+// Kiem tra toan bo du lieu Movie
 
-    return true;
-}
-
-// Kiem tra ngay YYYY-MM-DD, bao gom nam nhuan
-static bool isValidDate(const string& date)
-{
-    if (date.length() != 10 ||
-        date[4] != '-' || date[7] != '-')
-    {
-        return false;
-    }
-
-    for (int i = 0; i < 10; i++)
-    {
-        if (i == 4 || i == 7)
-            continue;
-
-        if (date[i] < '0' || date[i] > '9')
-            return false;
-    }
-
-    int year = stoi(date.substr(0, 4));
-    int month = stoi(date.substr(5, 2));
-    int day = stoi(date.substr(8, 2));
-
-    if (year < 1 || month < 1 || month > 12)
-        return false;
-
-    int daysInMonth[12] = {
-        31, 28, 31, 30, 31, 30,
-        31, 31, 30, 31, 30, 31
-    };
-
-    bool leapYear = (year % 400 == 0) ||
-                    (year % 4 == 0 && year % 100 != 0);
-
-    if (leapYear)
-        daysInMonth[1] = 29;
-
-    return day >= 1 && day <= daysInMonth[month - 1];
-}
-
-// Kiem tra du lieu co ban cua Movie
-static bool isValidMovie(const Movie* movie)
+bool MovieRepository::isValidMovie(const Movie* movie)
 {
     if (movie == nullptr)
+    {
         return false;
-
+    }
     if (!isValidMovieId(movie->getMovieId()))
-        return false;
-
-    if (!isValidText(movie->getTitle()) ||
-        !isValidText(movie->getGenre()))
     {
         return false;
     }
-
-    if (movie->getDurationMinutes() <= 0 ||
-        movie->getMinAge() < 0)
+    if (!Validator::isValidText(movie->getTitle()) || !Validator::isValidText(movie->getGenre()))
     {
         return false;
     }
-
-    if (!isValidDate(movie->getReleaseDate()) ||
-        !isValidDate(movie->getEndDate()))
+    if (movie->getDurationMinutes() <= 0)
     {
         return false;
     }
-
+    if (movie->getMinAge() < 0)
+    {
+        return false;
+    }
+    if (!Validator::isValidDate(movie->getReleaseDate()) || !Validator::isValidDate(movie->getEndDate()))
+    {
+        return false;
+    }
     if (movie->getReleaseDate() > movie->getEndDate())
+    {
         return false;
-
+    }
     return true;
 }
 
+
 MovieRepository::MovieRepository(const string& filePath)
-    : filePath(filePath), loaded(false)
+    : repo(filePath, getMovieId, parseMovie, serializeMovie)
+{}
+string MovieRepository::getMovieId(Movie* movie)
 {
-}
-
-MovieRepository::~MovieRepository()
-{
-    clearMovies();
-}
-
-// Xoa cac Movie va giai phong bo nho
-void MovieRepository::clearMovies()
-{
-    while (movies.nodeCount() > 0)
+    if (movie == nullptr)
     {
-        ListNode<Movie*>* node = movies.getAt(0);
-        delete node->data;
-        movies.popFront();
+        return "";
     }
+    return movie->getMovieId();
 }
 
-Movie* MovieRepository::stringToMovie(const string& line)
+
+Movie* MovieRepository::parseMovie(const string& line)
 {
-    vector<string> fields;
+    vector<string> fields; //lưu dữ liệu sau khi tách chuỗi
     size_t start = 0;
-    // Tach cac truong theo dau |
+    // Tach cac truong du lieu theo dau |
     while (true)
     {
         size_t pos = line.find('|', start);
-
-        if (pos == string::npos)
+        if (pos == string::npos) // nếu tới chuỗi ở cuối line sẽ k tìm thấy | sẽ trả về npos (-1)
         {
             fields.push_back(line.substr(start));
             break;
         }
-
         fields.push_back(line.substr(start, pos - start));
         start = pos + 1;
     }
-
     // Movie phai co dung 8 truong
     if (fields.size() != 8)
     {
         throw runtime_error("Sai so luong truong Movie");
     }
-
     int durationMinutes;
     int minAge;
-
+    // Chuyen du lieu so
     try
     {
         size_t pos1 = 0;
         size_t pos2 = 0;
-
         durationMinutes = stoi(fields[3], &pos1);
         minAge = stoi(fields[4], &pos2);
-
-        if (pos1 != fields[3].length() ||
-            pos2 != fields[4].length())
+        if (pos1 != fields[3].length() || pos2 != fields[4].length())
         {
-            throw runtime_error("Sai gia tri so");
+            throw runtime_error("Sai dinh dang so");
         }
     }
     catch (const exception&)
@@ -176,15 +113,15 @@ Movie* MovieRepository::stringToMovie(const string& line)
         throw runtime_error("Thoi luong hoac do tuoi khong hop le");
     }
 
+    // Kiem tra trang thai (active)
     if (fields[7] != "0" && fields[7] != "1")
     {
         throw runtime_error("Trang thai Movie khong hop le");
     }
-
     bool active = (fields[7] == "1");
 
-    // unique_ptr giup giai phong neu du lieu khong hop le
-    unique_ptr<Movie> movie(new Movie(
+    // Tao doi tuong Movie
+    Movie* movie = new Movie(
         fields[0],
         fields[1],
         fields[2],
@@ -193,22 +130,23 @@ Movie* MovieRepository::stringToMovie(const string& line)
         fields[5],
         fields[6],
         active
-    ));
-
-    if (!isValidMovie(movie.get()))
+    );
+    // Kiem tra du lieu Movie
+    if (!isValidMovie(movie))
     {
+        delete movie;
         throw runtime_error("Du lieu Movie khong hop le");
     }
-    return movie.release();
+    return movie;
 }
 
-string MovieRepository::movieToString(const Movie* movie) const
+// Chuyen Movie thanh mot dong TXT
+string MovieRepository::serializeMovie(Movie* movie)
 {
     if (!isValidMovie(movie))
     {
         throw runtime_error("Movie khong hop le khi ghi file");
     }
-
     return movie->getMovieId() + "|" +
            movie->getTitle() + "|" +
            movie->getGenre() + "|" +
@@ -219,171 +157,99 @@ string MovieRepository::movieToString(const Movie* movie) const
            (movie->isActive() ? "1" : "0");
 }
 
-void MovieRepository::load()
+// Doc du lieu phim tu file
+bool MovieRepository::load()
 {
-    if (loaded || movies.nodeCount() > 0)
-    {
-        throw runtime_error("MovieRepository da co du lieu");
-    }
-    vector<string> lines;
-    if (!FileIO::readLines(filePath, lines))
-    {
-        throw runtime_error("Khong doc duoc file: " + filePath);
-    }
-    try
-    {
-        for (size_t i = 0; i < lines.size(); i++)
-        {
-            string line = lines[i];
-            try
-            {
-                unique_ptr<Movie> movie(stringToMovie(line));
-
-                if (findById(movie->getMovieId()) != nullptr)
-                {
-                    throw runtime_error("Trung ma Movie");
-                }
-                movies.pushBack(movie.get());
-                movie.release();
-            }
-            catch (const exception& e)
-            {
-                throw runtime_error(
-                    filePath + " - dong " +
-                    to_string(i + 1) + ": " + e.what()
-                );
-            }
-        }
-    }
-    catch (...)
-    {
-        clearMovies();
-        loaded = false;
-        throw;
-    }
-
-    loaded = true;
+    return repo.load();
 }
 
-void MovieRepository::save()
+// Luu du lieu phim xuong file
+bool MovieRepository::save()
 {
-    if (!loaded)
-    {
-        throw runtime_error("MovieRepository chua load du lieu");
-    }
-
-    vector<string> lines;
-
-    // Chuyen toan bo Movie trong RAM thanh dong TXT
-    for (int i = 0; i < count(); i++)
-    {
-        lines.push_back(movieToString(getAt(i)));
-    }
-
-    if (!FileIO::writeLines(filePath, lines))
-    {
-        throw runtime_error("Khong ghi duoc file: " + filePath);
-    }
+    return repo.save();
 }
 
+// Them phim moi
 bool MovieRepository::add(Movie* movie)
 {
-    if (!loaded || !isValidMovie(movie))
-        return false;
-
-    for (int i = 0; i < count(); i++)
+    if (!repo.isLoaded() || !isValidMovie(movie))
     {
-        if (getAt(i) == movie)
-            return false;
-    }
-
-    if (findById(movie->getMovieId()) != nullptr)
         return false;
+    }
+    // Khong them lai con tro da duoc quan ly
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == movie)
+        {
+            return false;
+        }
+    }
+    return repo.add(movie);
+}
 
-    movies.pushBack(movie);
+// Cap nhat thong tin phim
+bool MovieRepository::update(const Movie& newValues)
+{
+    if (!repo.isLoaded() || !isValidMovie(&newValues))
+    {
+        return false;
+    }
+    Movie* movie = repo.findById(newValues.getMovieId());
+
+    if (movie == nullptr)
+    {
+        return false;
+    }
+    movie->setTitle(newValues.getTitle());
+    movie->setGenre(newValues.getGenre());
+    movie->setDurationMinutes(newValues.getDurationMinutes());
+    movie->setMinAge(newValues.getMinAge());
+    movie->setReleaseDate(newValues.getReleaseDate());
+    movie->setEndDate(newValues.getEndDate());
+    movie->setActive(newValues.isActive());
     return true;
 }
 
-bool MovieRepository::update(const Movie& newValues)
-{
-    if (!loaded || !isValidMovie(&newValues))
-        return false;
-
-    for (int i = 0; i < movies.nodeCount(); i++)
-    {
-        Movie* movie = movies.getAt(i)->data;
-
-        if (movie->getMovieId() == newValues.getMovieId())
-        {
-            movie->setTitle(newValues.getTitle());
-            movie->setGenre(newValues.getGenre());
-            movie->setDurationMinutes(newValues.getDurationMinutes());
-            movie->setMinAge(newValues.getMinAge());
-            movie->setReleaseDate(newValues.getReleaseDate());
-            movie->setEndDate(newValues.getEndDate());
-            movie->setActive(newValues.isActive());
-            return true;
-        }
-    }
-
-    return false;
-}
-
+// Xoa phim theo ID
 bool MovieRepository::removeById(const string& movieId)
 {
-    if (!loaded)
+    if (!repo.isLoaded())
+    {
         return false;
-
-    for (int i = 0; i < movies.nodeCount(); i++)
-    {
-        Movie* movie = movies.getAt(i)->data;
-
-        if (movie->getMovieId() == movieId)
-        {
-            // Chan xoa neu da co lien ket Showtime trong RAM
-            if (movie->getShowtimeCount() > 0)
-                return false;
-
-            // Service van phai xac minh tham chieu du lieu
-            delete movie;
-            movies.erase(i);
-
-            return true;
-        }
     }
-
-    return false;
-}
-
-const Movie* MovieRepository::findById(const string& movieId) const
-{
-    for (int i = 0; i < count(); i++)
+    Movie* movie = repo.findById(movieId);
+    if (movie == nullptr)
     {
-        const Movie* movie = getAt(i);
-
-        if (movie->getMovieId() == movieId)
-            return movie;
+        return false;
     }
-
-    return nullptr;
+    // Khong xoa neu phim con lien ket Showtime
+    if (movie->getShowtimeCount() > 0)
+    {
+        return false;
+    }
+    return repo.removeById(movieId);
 }
 
-const Movie* MovieRepository::getAt(int index) const
+// Tim phim theo ID
+Movie* MovieRepository::findById(const string& movieId)
 {
-    // DoublyLinkedList::getAt chua khai bao const.
-    // Chi doc node, khong thay doi danh sach.
-    auto& list =
-        const_cast<DoublyLinkedList<Movie*>&>(movies);
-
-    ListNode<Movie*>* node = list.getAt(index);
-
-    if (node == nullptr)
-        return nullptr;
-
-    return node->data;
+    return repo.findById(movieId);
 }
 
-int MovieRepository::count() const
+// Lay phim theo vi tri
+Movie* MovieRepository::getAt(int index)
 {
-    return movies.nodeCount();
+    return repo.getAt(index);
+}
+
+// Dem so luong phim
+int MovieRepository::count()
+{
+    return repo.count();
+}
+
+// Kiem tra trang thai load
+bool MovieRepository::isLoaded()
+{
+    return repo.isLoaded();
 }

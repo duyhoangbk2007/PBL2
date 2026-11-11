@@ -1,33 +1,43 @@
 
-#ifndef PBL2_MOVIE_REPOSITORY_H
-#define PBL2_MOVIE_REPOSITORY_H
+#ifndef MOVIE_REPOSITORY_H
+#define MOVIE_REPOSITORY_H
 
 #include <string>
-
+#include "Repository.h"
 #include "../models/Movie.h"
-#include "../data_structures/DoublyLinkedList.h"
 
-class MovieRepository {
+using namespace std;
+
+class MovieRepository
+{
 private:
-    std::string filePath;
-    DoublyLinkedList<Movie*> movies;
-    bool loaded;
-    Movie* stringToMovie(const std::string& line);
-    std::string movieToString(const Movie* movie) const;
-    void clearMovies();
-public:
-    explicit MovieRepository(const std::string& filePath);
-    ~MovieRepository();
-    void load();
-    void save();
+    Repository<Movie> repo;
 
+    // Cac ham cung cap cho Repository<Movie>
+    static string getMovieId(Movie* movie);
+    static Movie* parseMovie(const string& line);
+    static string serializeMovie(Movie* movie);
+
+    // Kiem tra du lieu Movie
+    static bool isValidMovie(const Movie* movie);
+
+public:
+    MovieRepository(const string& filePath);
+
+    // Doc va ghi du lieu
+    bool load();
+    bool save();
+
+    // Quan ly phim
     bool add(Movie* movie);
     bool update(const Movie& newValues);
-    bool removeById(const std::string& movieId);
+    bool removeById(const string& movieId);
 
-    const Movie* findById(const std::string& movieId) const;
-    const Movie* getAt(int index) const;
-    int count() const;
+    // Truy van phim
+    Movie* findById(const string& movieId);
+    Movie* getAt(int index);
+    int count();
+    bool isLoaded();
 };
 
 #endif
