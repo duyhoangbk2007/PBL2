@@ -50,18 +50,19 @@ Tài liệu mô tả thiết kế mục tiêu, không khẳng định các chứ
 
 ## 3. Kiến trúc
 
-Luồng mục tiêu: **GUI → BLL → DAL → DB**; kết quả trả về theo chiều ngược lại. Không bỏ qua tầng trung gian.
+Luồng mục tiêu: **GUI → Business Logic → Data Access → DB**; kết quả trả về theo chiều ngược lại.
 
-- `core/dal/models/`: kiểu dữ liệu C++ trao đổi giữa các tầng; không tự đọc/ghi TXT hoặc quản lý CRUD toàn tập.
-- `core/data_structures/`: `DoublyLinkedList<T>` tự cài đặt.
-- `core/bll/`: kiểm tra dữ liệu, quyền và quy tắc nghiệp vụ; gọi DALC, không đọc/ghi TXT.
-- `core/dal/dalc/`: quản lý tập Model, tra cứu và đọc/ghi TXT; không quyết định nghiệp vụ.
-- `core/utils/`: đọc/ghi file, ngày giờ, cấp mã và phục hồi giao dịch; bộ kiểm tra đầu vào vẫn là phần dự kiến.
-- `core/config/`: giá vé, ưu đãi, tích điểm và khoảng nghỉ giữa suất.
-- `ui/`: Qt Widgets; gọi service, không đọc/ghi file nghiệp vụ trực tiếp.
-- `data/`: dữ liệu bền vững và vùng phục hồi giao dịch.
+- `src/gui/`: Qt Widgets, nhận thao tác và hiển thị kết quả.
+- `src/business/`: các class `*Service` kiểm tra quyền và quy tắc nghiệp vụ.
+- `src/data_access/`: các class `*Repository` quản lý Model trong RAM, chuyển đổi và đọc/ghi TXT.
+- `src/models/`: tám Model, không tự đọc/ghi file.
+- `src/data_structures/`: cấu trúc tự cài đặt như `DoublyLinkedList<T>`.
+- `src/utils/`: `FileIO`, `DateTime`, `IdGenerator`. `FileIO` chỉ đọc/ghi dòng TXT.
+- `data/`: các file TXT; `tests/`: kiểm thử; `docs/`: tài liệu.
 
-Core hiện là C++ thuần, không phụ thuộc Qt. Cây mã đã có tám cặp Model trong `core/dal/models/`, `DoublyLinkedList.h` và bốn cặp tiện ích `FileHandler`, `TransactionManager`, `IdGenerator`, `DateTime` trong `core/utils/`. `main.cpp` chỉ in thông báo để thử chương trình. Chưa có mã BLL, DALC, GUI Qt, file TXT nghiệp vụ hoặc cấu hình CMake. Hạ tầng lưu trữ ở Bước 03 đã có các chức năng chính nhưng chưa được nghiệm thu tích hợp toàn bước; xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
+**Cây `src/` đã được tạo một phần.** Tám cặp Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `IdGenerator`, `DateTime` ở `src/utils/` và bản nháp `MovieRepository.h/.cpp` ở `src/data_access/`. `src/main.cpp` vẫn là chương trình thử; chưa có GUI Qt, các Service/Repository còn lại hoặc CMake. Mã `TransactionManager` cũ được lưu ở `tests/legacy/` cho bài thử lịch sử; ứng dụng mục tiêu không dùng. Xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
+
+**Lộ trình 15 bước:** nhóm xác nhận Bước 01–03 đã hoàn thành. Bước 04–12 triển khai theo từng chức năng: Repository → Service → kiểm thử C++ → tài liệu; không chờ viết xong tất cả Repository mới làm Service. Bước 04 hiện là **quản lý phim** do Hoàng phụ trách; bản nháp `MovieRepository` chưa có `MovieService` hoặc kiểm thử chức năng. Kiệt có thể bắt đầu Bước 05 đăng nhập song song. Bước 13 xây dựng Qt, Bước 14 kiểm thử tích hợp, Bước 15 đóng gói và bàn giao. Xem [phân công 15 bước](docs/development/PhanCongCongViec.md).
 
 ## 4. Cấu trúc dữ liệu
 
@@ -82,5 +83,5 @@ Chỉ bắt buộc tự cài `DoublyLinkedList<T>`. Các CTDL khác có thể d�
 - [Tổng quan đề tài và luồng chức năng](docs/TongQuan/TongQuanDeTai.md)
 - [Cấu trúc thư mục mục tiêu](docs/CauTrucThuMuc/cauTrucThuMuc.md)
 - [Quy tắc nghiệp vụ](docs/TongQuan/business_rules.md)
-- [Định dạng dữ liệu và phục hồi](docs/TongQuan/data_format.md)
+- [Định dạng dữ liệu TXT](docs/TongQuan/data_format.md)
 - `docs/DS/`: tài liệu cấu trúc dữ liệu hiện có.

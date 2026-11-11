@@ -1,6 +1,6 @@
 # Tổng quan đề tài và luồng chức năng
 
-Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện dự án mới có các model và một số cấu trúc dữ liệu; đối chiếu tiến độ thực tế trong [Tổng quan tiến độ](../development/TongQuanTienDo.md).
+Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model, tiện ích và bản nháp `MovieRepository`; đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 13.
 
 ## 1. Hệ thống giải quyết việc gì?
 
@@ -10,22 +10,20 @@ Một ví dụ xuyên suốt: Admin tạo phim → tạo phòng và ghế → x�
 
 ## 2. Ba lớp ứng dụng và DB
 
-Kiến trúc mục tiêu là **GUI → BLL → DAL → DB** và kết quả trả về theo chiều ngược lại. GUI Qt Widgets chỉ gọi BLL, không gọi DAL hoặc đọc TXT. BLL kiểm tra dữ liệu, quyền và nghiệp vụ rồi gọi DALC, không tự đọc/ghi TXT. DAL gồm `core/dal/models/` (dữ liệu trao đổi, không tự truy cập DB) và `core/dal/dalc/` (quản lý tập Model, tìm kiếm, chuyển đổi và đọc/ghi TXT). DB là các file TXT trong `data/`. Các lớp Repository/Service nhắc bên dưới là tên dự kiến trong DALC/BLL, chưa có mã; không tạo chức năng mới trong lần đổi thư mục này.
+Kiến trúc mục tiêu là **GUI → Business Logic → Data Access → DB**. GUI Qt Widgets ở `src/gui/` gọi Service trong `src/business/`; Service kiểm tra dữ liệu, quyền và nghiệp vụ rồi gọi Repository trong `src/data_access/`. Repository quản lý Model trong RAM, chuyển đổi và đọc/ghi TXT qua `FileIO`. DB là các file TXT trong `data/`. `src/models/`, `src/data_structures/` và `src/utils/` là thư mục hỗ trợ, không phải tầng nghiệp vụ bổ sung. Cây `src/` đã có Model, `MovieRepository` và tiện ích; GUI và Service chưa có mã.
 
 Chỉ `DoublyLinkedList<T>` cần tự cài. Hash table, stack, queue, map, heap và mảng động có thể dùng STL. Quan hệ Model có mã định danh và một số con trỏ hiện có; lần này không thay đổi con trỏ hoặc vòng đời đối tượng.
 
-### Ghi chú về bảng thiết kế cũ
-
-Bảng bên dưới ghi luồng thiết kế cũ để đối chiếu; đường đi thực thi mới phải tuân theo GUI → BLL → DAL → DB.
+### Trách nhiệm các thành phần
 
 | Tầng | Thư mục | Câu hỏi tầng đó trả lời |
 | --- | --- | --- |
-| UI | `ui/` (dự kiến) | Người dùng nhìn thấy gì và vừa bấm gì? Hiển thị form, bảng, sơ đồ ghế và kết quả. |
-| Service | Cây mục tiêu: `core/bll/`; thư mục hiện có: `core/bll/` | Thao tác có được phép không, dữ liệu có hợp lệ không và phải phối hợp những bước nào? |
-| Repository | `core/dal/dalc/` | Tìm, thêm, sửa, xóa hoặc chuẩn bị lưu bản ghi nào? |
-| File Storage | `data/*.txt`, qua `core/utils/` | Bản ghi được lưu bền vững và phục hồi khi ghi lỗi như thế nào? |
+| UI | `src/gui/` (dự kiến) | Người dùng nhìn thấy gì và vừa bấm gì? Hiển thị form, bảng, sơ đồ ghế và kết quả. |
+| Service | `src/business/` (mục tiêu) | Thao tác có được phép không, dữ liệu có hợp lệ không và phải phối hợp những bước nào? |
+| Repository | `src/data_access/` | Tìm, thêm, sửa, xóa hoặc chuẩn bị lưu bản ghi nào? |
+| TXT và `FileIO` | `data/*.txt`, qua `src/utils/` (mục tiêu) | Đọc/ghi dòng TXT; Repository kiểm tra kết quả và báo lỗi. |
 
-`core/dal/models/` chứa các **đối tượng dữ liệu** (`Movie`, `Room`, `Seat`, `Showtime`, `User`, `Member`, `Ticket`, `Invoice`) đi qua các tầng. `core/data_structures/` chứa cách giữ/tra cứu dữ liệu **trong bộ nhớ** như danh sách liên kết đôi, bảng băm và stack. Hai thư mục này hỗ trợ các tầng trên, không thay thế Service hay Repository.
+`src/models/` chứa các **đối tượng dữ liệu** (`Movie`, `Room`, `Seat`, `Showtime`, `User`, `Member`, `Ticket`, `Invoice`) đi qua các tầng. `src/data_structures/` chứa cách giữ/tra cứu dữ liệu **trong bộ nhớ** như danh sách liên kết đôi, bảng băm và stack. Hai thư mục này hỗ trợ các tầng trên, không thay thế Service hay Repository.
 
 Ví dụ Admin thêm phim:
 
@@ -33,7 +31,7 @@ Ví dụ Admin thêm phim:
 MovieManagementView (UI)
     → MovieService: kiểm tra Admin, dữ liệu phim, quy tắc thêm phim
     → MovieRepository: thêm bản ghi Movie và chuẩn bị lưu
-    → FileHandler/TransactionManager khi cần: ghi movies.txt và sequences.txt
+    → FileIO: ghi toàn bộ movies.txt và sequences.txt khi luồng yêu cầu lưu
     → trả kết quả về UI
 ```
 
@@ -45,11 +43,11 @@ Admin quản lý dữ liệu nền của rạp, nhân viên và báo cáo; đồ
 
 | Chức năng | UI → Service → Repository | File dữ liệu chính |
 | --- | --- | --- |
-| Đăng nhập | `LoginView` → `AuthService` → `AuthRepository` | `users.txt` |
+| Đăng nhập | `LoginView` → `AuthService` → `UserRepository` | `users.txt` |
 | Thêm/sửa/tìm/ngừng phim; xóa khi đủ điều kiện | `MovieManagementView` → `MovieService` → `MovieRepository` | `movies.txt`, `sequences.txt` khi thêm |
 | Quản lý phòng và sơ đồ ghế | `RoomManagementView`/`SeatMapView` → `RoomService` → `RoomRepository` | `rooms.txt`, `seats.txt`, `sequences.txt` khi thêm phòng |
 | Tạo/sửa/hủy và xem lịch suất chiếu | `ShowtimeManagementView` → `ShowtimeService` → `ShowtimeRepository`; service còn tra phim/phòng/vé để kiểm tra điều kiện | `showtimes.txt`, `sequences.txt` khi tạo |
-| Thêm/sửa/tìm/vô hiệu hóa Staff | `StaffManagementView` → `StaffService` → `StaffRepository` | `users.txt`, `sequences.txt` khi thêm |
+| Thêm/sửa/tìm/vô hiệu hóa Staff | `StaffManagementView` → `StaffService` → `UserRepository` | `users.txt`, `sequences.txt` khi thêm |
 | Xem tất cả hóa đơn, lọc lịch sử | `InvoiceHistoryView` → `ReportService` → `InvoiceRepository`, `TicketRepository` và các repository tra cứu liên quan | Chủ yếu đọc `invoices.txt`, `tickets.txt` |
 | Hủy **vé đã bán** trước giờ chiếu | `InvoiceHistoryView` → `BookingService` (luồng hủy) → `TicketRepository`, `InvoiceRepository`, `MemberRepository` và các repository kiểm tra tham chiếu | Ghi `tickets.txt`, `members.txt` nếu có thành viên; giữ hóa đơn lịch sử |
 | Xem doanh thu, vé bán/hủy, top phim | `ReportView` → `ReportService` → các repository hóa đơn, vé, phim/suất | Chủ yếu đọc `invoices.txt`, `tickets.txt`, `movies.txt`, `showtimes.txt` |
@@ -63,7 +61,7 @@ Staff tập trung vào tra cứu thông tin, phục vụ khách và bán vé. Se
 
 | Chức năng | UI → Service → Repository | File dữ liệu chính |
 | --- | --- | --- |
-| Đăng nhập | `LoginView` → `AuthService` → `AuthRepository` | `users.txt` |
+| Đăng nhập | `LoginView` → `AuthService` → `UserRepository` | `users.txt` |
 | Xem/tìm phim sắp chiếu, đang chiếu; xem suất | `StaffDashboard`/`BookingView` → `MovieService`, `ShowtimeService` → `MovieRepository`, `ShowtimeRepository` | Đọc `movies.txt`, `showtimes.txt` |
 | Xem sơ đồ ghế và ghế còn trống của suất | `SeatMapView`/`BookingView` → `BookingService` → `RoomRepository`, `TicketRepository`, `ShowtimeRepository` | Đọc `rooms.txt`, `seats.txt`, `tickets.txt`, `showtimes.txt` |
 | Tạo, tìm, sửa **thông tin liên hệ** thành viên | `MemberManagementView` → `MemberService` → `MemberRepository` | `members.txt`, `sequences.txt` khi tạo |
@@ -85,12 +83,12 @@ BookingView → BookingService
                  ├─ RoomRepository + TicketRepository: ghế thuộc phòng và chưa bán?
                  ├─ MemberRepository: thành viên có tồn tại, điểm mới là bao nhiêu?
                  ├─ InvoiceRepository + TicketRepository: chuẩn bị hóa đơn và vé
-                 └─ TransactionManager: lưu cùng giao dịch, rồi cập nhật bộ nhớ
+                 └─ FileIO: ghi tuần tự các file liên quan, kiểm tra và báo lỗi ghi
 ```
 
 `TicketRepository` chỉ quản lý bản ghi vé; nó **không tự quyết định** Staff có được bán ghế đó hay không, mức giảm giá nào áp dụng hoặc khi nào phải cộng điểm. Những quyết định này thuộc `BookingService`. Tương tự, `MemberRepository` lưu điểm đã được Service tính và kiểm tra, không cho UI tự nhập điểm để tăng/giảm.
 
-Xem [thiết kế BookingService](../BookingService.md) để đọc từng bước chọn ghế, Undo, tính giá, xác nhận và xử lý lỗi.
+Xem [quy tắc nghiệp vụ](business_rules.md) để đối chiếu việc chọn ghế, Undo, tính giá và xác nhận.
 
 ## 6. Cách đọc sơ đồ khi tự triển khai
 
@@ -98,6 +96,6 @@ Xem [thiết kế BookingService](../BookingService.md) để đọc từng bư�
 2. **Tìm màn hình UI:** màn hình lấy dữ liệu nhập và hiển thị kết quả.
 3. **Tìm Service cùng nghiệp vụ:** nơi kiểm tra quyền, điều kiện và điều phối.
 4. **Tìm Repository theo loại dữ liệu:** nơi đọc/tìm/chuẩn bị cập nhật các bản ghi.
-5. **Xác định file dữ liệu bị ảnh hưởng:** một thao tác có thể đọc nhiều file nhưng chỉ ghi một số file. Nếu ghi nhiều file, cần cơ chế giao dịch như mô tả trong [định dạng dữ liệu](data_format.md).
+5. **Xác định file dữ liệu bị ảnh hưởng:** một thao tác có thể đọc nhiều file nhưng chỉ ghi một số file. Nếu ghi nhiều file, kiểm tra từng lần ghi và nêu rõ giới hạn không nguyên tử như trong [định dạng dữ liệu](data_format.md).
 
-Các tên file dự kiến nằm trong [cấu trúc thư mục](cauTrucThuMuc.md). Hiện `core/dal/dalc/` và `core/bll/` chưa có mã; các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành.
+Các tên file dự kiến nằm trong [cấu trúc thư mục](../CauTrucThuMuc/cauTrucThuMuc.md). Hiện `src/data_access/` mới có bản nháp `MovieRepository`, còn `src/business/` chưa có mã; các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành. Ghi nhiều file tuần tự không nguyên tử: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Không dùng `TransactionManager` trong ứng dụng mục tiêu.

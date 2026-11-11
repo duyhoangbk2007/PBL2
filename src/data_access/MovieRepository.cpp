@@ -1,6 +1,5 @@
-#include "MovieDALC.h"
-#include "../../utils/FileHandler.h"
-#include "../../utils/TransactionManager.h"
+#include "MovieRepository.h"
+#include "../utils/FileIO.h"
 
 #include <stdexcept>
 #include <vector>
@@ -114,15 +113,15 @@ static bool isValidMovie(const Movie* movie)
     return true;
 }
 
-MovieDALC::MovieDALC(const string& filePath)
+MovieRepository::MovieRepository(const string& filePath)
     : filePath(filePath), loaded(false)
 {}
-MovieDALC::~MovieDALC()
+MovieRepository::~MovieRepository()
 {
     clearMovies();
 }
 
-void MovieDALC::clearMovies()
+void MovieRepository::clearMovies()
 {
     while (movies.nodeCount() > 0)
     {
@@ -132,11 +131,11 @@ void MovieDALC::clearMovies()
     }
 }
 
-int MovieDALC::count()
+int MovieRepository::count()
 {
     return movies.nodeCount();
 }
-Movie* MovieDALC::getAt(int index)
+Movie* MovieRepository::getAt(int index)
 {
     ListNode<Movie*>* node = movies.getAt(index);
     if (node == nullptr)
@@ -144,7 +143,7 @@ Movie* MovieDALC::getAt(int index)
 
     return node->data;
 }
-Movie* MovieDALC::findById(const string& movieId)
+Movie* MovieRepository::findById(const string& movieId)
 {
     int n = movies.nodeCount();
     for (int i = 0; i < n; i++)
@@ -156,7 +155,7 @@ Movie* MovieDALC::findById(const string& movieId)
     return nullptr;
 }
 
-Movie* MovieDALC::StringToMovie(const string& line)
+Movie* MovieRepository::StringToMovie(const string& line)
 {
     string fields[8]; //mỗi phần tử lưu 1 chuỗi thuộc tính của phim
     size_t start = 0;
@@ -227,7 +226,7 @@ Movie* MovieDALC::StringToMovie(const string& line)
     }
     return movie;
 }
-string MovieDALC::MovieToString(Movie* movie)
+string MovieRepository::MovieToString(Movie* movie)
 {
     if (!isValidMovie(movie))
     {
@@ -248,7 +247,7 @@ string MovieDALC::MovieToString(Movie* movie)
     return line;
 }
 
-void MovieDALC::load()
+void MovieRepository::load()
 {
     if (loaded || movies.nodeCount() > 0)
     {
@@ -256,14 +255,13 @@ void MovieDALC::load()
     }
     vector<string> lines;
     // Doc du lieu tu file
-    if (!FileHandler::readlines(filePath, lines))
+    if (!FileIO::readLines(filePath, lines))
     {
         throw runtime_error("Khong doc duoc file Movie");
     }
     try
     {
-        // Bo qua dong schema, bat dau tu dong thu hai
-        for (int i = 1; i < (int)lines.size(); i++)
+        for (int i = 0; i < (int)lines.size(); i++)
         {
             Movie* movie = StringToMovie(lines[i]);
 
@@ -284,11 +282,11 @@ void MovieDALC::load()
     loaded = true;
 }
 
-void MovieDALC::save()
+void MovieRepository::save()
 {
     if (!loaded)
     {
-        throw runtime_error("MovieDALC chua load du lieu");
+        throw runtime_error("MovieRepository chua load du lieu");
     }
     vector<string> lines;
     // Chuyen tung Movie thanh chuoi
@@ -299,18 +297,13 @@ void MovieDALC::save()
         lines.push_back(line);
     }
 
-    // Tao du lieu ghi file
-    TransactionFile file;
-    file.path = filePath;
-    file.newLines = lines;
-
-    vector<TransactionFile> files;
-    files.push_back(file);
-    // Ghi file thong qua TransactionManager
-    TransactionManager::execute(files);
+    if (!FileIO::writeLines(filePath, lines))
+    {
+        throw runtime_error("Khong ghi duoc file Movie");
+    }
 }
 
-bool MovieDALC::add(Movie* movie)
+bool MovieRepository::add(Movie* movie)
 {
     if (!loaded)
     {
@@ -331,7 +324,7 @@ bool MovieDALC::add(Movie* movie)
     return true;
 }
 
-bool MovieDALC::update(const Movie& newValues)
+bool MovieRepository::update(const Movie& newValues)
 {
     if (!loaded)
     {
@@ -360,7 +353,7 @@ bool MovieDALC::update(const Movie& newValues)
     return true;
 }
 
-bool MovieDALC::removeById(const string& movieId)
+bool MovieRepository::removeById(const string& movieId)
 {
     if (!loaded)
     {

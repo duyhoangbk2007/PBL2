@@ -1,11 +1,11 @@
-#ifndef PBL2_MOVIE_DALC_H
-#define PBL2_MOVIE_DALC_H
+#ifndef PBL2_MOVIE_REPOSITORY_H
+#define PBL2_MOVIE_REPOSITORY_H
 
 #include "../models/Movie.h"
-#include "../../data_structures/DoublyLinkedList.h"
+#include "../data_structures/DoublyLinkedList.h"
 #include <string>
 
-class MovieDALC {
+class MovieRepository {
 private:
     std::string filePath;
     DoublyLinkedList<Movie*> movies;
@@ -15,8 +15,8 @@ private:
     std::string MovieToString(Movie* movie);
     void clearMovies();
 public:
-    MovieDALC(const std::string& filePath);
-    ~MovieDALC();
+    MovieRepository(const std::string& filePath);
+    ~MovieRepository();
     // Doc / ghi du lieu
     void load();
     void save();

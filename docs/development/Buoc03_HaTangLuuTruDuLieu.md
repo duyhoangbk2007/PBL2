@@ -108,4 +108,6 @@ Trong mã test, nhánh kiểm tra lỗi cố ý sau khi thay file đầu tiên n
 - [ ] Thống nhất nhu cầu parse/kiểm tra ngày giờ khi thiết kế DALC; chỉ cài các hàm thật sự cần, giữ `Validator` theo kế hoạch hoãn hiện tại.
 - [ ] Bắt đầu Bước 04 – DALC theo phân công đã chốt, dùng `IdGenerator` và `TransactionManager` qua tầng DALC; chưa triển khai Bước 04 trong lần cập nhật này.
 
-**Kết luận hiện tại:** Bước 03 đủ kết quả chức năng cơ bản để bắt đầu Bước 04. Việc kiểm tra độ bền vững, nhánh `-DTEST_ROLLBACK` và tích hợp chính thức vẫn là việc còn mở.
+**Kết luận tại mốc trên:** Bước 03 đủ kết quả chức năng cơ bản để bắt đầu Bước 04. Việc kiểm tra độ bền vững, nhánh `-DTEST_ROLLBACK` và tích hợp chính thức vẫn là việc còn mở.
+
+> **Cập nhật sau tái cấu trúc:** Nhật ký trên giữ nguyên những việc đã làm và kết quả kiểm thử tại thời điểm đó. `FileHandler` đã đổi thành `FileIO` ở `src/utils/`; Model và DLL đã chuyển vào `src/`, bản nháp `MovieDALC` thành `MovieRepository` ở `src/data_access/`. `TransactionManager` cũ nằm tại `tests/legacy/`, không thuộc luồng ứng dụng mục tiêu. Xem [Bước 04](Buoc04_XayDungDALC.md) và [định dạng dữ liệu](../TongQuan/data_format.md). Ghi tuần tự nhiều file không nguyên tử.

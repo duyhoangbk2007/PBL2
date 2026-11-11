@@ -1,6 +1,6 @@
 # DateTime
 
-**Mã nguồn:** `core/utils/DateTime.h`, `core/utils/DateTime.cpp`.
+**Mã nguồn hiện có:** `src/utils/DateTime.h`, `src/utils/DateTime.cpp`; đã chuyển từ `core/utils/`, chưa đổi API.
 
 `DateTime` hiện chỉ cung cấp thời điểm hiện tại ở dạng chuỗi để các phần khác có thể ghi dấu thời gian. Lớp chưa có hàm parse, kiểm tra ngày hợp lệ, cộng/trừ thời gian hoặc so sánh hai thời điểm.
 

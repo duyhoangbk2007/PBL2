@@ -29,7 +29,7 @@ userId|username|password|fullName|role|active
 
 Trong bộ nhớ dựng hai chỉ mục tài khoản: một hash table theo `userId` cho quan hệ tham chiếu và một hash table theo `username` cho đăng nhập. Hash table hóa đơn dùng `invoiceId`. Username phải duy nhất và không thay thế `userId` làm mã bất biến của tài khoản.
 
-role = ADMIN/STAFF. Mô hình dùng một kiểu `User` có trường role, không cần lớp con Admin/Staff. AuthRepository và StaffRepository cùng dùng file này; sửa nhân viên phải giữ các tài khoản Admin.
+role = ADMIN/STAFF. Mô hình dùng một kiểu `User` có trường role, không cần lớp con Admin/Staff. `AuthService` (Bước 05) và `StaffService` (Bước 07) cùng dùng `UserRepository` để truy cập file này; sửa nhân viên phải giữ các tài khoản Admin.
 
 ### movies.txt
 
@@ -105,39 +105,23 @@ INV|1
 MEM|1
 ```
 
-`sequences.txt` cũng tuân theo quy ước không có schema hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Tăng và lưu cùng giao dịch tạo dữ liệu; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
+`sequences.txt` cũng tuân theo quy ước không có schema hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Khi cấp mã, phải lưu bộ đếm mới cùng dữ liệu được tạo trong luồng nghiệp vụ; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
 
 ## 3. Tải và kiểm tra
 
-1. Phục hồi giao dịch dang dở trước khi đọc dữ liệu nghiệp vụ.
+1. Đọc các file TXT bằng `FileIO`; báo lỗi nếu thiếu file trong bộ dữ liệu đã có.
 2. Kiểm tra số lượng trường, số trường, kiểu, enum và mã trùng.
 3. Tải danh mục rồi kiểm tra tham chiếu suất/hóa đơn/vé; showtimeId của từng vé phải trùng showtimeId trên hóa đơn tương ứng.
 4. Kiểm tra hóa đơn không rỗng, ghế bán trùng, tổng tiền, điểm thành viên và bộ đếm mã.
 5. Chỉ sau khi hợp lệ mới dựng danh sách, hash table, trie, BST và dữ liệu báo cáo trong bộ nhớ.
 
-Thứ tự khởi động ứng dụng là: lấy khóa độc quyền bộ dữ liệu, phục hồi giao dịch dang dở, đọc và kiểm tra file, dựng chỉ mục rồi mới hiển thị đăng nhập. Khóa phải dựa trên cơ chế khóa của hệ điều hành hoặc có kiểm tra tiến trình sở hữu; không chỉ dựa vào sự tồn tại của một file lock. Khi thoát bình thường, ứng dụng hoàn tất ghi rồi nhả khóa.
+Thứ tự khởi động mục tiêu là: đọc và kiểm tra file, dựng dữ liệu trong bộ nhớ rồi mới phục vụ thao tác. Dự án dự kiến chỉ có một phiên ứng dụng thao tác trên bộ dữ liệu tại một thời điểm.
 
 File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: tạo mọi file TXT không có dòng schema hoặc tiêu đề; bộ đếm trong `sequences.txt` bắt đầu từ 1.
 
-## 4. Lưu nhiều file và phục hồi
+## 4. Đọc và ghi TXT theo thiết kế mục tiêu
 
-TransactionManager áp dụng cho bán/hủy vé và các cập nhật nhiều file như phòng/ghế hoặc thực thể/bộ đếm. Thay từng file riêng không bảo đảm nguyên tử cho cả giao dịch.
+Repository dùng `FileIO` để đọc các dòng TXT, kiểm tra định dạng, khóa và tham chiếu rồi chuyển thành Model trong RAM. Khi nghiệp vụ yêu cầu lưu, Repository chuyển dữ liệu thành các dòng và gọi `FileIO` ghi **toàn bộ nội dung** từng file tương ứng; không append từng bản ghi. `FileIO` chỉ đọc/ghi dòng, không hiểu quy tắc nghiệp vụ.
 
-Mỗi giao dịch có thư mục duy nhất dưới `data/transactions/`, chứa dữ liệu mới, backup và manifest (danh sách file, file gốc có tồn tại không, trạng thái giao dịch).
-
-1. Chuẩn bị và kiểm tra toàn bộ dữ liệu mới trong bộ nhớ, chưa thay trạng thái đang dùng.
-2. Ghi file mới và backup, kiểm tra lỗi và flush bền vững theo API hệ điều hành.
-3. Ghi bền vững manifest PREPARED trước khi đụng file chính. Cập nhật manifest qua file tạm rồi thay thế nguyên tử trên cùng ổ đĩa.
-4. Thay file chính bằng dữ liệu mới; giữ backup và bản mới đến khi hoàn tất.
-5. Sau khi mọi file chính được ghi bền vững, ghi bền vững manifest COMMITTED. Đây là mốc commit.
-6. Cập nhật bộ nhớ, báo thành công rồi dọn vùng giao dịch. Lỗi dọn sau commit không làm giao dịch thất bại.
-
-Phục hồi trước khi phục vụ người dùng:
-
-- Vùng chuẩn bị chưa có manifest và chưa thay file chính: có thể dọn sau kiểm tra.
-- PREPARED: khôi phục toàn bộ file từ backup; file vốn không tồn tại thì loại bỏ bản mới tương ứng. Giữ manifest đến khi rollback xong để phục hồi có thể lặp lại nếu tiếp tục gián đoạn.
-- COMMITTED: giữ dữ liệu mới, kiểm tra và hoàn tất dọn; không rollback giao dịch đã commit.
-- Manifest hỏng hoặc thiếu backup cần thiết: chặn ghi, báo lỗi; không đoán dữ liệu đúng.
-
-Lỗi trước commit phải rollback và báo chưa hoàn tất; rollback thất bại thì chặn thao tác ghi tiếp. Cần kiểm thử lỗi ghi và gián đoạn ở từng giai đoạn khi triển khai. Cơ chế này không thay thế bản sao lưu độc lập khi ổ đĩa hỏng.
+Nếu đọc hoặc ghi thất bại, phải báo lỗi rõ ràng. Không bỏ qua bản ghi sai hoặc âm thầm ghi đè dữ liệu không hợp lệ. Khi một nghiệp vụ ghi nhiều file, các lần ghi diễn ra tuần tự và **không nguyên tử**: lỗi hoặc gián đoạn có thể khiến dữ liệu giữa các file không nhất quán. Luồng xử lý phải kiểm tra kết quả từng lần ghi và không báo thành công khi có lỗi. Thiết kế mục tiêu không dùng `TransactionManager`, backup giao dịch hay phục hồi lúc khởi động.
 

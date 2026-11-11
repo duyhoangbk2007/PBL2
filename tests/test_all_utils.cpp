@@ -1,10 +1,10 @@
-// PBL2 - One-file test runner for core/utils (C++17).
+// PBL2 - One-file test runner for src/utils and archived transaction code (C++17).
 // Run from the repository root using the compile instructions below.
-// Does NOT modify core code or real data: changes working directory to an isolated folder.
-#include "core/utils/FileHandler.h"
-#include "core/utils/DateTime.h"
-#include "core/utils/IdGenerator.h"
-#include "core/utils/TransactionManager.h"
+// Does NOT modify real data: changes working directory to an isolated folder.
+#include "src/utils/FileIO.h"
+#include "src/utils/DateTime.h"
+#include "src/utils/IdGenerator.h"
+#include "tests/legacy/TransactionManager.h"
 
 #include <chrono>
 #include <ctime>
@@ -47,21 +47,21 @@ void expectThrows(const std::function<void()>& fn) {
 }
 Lines read(const fs::path& file) {
     Lines lines;
-    require(FileHandler::readlines(file.string(), lines), "Cannot read " + file.string());
+    require(FileIO::readLines(file.string(), lines), "Cannot read " + file.string());
     return lines;
 }
 void write(const fs::path& file, const Lines& lines) {
-    require(FileHandler::writeLines(file.string(), lines), "Cannot write " + file.string());
+    require(FileIO::writeLines(file.string(), lines), "Cannot write " + file.string());
 }
-void testFileHandler() {
+void testFileIO() {
     fs::create_directories("files");
     const Lines expected = {"alpha", "MOV|1", ""};
     write("files/sample.txt", expected);
     require(read("files/sample.txt") == expected, "Read/write mismatch");
     Lines preserved = {"keep"};
-    require(!FileHandler::readlines("files/missing.txt", preserved), "Missing file unexpectedly readable");
+    require(!FileIO::readLines("files/missing.txt", preserved), "Missing file unexpectedly readable");
     require(preserved == Lines{"keep"}, "Failed read modified output");
-    require(!FileHandler::writeLines("missing_parent/new.txt", {"x"}), "Write into missing folder succeeded");
+    require(!FileIO::writeLines("missing_parent/new.txt", {"x"}), "Write into missing folder succeeded");
     write("files/sample.txt", {});
     require(read("files/sample.txt").empty(), "Empty write mismatch");
 }
@@ -163,7 +163,7 @@ int main() {
     try {
         Workspace sandbox;
         const std::vector<std::pair<std::string, std::function<void()>>> tests = {
-            {"FileHandler", testFileHandler},
+            {"FileIO", testFileIO},
             {"DateTime", testDateTime},
             {"IdGenerator", testIdGenerator},
             {"TransactionManager", testTransactionManager}
