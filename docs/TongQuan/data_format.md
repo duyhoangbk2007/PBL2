@@ -1,6 +1,6 @@
-﻿# Định dạng dữ liệu và phục hồi giao dịch
+﻿# Định dạng dữ liệu TXT
 
-Đặc tả thiết kế mục tiêu; việc cập nhật tài liệu chưa tạo file dữ liệu hoặc triển khai cơ chế phục hồi.
+Đặc tả thiết kế mục tiêu; việc cập nhật tài liệu chưa tạo file dữ liệu hoặc triển khai chức năng đọc/ghi nghiệp vụ.
 
 ## 1. Quy ước
 

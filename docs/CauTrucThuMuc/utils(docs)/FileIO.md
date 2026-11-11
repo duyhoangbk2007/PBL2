@@ -1,6 +1,6 @@
 # FileIO — tiện ích đọc/ghi TXT mục tiêu
 
-> Giữ tên file tài liệu `FileHandler.md` để liên kết cũ hoạt động. Mã `FileIO` đã có tại `src/utils/`.
+Tài liệu này mô tả `FileIO` hiện có tại `src/utils/`. Tên `FileHandler` chỉ dùng khi nhắc tới lịch sử đổi tên mã.
 
 `FileIO.h/.cpp` đã đặt trong `src/utils/`. Class này chỉ đọc các dòng từ file TXT và ghi toàn bộ các dòng xuống file TXT. Hai thao tác hiện có là `readLines(path, lines)` và `writeLines(path, lines)`, đều trả `bool`. `FileIO` không hiểu Model, định dạng bản ghi, quyền hay nghiệp vụ.
 
@@ -10,4 +10,4 @@ Nếu ghi lỗi giữa chừng, file đích có thể chỉ có một phần d�
 
 ## Hiện trạng mã nguồn
 
-`src/utils/FileIO.h/.cpp` đã được chuyển và đổi tên từ `core/utils/FileHandler.h/.cpp`; phương thức đọc đã đổi từ `readlines` thành `readLines`. Bản nháp `MovieRepository` đã dùng API mới. Xem [Bước 04](../../development/Buoc04_XayDungDALC.md) để theo dõi kiểm thử tích hợp.
+`src/utils/FileIO.h/.cpp` đã được chuyển và đổi tên từ `core/utils/FileHandler.h/.cpp`; phương thức đọc đã đổi từ `readlines` thành `readLines`. Code `MovieRepository` cũ từng dùng API mới nhưng chưa được nghiệm thu; hai file Repository hiện đã bị xóa khỏi cây làm việc và sẽ được viết lại trong [Bước 04](../../development/Buoc04_QuanLyPhim.md).

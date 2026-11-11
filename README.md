@@ -60,9 +60,9 @@ Luồng mục tiêu: **GUI → Business Logic → Data Access → DB**; kết qu
 - `src/utils/`: `FileIO`, `DateTime`, `IdGenerator`. `FileIO` chỉ đọc/ghi dòng TXT.
 - `data/`: các file TXT; `tests/`: kiểm thử; `docs/`: tài liệu.
 
-**Cây `src/` đã được tạo một phần.** Tám cặp Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `IdGenerator`, `DateTime` ở `src/utils/` và bản nháp `MovieRepository.h/.cpp` ở `src/data_access/`. `src/main.cpp` vẫn là chương trình thử; chưa có GUI Qt, các Service/Repository còn lại hoặc CMake. Mã `TransactionManager` cũ được lưu ở `tests/legacy/` cho bài thử lịch sử; ứng dụng mục tiêu không dùng. Xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
+**Cây `src/` đã được tạo một phần.** Tám cặp Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `IdGenerator`, `DateTime` ở `src/utils/`. Hai file code cũ `MovieRepository.h/.cpp` đã bị xóa khỏi cây làm việc; Hoàng sẽ viết lại từ đầu trong Bước 04. `src/main.cpp` vẫn là chương trình thử; chưa có GUI Qt, Service, Repository hiện hành hoặc CMake. Mã `TransactionManager` cũ được lưu ở `tests/legacy/` cho bài thử lịch sử; ứng dụng mục tiêu không dùng. Xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
 
-**Lộ trình 15 bước:** nhóm xác nhận Bước 01–03 đã hoàn thành. Bước 04–12 triển khai theo từng chức năng: Repository → Service → kiểm thử C++ → tài liệu; không chờ viết xong tất cả Repository mới làm Service. Bước 04 hiện là **quản lý phim** do Hoàng phụ trách; bản nháp `MovieRepository` chưa có `MovieService` hoặc kiểm thử chức năng. Kiệt có thể bắt đầu Bước 05 đăng nhập song song. Bước 13 xây dựng Qt, Bước 14 kiểm thử tích hợp, Bước 15 đóng gói và bàn giao. Xem [phân công 15 bước](docs/development/PhanCongCongViec.md).
+**Lộ trình 15 bước:** nhóm xác nhận Bước 01–03 đã hoàn thành. Bước 04–12 triển khai theo từng chức năng: Repository → Service → kiểm thử C++ → tài liệu; không chờ viết xong tất cả Repository mới làm Service. Bước 04 là **quản lý phim** do Hoàng phụ trách: viết lại `MovieRepository`, xây dựng `MovieService` và kiểm thử C++; code Repository hiện tại chưa nghiệm thu. Kiệt có thể bắt đầu Bước 05 đăng nhập song song. Bước 13 xây dựng Qt, Bước 14 kiểm thử tích hợp, Bước 15 đóng gói và bàn giao. Xem [phân công 15 bước](docs/development/PhanCongCongViec.md).
 
 ## 4. Cấu trúc dữ liệu
 

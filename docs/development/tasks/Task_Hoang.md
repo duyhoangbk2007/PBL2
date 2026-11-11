@@ -68,11 +68,11 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 04 – Quản lý phim
 
-**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** Mã nháp `MovieDALC` theo kiến trúc cũ đã được chuyển thành bản nháp `src/data_access/MovieRepository.h/.cpp`; chưa có `MovieService`, chưa nghiệm thu chức năng. Xem [nhật ký Bước 04](../Buoc04_XayDungDALC.md).
+**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị viết lại từ đầu.** `src/data_access/MovieRepository.h/.cpp` cũ đã bị xóa khỏi cây làm việc và chưa từng được nghiệm thu; `MovieService` và kiểm thử chức năng phim chưa có. Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
 
 - [x] Chuyển bản nháp sang thư mục mới và dùng `FileIO`; kiểm tra cú pháp C++17.
-- [ ] Hoàn thiện `MovieRepository`: đọc/ghi `movies.txt`, tra cứu, phát hiện mã trùng và dữ liệu lỗi.
-- [ ] Cài `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu.
+- [ ] Viết lại `MovieRepository` từ đầu: đọc/ghi `movies.txt`, thêm/sửa/xóa, tra cứu, phát hiện mã trùng và dữ liệu lỗi; không dùng việc chuyển tên code cũ làm bằng chứng hoàn thành.
+- [ ] Viết `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu.
 - [ ] Kiểm thử chức năng C++ với dữ liệu hợp lệ/lỗi, lưu rồi nạp lại; ghi lệnh, kết quả và cập nhật tài liệu.
 
 **Điều kiện hoàn thành:** Repository và Service phim hoạt động, có bằng chứng kiểm thử; bản nháp riêng lẻ chưa đủ.

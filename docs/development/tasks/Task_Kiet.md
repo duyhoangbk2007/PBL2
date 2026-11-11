@@ -69,7 +69,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 ### Bước 04 – Quản lý phim
 
-**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** Mã nháp `MovieDALC` theo kiến trúc cũ đã được chuyển thành bản nháp `MovieRepository`; `MovieService` và kiểm thử chức năng chưa có.
+**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị viết lại từ đầu.** `MovieRepository` cũ chuyển từ `MovieDALC` đã bị xóa khỏi cây làm việc và chưa nghiệm thu. Hoàng sẽ viết lại Repository, xây dựng `MovieService` và kiểm thử C++; Kiệt phối hợp thống nhất API cần dùng cho các bước sau.
 
 - [ ] Kiệt thống nhất API phim cần cho đăng nhập, bán vé và các chức năng sau khi Hoàng triển khai.
 

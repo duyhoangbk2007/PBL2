@@ -58,8 +58,8 @@ PBL2/
 │   │   ├── ReportService.h               [Dự kiến]
 │   │   └── ReportService.cpp             [Dự kiến]
 │   ├── data_access/                       [Dự kiến: truy xuất TXT]
-│   │   ├── MovieRepository.h             [Đã có; chuyển từ MovieDALC]
-│   │   ├── MovieRepository.cpp           [Đã có; chuyển từ MovieDALC]
+│   │   ├── MovieRepository.h             [Dự kiến viết lại ở Bước 04]
+│   │   ├── MovieRepository.cpp           [Dự kiến viết lại ở Bước 04]
 │   │   ├── RoomRepository.h              [Dự kiến]
 │   │   ├── RoomRepository.cpp            [Dự kiến]
 │   │   ├── SeatRepository.h              [Dự kiến]
@@ -122,10 +122,15 @@ PBL2/
     │   └── data_format.md
     ├── CauTrucThuMuc/
     │   ├── cauTrucThuMuc.md
+    │   ├── src.md
+    │   ├── gui.md
+    │   ├── business.md
+    │   ├── data_access.md
     │   ├── models.md
-    │   ├── dalc.md
+    │   ├── data_structures.md
+    │   ├── utils.md
     │   └── utils(docs)/
-    │       ├── FileHandler.md
+    │       ├── FileIO.md
     │       ├── DateTime.md
     │       └── IdGenerator.md
     ├── DS/
@@ -136,17 +141,17 @@ PBL2/
         ├── Buoc01_KhoiTaoDuAn.md
         ├── Buoc02_XayDungModels.md
         ├── Buoc03_HaTangLuuTruDuLieu.md
-        ├── Buoc04_XayDungDALC.md
+        ├── Buoc04_QuanLyPhim.md
         └── tasks/
             ├── Task_Hoang.md
             └── Task_Kiet.md
 ```
 
-`src/` chứa mã nguồn ứng dụng C++; `data/` chứa TXT; `docs/` chứa tài liệu; `tests/` chứa kiểm thử và mã cũ để đối chiếu. Cây mã mới không đặt thêm `core/`, `dal/`, `dalc/`, `services/` hoặc `repositories/` làm thư mục trung gian. Các tên `dalc.md`, `FileHandler.md` và `Buoc04_XayDungDALC.md` trong `docs/` là **tên tài liệu lịch sử được giữ**, không phải tên class hay thư mục mã mới. Tài liệu riêng `TransactionManager.md` không còn trong cây tài liệu; nhật ký Bước 03 vẫn giữ lịch sử liên quan.
+`src/` chứa mã nguồn ứng dụng C++; `data/` chứa TXT; `docs/` chứa tài liệu; `tests/` chứa kiểm thử và mã cũ để đối chiếu. Cây mã mới không đặt thêm `core/`, `dal/`, `dalc/`, `services/` hoặc `repositories/` làm thư mục trung gian. Tên tài liệu hiện hành dùng `data_access.md`, `FileIO.md` và `Buoc04_QuanLyPhim.md`; lịch sử DALC và FileHandler được giữ trong nội dung nhật ký. Tài liệu riêng `TransactionManager.md` không còn trong cây tài liệu; nhật ký Bước 03 vẫn giữ lịch sử liên quan.
 
 ## 2. Vai trò từng file mã nguồn
 
-Với các cặp `.h` và `.cpp` trong bảng, `.h` khai báo class và hàm; `.cpp` cài đặt chúng. Tám cặp Model, `MovieRepository`, `FileIO`, `DateTime` và `IdGenerator` đã có ở `src/`; các cặp còn lại vẫn là đề xuất. API cụ thể phải đối chiếu mã khi triển khai.
+Với các cặp `.h` và `.cpp` trong bảng, `.h` khai báo class và hàm; `.cpp` cài đặt chúng. Tám cặp Model, `FileIO`, `DateTime` và `IdGenerator` đã có ở `src/`; các cặp còn lại vẫn là đề xuất. Hai file `MovieRepository` cũ đã bị xóa khỏi cây làm việc; Hoàng sẽ viết lại từ đầu trong Bước 04. API cụ thể phải đối chiếu mã khi triển khai.
 
 ### `src/gui/` — giao diện
 
@@ -188,7 +193,7 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 
 | Cặp file | Vai trò dự kiến |
 | --- | --- |
-| `MovieRepository.h/.cpp` | Quản lý tập `Movie`, đọc/ghi `movies.txt`, tra phim theo mã. |
+| `MovieRepository.h/.cpp` | Dự kiến viết lại trong Bước 04 để quản lý tập `Movie`, đọc/ghi `movies.txt`, tra phim theo mã; code cũ chưa nghiệm thu đã bị xóa khỏi cây làm việc. |
 | `RoomRepository.h/.cpp` | Quản lý `Room`, đọc/ghi `rooms.txt`, kiểm tra mã phòng. |
 | `SeatRepository.h/.cpp` | Quản lý `Seat`, đọc/ghi `seats.txt`, kiểm tra phòng và vị trí ghế. |
 | `ShowtimeRepository.h/.cpp` | Quản lý `Showtime`, đọc/ghi `showtimes.txt`, kiểm tra tham chiếu phim/phòng. |
@@ -197,7 +202,7 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 | `TicketRepository.h/.cpp` | Quản lý `Ticket`, đọc/ghi `tickets.txt`, giữ vé đã hủy để tra lịch sử. |
 | `InvoiceRepository.h/.cpp` | Quản lý `Invoice`, đọc/ghi `invoices.txt`, giữ liên kết hóa đơn–vé. |
 
-Repository gọi `FileIO` để đọc dòng, kiểm tra số trường/kiểu/khóa/tham chiếu rồi dựng Model trong RAM. Khi nghiệp vụ yêu cầu lưu, Repository chuyển Model thành dòng và ghi **toàn bộ** file. Từ Bước 04, từng chức năng làm Repository rồi Service rồi kiểm thử C++; không chờ hoàn thành mọi Repository. Chưa mặc định tạo `SequenceRepository` hoặc `BookingRepository`: `IdGenerator` xử lý quy tắc mã, còn `BookingService` điều phối bán vé. Xem [thiết kế Repository](dalc.md) và [lộ trình](../development/PhanCongCongViec.md).
+Repository gọi `FileIO` để đọc dòng, kiểm tra số trường/kiểu/khóa/tham chiếu rồi dựng Model trong RAM. Khi nghiệp vụ yêu cầu lưu, Repository chuyển Model thành dòng và ghi **toàn bộ** file. Từ Bước 04, từng chức năng làm Repository rồi Service rồi kiểm thử C++; không chờ hoàn thành mọi Repository. Chưa mặc định tạo `SequenceRepository` hoặc `BookingRepository`: `IdGenerator` xử lý quy tắc mã, còn `BookingService` điều phối bán vé. Xem [thiết kế Repository](data_access.md) và [lộ trình](../development/PhanCongCongViec.md).
 
 ### `src/models/` — đối tượng dữ liệu
 
@@ -269,11 +274,11 @@ Ví dụ bán vé (Bước 11; GUI triển khai ở Bước 13): `BookingView` g
 | --- | --- | --- |
 | `main.cpp` | `src/main.cpp` | Đã chuyển; hiện vẫn là chương trình thử, chưa phải GUI. |
 | `core/dal/models/*.h`, `*.cpp` | `src/models/` | Đã chuyển tám Model và giữ quan hệ/định dạng hiện hành. |
-| `core/dal/dalc/MovieDALC.h/.cpp` | `src/data_access/MovieRepository.h/.cpp` | Đã chuyển, đổi tên; giữ sửa đổi đọc từ dòng đầu. Chưa nghiệm thu Repository. |
+| `core/dal/dalc/MovieDALC.h/.cpp` | `src/data_access/MovieRepository.h/.cpp` | Từng chuyển và đổi tên; hai file Repository cũ hiện đã bị xóa, chưa nghiệm thu; Bước 04 sẽ viết lại từ đầu. |
 | `core/data_structures/DoublyLinkedList.h` | `src/data_structures/` | Đã chuyển cấu trúc dữ liệu tự cài đặt. |
 | `core/utils/FileHandler.h/.cpp` | `src/utils/FileIO.h/.cpp` | Đã đổi tên class và phương thức đọc thành `readLines`. |
 | `core/utils/DateTime.h/.cpp` | `src/utils/` | Đã chuyển, chưa đổi API. |
 | `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
-Hiện `src/` đã có tám Model, `MovieRepository`, `DoublyLinkedList`, `FileIO`, `DateTime`, `IdGenerator` và `main.cpp` thử nghiệm. Các Repository khác, Service, GUI Qt và `CMakeLists.txt` chưa có. `data/` trống; một số `.exe` thử nghiệm còn ở gốc cây làm việc và không thuộc cây mã nguồn mục tiêu.
+Hiện `src/` đã có tám Model, `DoublyLinkedList`, `FileIO`, `DateTime`, `IdGenerator` và `main.cpp` thử nghiệm. Hai file `MovieRepository` cũ đã bị xóa khỏi cây làm việc; Bước 04 sẽ viết lại từ đầu. Repository hiện hành, Service, GUI Qt và `CMakeLists.txt` chưa có. `data/` trống; một số `.exe` thử nghiệm còn ở gốc cây làm việc và không thuộc cây mã nguồn mục tiêu.

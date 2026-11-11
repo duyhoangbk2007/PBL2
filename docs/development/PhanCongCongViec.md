@@ -13,7 +13,7 @@ Kiến trúc mục tiêu: **GUI (`src/gui/`) → Business (`src/business/`) → 
 | 01 | Khởi tạo dự án | Hoàng và Kiệt — đã hoàn thành | Giữ kết quả và nhật ký lịch sử. |
 | 02 | Xây dựng Models và quan hệ Model | Hoàng và Kiệt — đã hoàn thành | Giữ tám Model và nhật ký lịch sử. |
 | 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng và Kiệt — đã hoàn thành | Giữ kết quả lịch sử; thiết kế hiện hành dùng `FileIO`, `DateTime`, `IdGenerator`. |
-| 04 | Quản lý phim | Hoàng | `MovieRepository`, `MovieService`, CRUD/tìm kiếm/trạng thái, kiểm thử C++. |
+| 04 | Quản lý phim | Hoàng | Viết lại `MovieRepository` từ đầu, xây dựng `MovieService`, CRUD/tìm kiếm/trạng thái, kiểm thử C++ và cập nhật tài liệu; code Repository hiện tại chưa nghiệm thu. |
 | 05 | Đăng nhập và phân quyền | Kiệt | `UserRepository`, `AuthService`, kiểm tra tài khoản hoạt động và quyền Admin/Staff, kiểm thử. |
 | 06 | Quản lý phòng và ghế | Hoàng | `RoomRepository`, `SeatRepository`, `RoomService`, sơ đồ/loại ghế, trùng vị trí, kiểm thử. |
 | 07 | Quản lý nhân viên | Kiệt | `StaffService` dùng lại `UserRepository`, thêm/sửa/tìm/vô hiệu hóa Staff, kiểm tra quyền Admin, kiểm thử. |
@@ -49,4 +49,4 @@ Các bước 04–12 bao gồm kiểm thử chức năng C++ và cập nhật t�
 
 ## Theo dõi và nghiệm thu
 
-Giữ tên [nhật ký Bước 04](Buoc04_XayDungDALC.md) để các liên kết cũ hoạt động; tên file phản ánh lịch sử DALC, còn nội dung mục tiêu hiện là **quản lý phim**. Không tạo sẵn nhật ký trống cho Bước 05–15. Bước chỉ được nghiệm thu khi phần phụ trách có mã, kiểm thử và tài liệu tương ứng; không suy ra kết quả từ tên file dự kiến. Ghi nhiều file TXT tuần tự không nguyên tử, nên kiểm tra kết quả ghi và báo lỗi; không dùng cơ chế giao dịch nhiều file trong thiết kế mục tiêu.
+[Nhật ký Bước 04](Buoc04_QuanLyPhim.md) ghi kế hoạch quản lý phim hiện hành và giữ riêng mốc lịch sử DALC. Hoàng viết lại `MovieRepository` từ đầu; hai file code cũ đã bị xóa khỏi cây làm việc và chưa từng được nghiệm thu. Không tạo sẵn nhật ký trống cho Bước 05–15. Bước chỉ được nghiệm thu khi phần phụ trách có mã, kiểm thử và tài liệu tương ứng; không suy ra kết quả từ tên file dự kiến. Ghi nhiều file TXT tuần tự không nguyên tử, nên kiểm tra kết quả ghi và báo lỗi; không dùng cơ chế giao dịch nhiều file trong thiết kế mục tiêu.

@@ -37,4 +37,4 @@ public:
 
 Mọi TXT, kể cả `sequences.txt`, không có `#schema=1` hoặc dòng tiêu đề. Không đổi quy tắc ID hoặc định dạng TXT khi chỉ tổ chức lại thư mục. Thiết kế mới không dùng `TransactionManager`; mã cũ được lưu tại `tests/legacy/` để đối chiếu lịch sử Bước 03.
 
-Chi tiết từng tiện ích: [FileIO](<utils(docs)/FileHandler.md>) (tên file tài liệu cũ được giữ), [DateTime](<utils(docs)/DateTime.md>), [IdGenerator](<utils(docs)/IdGenerator.md>). Xem thêm [định dạng dữ liệu](../TongQuan/data_format.md) và [nhật ký Bước 03](../development/Buoc03_HaTangLuuTruDuLieu.md).
+Chi tiết từng tiện ích: [FileIO](<utils(docs)/FileIO.md>), [DateTime](<utils(docs)/DateTime.md>), [IdGenerator](<utils(docs)/IdGenerator.md>). Xem thêm [định dạng dữ liệu](../TongQuan/data_format.md) và [nhật ký Bước 03](../development/Buoc03_HaTangLuuTruDuLieu.md).

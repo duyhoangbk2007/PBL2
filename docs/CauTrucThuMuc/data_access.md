@@ -1,6 +1,6 @@
 # `src/data_access/` — truy xuất dữ liệu TXT
 
-**Phạm vi Bước 01–03:** chưa có Repository được nghiệm thu như một chức năng. Hiện cây mã có bản nháp `MovieRepository.h/.cpp` được chuyển từ `MovieDALC` khi chuẩn bị Bước 04; bản nháp này **không phải kết quả hoàn thành Bước 03 hoặc Bước 04**. Tài liệu này chỉ chuẩn bị ranh giới thư mục và sườn chung.
+**Phạm vi Bước 01–03:** chưa có Repository được nghiệm thu như một chức năng. Hai file `MovieRepository.h/.cpp` từng được chuyển từ `MovieDALC` nhưng đã bị xóa khỏi cây làm việc; code cũ chưa được nghiệm thu và Hoàng sẽ viết lại từ đầu ở Bước 04. Tài liệu này chỉ chuẩn bị ranh giới thư mục và sườn chung.
 
 ## Ý nghĩa và ranh giới
 
@@ -15,4 +15,4 @@ Ghi: Model trong RAM → Repository tạo các dòng → FileIO.writeLines → k
 
 Mọi file TXT, kể cả `sequences.txt`, bắt đầu ngay bằng bản ghi đầu tiên, không có schema hoặc tiêu đề. Khi dữ liệu lỗi, báo file/dòng/nguyên nhân; không âm thầm bỏ bản ghi rồi ghi đè. Việc ghi nhiều file tuần tự không nguyên tử và có thể gây lệch dữ liệu nếu bị gián đoạn.
 
-Đây là **sườn thiết kế**, chưa cam kết chữ ký Repository hoặc tạo thêm class mới. Xem [utils.md](utils.md) cho API `FileIO` hiện có, [models.md](models.md) cho đối tượng dữ liệu, [data_format.md](../TongQuan/data_format.md) cho hợp đồng TXT. [dalc.md](dalc.md) giữ ghi chú thiết kế của tầng truy xuất dữ liệu cho các bước sau.
+Đây là **sườn thiết kế**, chưa cam kết chữ ký Repository hoặc tạo thêm class mới. Xem [utils.md](utils.md) cho API `FileIO` hiện có, [models.md](models.md) cho đối tượng dữ liệu, [data_format.md](../TongQuan/data_format.md) cho hợp đồng TXT và [nhật ký Bước 04](../development/Buoc04_QuanLyPhim.md) cho kế hoạch viết lại chức năng phim.

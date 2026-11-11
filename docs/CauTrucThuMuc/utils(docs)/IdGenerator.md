@@ -41,4 +41,4 @@ Ví dụ, nếu file chứa `MOV|7`, gọi với `entity = "MOV"` sẽ cho `id =
 
 Hàm ném `std::runtime_error` khi loại mã hoặc file không hợp lệ, thiếu bộ đếm, dữ liệu sai định dạng, dòng trùng, số vượt phạm vi hoặc hết mã. Nó không kiểm tra mã vừa cấp có trùng với bản ghi đã lưu hay không; tính đúng đắn phụ thuộc bộ đếm và việc lưu bộ đếm cùng dữ liệu. Nó cũng không khóa file hay tự chống hai phiên gọi cấp mã đồng thời. Quy tắc khóa bộ dữ liệu thuộc tầng ứng dụng.
 
-Xem [quy ước `sequences.txt`](../../TongQuan/data_format.md) và [FileIO](FileHandler.md) khi tích hợp việc tạo đối tượng. Thiết kế mục tiêu ghi từng file tuần tự, không dùng `TransactionManager`.
+Xem [quy ước `sequences.txt`](../../TongQuan/data_format.md) và [FileIO](FileIO.md) khi tích hợp việc tạo đối tượng. Thiết kế mục tiêu ghi từng file tuần tự, không dùng `TransactionManager`.

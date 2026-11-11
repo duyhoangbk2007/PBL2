@@ -1,6 +1,6 @@
 # Tổng quan đề tài và luồng chức năng
 
-Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model, tiện ích và bản nháp `MovieRepository`; đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 13.
+Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model và tiện ích; code cũ `MovieRepository` đã bị xóa khỏi cây làm việc và chưa nghiệm thu. Hoàng sẽ viết lại Repository này từ đầu trong Bước 04. Đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 13.
 
 ## 1. Hệ thống giải quyết việc gì?
 
@@ -10,7 +10,7 @@ Một ví dụ xuyên suốt: Admin tạo phim → tạo phòng và ghế → x�
 
 ## 2. Ba lớp ứng dụng và DB
 
-Kiến trúc mục tiêu là **GUI → Business Logic → Data Access → DB**. GUI Qt Widgets ở `src/gui/` gọi Service trong `src/business/`; Service kiểm tra dữ liệu, quyền và nghiệp vụ rồi gọi Repository trong `src/data_access/`. Repository quản lý Model trong RAM, chuyển đổi và đọc/ghi TXT qua `FileIO`. DB là các file TXT trong `data/`. `src/models/`, `src/data_structures/` và `src/utils/` là thư mục hỗ trợ, không phải tầng nghiệp vụ bổ sung. Cây `src/` đã có Model, `MovieRepository` và tiện ích; GUI và Service chưa có mã.
+Kiến trúc mục tiêu là **GUI → Business Logic → Data Access → DB**. GUI Qt Widgets ở `src/gui/` gọi Service trong `src/business/`; Service kiểm tra dữ liệu, quyền và nghiệp vụ rồi gọi Repository trong `src/data_access/`. Repository quản lý Model trong RAM, chuyển đổi và đọc/ghi TXT qua `FileIO`. DB là các file TXT trong `data/`. `src/models/`, `src/data_structures/` và `src/utils/` là thư mục hỗ trợ, không phải tầng nghiệp vụ bổ sung. Cây `src/` đã có Model và tiện ích; GUI, Service và Repository hiện hành chưa có mã.
 
 Chỉ `DoublyLinkedList<T>` cần tự cài. Hash table, stack, queue, map, heap và mảng động có thể dùng STL. Quan hệ Model có mã định danh và một số con trỏ hiện có; lần này không thay đổi con trỏ hoặc vòng đời đối tượng.
 
@@ -53,7 +53,7 @@ Admin quản lý dữ liệu nền của rạp, nhân viên và báo cáo; đồ
 | Xem doanh thu, vé bán/hủy, top phim | `ReportView` → `ReportService` → các repository hóa đơn, vé, phim/suất | Chủ yếu đọc `invoices.txt`, `tickets.txt`, `movies.txt`, `showtimes.txt` |
 | Bán vé tại quầy | `BookingView`/`SeatMapView` → `BookingService` → các repository của suất, phòng/ghế, vé, hóa đơn, thành viên | Xem luồng bán vé ở Mục 5 |
 
-Admin không được tùy ý xóa lịch sử vé/hóa đơn. Hủy vé là cập nhật trạng thái `SOLD` → `CANCELLED`, ghi người hủy/lý do/tiền hoàn và thu hồi điểm cùng giao dịch; chỉ thực hiện khi các điều kiện trong [quy tắc nghiệp vụ](business_rules.md) thỏa mãn.
+Admin không được tùy ý xóa lịch sử vé/hóa đơn. Hủy vé là cập nhật trạng thái `SOLD` → `CANCELLED`, ghi người hủy/lý do/tiền hoàn và thu hồi điểm trong các file liên quan; chỉ thực hiện khi các điều kiện trong [quy tắc nghiệp vụ](business_rules.md) thỏa mãn. Mỗi lần ghi phải được kiểm tra kết quả.
 
 ## 4. Staff làm gì?
 
@@ -98,4 +98,4 @@ Xem [quy tắc nghiệp vụ](business_rules.md) để đối chiếu việc ch�
 4. **Tìm Repository theo loại dữ liệu:** nơi đọc/tìm/chuẩn bị cập nhật các bản ghi.
 5. **Xác định file dữ liệu bị ảnh hưởng:** một thao tác có thể đọc nhiều file nhưng chỉ ghi một số file. Nếu ghi nhiều file, kiểm tra từng lần ghi và nêu rõ giới hạn không nguyên tử như trong [định dạng dữ liệu](data_format.md).
 
-Các tên file dự kiến nằm trong [cấu trúc thư mục](../CauTrucThuMuc/cauTrucThuMuc.md). Hiện `src/data_access/` mới có bản nháp `MovieRepository`, còn `src/business/` chưa có mã; các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành. Ghi nhiều file tuần tự không nguyên tử: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Không dùng `TransactionManager` trong ứng dụng mục tiêu.
+Các tên file dự kiến nằm trong [cấu trúc thư mục](../CauTrucThuMuc/cauTrucThuMuc.md). Hiện `src/data_access/` không có Repository; code `MovieRepository` cũ đã bị xóa và sẽ được viết lại. `src/business/` cũng chưa có mã. Các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành. Ghi nhiều file tuần tự không nguyên tử: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Không dùng `TransactionManager` trong ứng dụng mục tiêu.
