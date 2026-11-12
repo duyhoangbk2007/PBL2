@@ -62,3 +62,28 @@ bool Validator::isValidDate(const string& date)
     }
     return day >= 1 && day <= daysInMonth[month - 1];
 }
+
+bool Validator::isValidId(const string& id, const string& prefix)
+{
+    if (prefix.size() != 3 || id.size() != 7)
+    {
+        return false;
+    }
+    if (id.substr(0, 3) != prefix)
+    {
+        return false;
+    }
+    for (int i = 3; i < 7; i++)
+    {
+        if (id[i] < '0' || id[i] > '9')
+        {
+            return false;
+        }
+    }
+    if (id.substr(3) == "0000")
+    {
+        return false;
+    }
+    return true;
+}
+

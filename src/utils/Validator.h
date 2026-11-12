@@ -10,6 +10,7 @@ class Validator
 public:
     static bool isValidText(const string& text);
     static bool isValidDate(const string& date);
+    static bool isValidId(const string& id, const string& prefix);
 };
 
 #endif
