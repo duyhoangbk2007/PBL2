@@ -32,7 +32,7 @@ public:
     bool add(Movie* movie);
     bool update(const Movie& newValues);
     bool removeById(const string& movieId);
-
+    
     // Truy van phim
     Movie* findById(const string& movieId);
     Movie* getAt(int index);

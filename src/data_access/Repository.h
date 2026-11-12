@@ -93,6 +93,10 @@ T* Repository<T>::findById(const string& id)
 template <typename T>
 bool Repository<T>::add(T* item)
 {
+    if (!loaded)
+    {
+        return false;
+    }
     if (item == nullptr)
     {
         return false;

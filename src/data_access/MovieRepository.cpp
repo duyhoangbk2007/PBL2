@@ -59,7 +59,6 @@ bool MovieRepository::isValidMovie(const Movie* movie)
     return true;
 }
 
-
 MovieRepository::MovieRepository(const string& filePath)
     : repo(filePath, getMovieId, parseMovie, serializeMovie)
 {}
@@ -71,7 +70,6 @@ string MovieRepository::getMovieId(Movie* movie)
     }
     return movie->getMovieId();
 }
-
 
 Movie* MovieRepository::parseMovie(const string& line)
 {
