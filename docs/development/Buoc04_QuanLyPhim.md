@@ -1,5 +1,9 @@
 # Nhật ký Bước 04 — Quản lý phim
 
+## Rà soát 2026-11-12
+
+Nhánh `feature/b04-hoang-movie-management`, commit `73ebf68`: `MovieRepository` đã có CRUD, tra cứu, đọc/ghi qua `FileIO` và kiểm tra dữ liệu. Biên dịch và chạy `tests/test_movie_repository.cpp` bằng g++ C++17: 40 PASS, 0 FAILED; có kiểm tra lưu/nạp lại. `MovieService.cpp` qua kiểm tra cú pháp C++17, hiện hỗ trợ thêm, sửa và tra cứu. Service chưa có API đổi trạng thái, xóa, kiểm tra quyền hoặc test riêng. Repository chưa báo tên file/số dòng cho mọi lỗi nạp, và test chưa kiểm tra lỗi ghi. Vì vậy Bước 04 vẫn đang thực hiện. Các mô tả trạng thái bên dưới là lịch sử trước lần rà soát này.
+
 **Mục tiêu hiện hành:** Hoàng làm lại chức năng quản lý phim từ đầu, gồm `MovieRepository`, `MovieService`, kiểm thử C++ và cập nhật tài liệu. Tên DALC chỉ còn trong phần ghi chép lịch sử bên dưới.
 
 ## Mốc lịch sử 2026-11-10

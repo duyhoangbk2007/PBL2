@@ -68,12 +68,15 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 04 – Quản lý phim
 
-**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị viết lại từ đầu.** `src/data_access/MovieRepository.h/.cpp` cũ đã bị xóa khỏi cây làm việc và chưa từng được nghiệm thu; `MovieService` và kiểm thử chức năng phim chưa có. Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
+**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** `MovieRepository` đã được cài và kiểm thử riêng; `MovieService` đã có phần thêm, sửa và tra cứu. Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
 
 - [x] Chuyển bản nháp sang thư mục mới và dùng `FileIO`; kiểm tra cú pháp C++17.
-- [ ] Viết lại `MovieRepository` từ đầu: đọc/ghi `movies.txt`, thêm/sửa/xóa, tra cứu, phát hiện mã trùng và dữ liệu lỗi; không dùng việc chuyển tên code cũ làm bằng chứng hoàn thành.
-- [ ] Viết `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu.
-- [ ] Kiểm thử chức năng C++ với dữ liệu hợp lệ/lỗi, lưu rồi nạp lại; ghi lệnh, kết quả và cập nhật tài liệu.
+- [x] Cài `MovieRepository`: đọc/ghi TXT, thêm/sửa/xóa, tra cứu, phát hiện mã trùng và dữ liệu lỗi; kiểm thử riêng đạt 40/40.
+- [ ] Bổ sung thông báo lỗi có tên file và số dòng khi nạp dữ liệu sai; kiểm tra hành vi khi ghi file thất bại.
+- [ ] Hoàn thiện `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu. Hiện chỉ có thêm, sửa và tra cứu.
+- [ ] Kiểm thử `MovieService` và toàn bộ nghiệp vụ phim; test Repository hiện có đã kiểm tra dữ liệu hợp lệ/lỗi và lưu/nạp lại.
+
+**Kiểm tra 2026-11-12:** Trên commit `73ebf68`, biên dịch và chạy `tests/test_movie_repository.cpp` bằng g++ C++17: 40 PASS, 0 FAILED. `MovieService.cpp` qua kiểm tra cú pháp C++17. Chưa có test Service; Bước 04 chưa hoàn thành.
 
 **Điều kiện hoàn thành:** Repository và Service phim hoạt động, có bằng chứng kiểm thử; bản nháp riêng lẻ chưa đủ.
 
@@ -86,11 +89,14 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 06 – Quản lý phòng và ghế
 
-**Phụ trách chính: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị triển khai.** Tạm để Bước 04 đang thực hiện để chuyển sang Bước 06. Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
 
-- [ ] Cài `RoomRepository`, `SeatRepository` để đọc/ghi, tra cứu phòng và ghế.
-- [ ] Cài `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra trùng vị trí và quan hệ phòng–ghế.
-- [ ] Kiểm thử C++ dữ liệu hợp lệ/lỗi, quyền, tham chiếu và nạp lại; cập nhật tài liệu.
+- [x] Đối chiếu hiện trạng Model, tầng lưu trữ và định dạng `rooms.txt`/`seats.txt`; lập nhật ký và checklist Bước 06.
+- [ ] Chốt vòng đời object, thứ tự nạp/liên kết và điều kiện sửa/xóa khi còn suất chiếu hoặc vé tham chiếu.
+- [ ] Cài `RoomRepository` để đọc/ghi, tra cứu và quản lý phòng; kiểm tra dữ liệu, mã trùng và lỗi file.
+- [ ] Cài `SeatRepository` để đọc/ghi, tra cứu ghế theo `(roomId, seatId)`; kiểm tra phòng, loại ghế, vị trí trong sơ đồ và vị trí trùng.
+- [ ] Cài `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra quan hệ phòng–ghế và quyền khi có API xác thực.
+- [ ] Kiểm thử C++ dữ liệu hợp lệ/lỗi, quyền, tham chiếu, lỗi ghi và nạp lại; ghi lệnh và kết quả vào nhật ký.
 
 ### Bước 07 – Quản lý nhân viên
 
