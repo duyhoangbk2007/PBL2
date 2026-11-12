@@ -1,5 +1,7 @@
 # `src/business/` — xử lý nghiệp vụ
 
+**Cập nhật 2026-11-12:** Đã có `AuthService.h/.cpp` nhận `UserRepository&`, xử lý đăng nhập/đăng xuất và cung cấp `requireLogin()`/`requireAdmin()` để bảo vệ thao tác tại Service. Kiểm thử C++ tích hợp `test_auth` đạt 14 nhóm, 0 lỗi; chưa tích hợp GUI. Xem [API và kết quả Bước 05](../development/Buoc05_DangNhapVaPhanQuyen.md).
+
 **Đến hết Bước 03:** thư mục có trong cây mục tiêu nhưng **chưa có class Service**. Từ Bước 04, mỗi chức năng được làm cùng Repository cần thiết và kiểm thử C++; không đợi hoàn tất toàn bộ tầng truy xuất dữ liệu. Tài liệu này chỉ ghi sườn trách nhiệm trước khi lập trình.
 
 ## Ý nghĩa và ranh giới

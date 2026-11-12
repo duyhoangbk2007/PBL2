@@ -830,6 +830,10 @@ Cần xử lý vấn đề quyền sở hữu và sao chép trước khi sử d�
 
 ## 17. Trạng thái triển khai
 
+**Cập nhật 2026-11-12:** Đã chạy `tests/test_auth.cpp`, 14 nhóm đạt, 0 lỗi, kiểm tra tích hợp `UserRepository` với `AuthService` và file TXT tạm (tra cứu, lỗi dữ liệu, thêm/cập nhật, lưu/nạp). Xem [kết quả Bước 05](../development/Buoc05_DangNhapVaPhanQuyen.md). Đây không phải xác nhận kiểm thử mọi kiểu `Repository<T>` hoặc `MovieRepository`.
+
+**Cập nhật 2026-11-11:** `UserRepository.h/.cpp` đã dùng composition với `Repository<User>`, có hai hash table theo ID/username, đọc/ghi và thêm/cập nhật tài khoản. Xem [API và giới hạn hiện tại](../development/Buoc05_DangNhapVaPhanQuyen.md). Kiểm tra cú pháp đạt; chưa chạy kiểm thử runtime. `Repository.cpp` không còn trong working tree; phần template nằm trong header. Các ghi nhận dưới đây là trạng thái trước cập nhật này.
+
 Tại thời điểm viết tài liệu:
 
 - `Repository<T>` đã có các hàm quản lý dữ liệu chung.

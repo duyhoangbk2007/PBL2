@@ -8,7 +8,7 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 | 02 | Xây dựng Models và quan hệ Model | Hoàng và Kiệt | **Đã hoàn thành theo xác nhận nhóm**; giữ bằng chứng và ghi chú lịch sử. | [Bước 02](Buoc02_XayDungModels.md) |
 | 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng và Kiệt | **Đã hoàn thành theo xác nhận nhóm**; kết quả kiểm thử lịch sử giữ nguyên. Thiết kế mới dùng `FileIO`, `DateTime`, `IdGenerator`. | [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) |
 | 04 | Quản lý phim | Hoàng | **Chuẩn bị viết lại từ đầu**: hai file `MovieRepository.h/.cpp` cũ đã bị xóa khỏi cây làm việc; chưa có `MovieService` hoặc kiểm thử chức năng phim. Code cũ chưa được nghiệm thu. | [Bước 04](Buoc04_QuanLyPhim.md) |
-| 05 | Đăng nhập và phân quyền | Kiệt | Chưa bắt đầu; `User` Model không đồng nghĩa `UserRepository`/`AuthService` đã có. | Chưa tạo |
+| 05 | Đăng nhập và phân quyền | Kiệt | **Hoàn thành phần C++**: `UserRepository`, `AuthService`, tích hợp TXT và tài liệu; `test_auth` đạt 14 nhóm PASS, 0 FAILED ngày 2026-11-12. GUI/tích hợp các chức năng khác ở bước sau. | [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) |
 | 06 | Quản lý phòng và ghế | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 07 | Quản lý nhân viên | Kiệt | Chưa bắt đầu. | Chưa tạo |
 | 08 | Quản lý suất chiếu | Hoàng | Chưa bắt đầu. | Chưa tạo |
@@ -21,6 +21,10 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 | 15 | Đóng gói, hoàn thiện tài liệu và bàn giao | Cả hai | Chưa bắt đầu. | Chưa tạo |
 
 ## Hiện trạng mã và cách đọc lịch sử
+
+**Cập nhật 2026-11-12:** Đã có `src/business/AuthService.h/.cpp` cho đăng nhập/đăng xuất và kiểm tra quyền qua `UserRepository`. `tests/test_auth.cpp` đã chạy đạt 14 nhóm, 0 lỗi trên file tạm. Các ghi nhận cũ dưới đây về việc chưa có Service không còn là trạng thái hiện tại.
+
+**Cập nhật 2026-11-11:** Working tree đã có `Repository.h`, `MovieRepository.h/.cpp` và `UserRepository.h/.cpp`. UserRepository dùng template chung qua composition; xem nhật ký Bước 05. Mô tả dưới đây về Repository là ghi nhận cũ, không phản ánh các file mới hiện có.
 
 Mã hiện có tám Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `DateTime`, `IdGenerator` ở `src/utils/` và `src/main.cpp` thử nghiệm. Hai file `MovieRepository.h/.cpp` cũ đã bị xóa khỏi cây làm việc; Hoàng sẽ viết lại Repository này từ đầu trong Bước 04. Chưa có Service, GUI Qt, Repository hiện hành, CMake hoặc dữ liệu TXT nghiệp vụ. `TransactionManager` cũ ở `tests/legacy/` chỉ để đối chiếu và giữ bài thử lịch sử.
 

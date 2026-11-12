@@ -50,6 +50,8 @@ Tài liệu mô tả thiết kế mục tiêu, không khẳng định các chứ
 
 ## 3. Kiến trúc
 
+**Cập nhật Bước 05 (2026-11-12):** Hoàn thành phần C++ gồm `UserRepository`, `AuthService` và kiểm thử tích hợp TXT: `tests/test_auth.cpp` đạt **14 nhóm PASS, 0 FAILED**. Có đăng nhập/đăng xuất, kiểm tra active và quyền Admin/Staff; chưa tích hợp GUI. Xem [nhật ký và lệnh chạy Bước 05](docs/development/Buoc05_DangNhapVaPhanQuyen.md). Working tree hiện có cả `MovieRepository.h/.cpp`; các đoạn trạng thái cũ bên dưới chưa phản ánh các file Repository/Service hiện có.
+
 Luồng mục tiêu: **GUI → Business Logic → Data Access → DB**; kết quả trả về theo chiều ngược lại.
 
 - `src/gui/`: Qt Widgets, nhận thao tác và hiển thị kết quả.

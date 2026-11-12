@@ -75,11 +75,11 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 ### Bước 05 – Đăng nhập và phân quyền
 
-**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách chính: Kiệt. Trạng thái: hoàn thành phần C++ Bước 05.** Ngày 2026-11-12, `tests/test_auth.cpp` biên dịch không cảnh báo và chạy đạt **14 nhóm PASS, 0 FAILED**, bao gồm tích hợp Repository/Service/TXT. Xem [lệnh chạy, kết quả và phạm vi](../Buoc05_DangNhapVaPhanQuyen.md). GUI và tích hợp các chức năng khác thuộc các bước sau.
 
-- [ ] Cài `UserRepository` đọc/ghi `users.txt` và tra ID/tên đăng nhập.
-- [ ] Cài `AuthService` đăng nhập, kiểm tra tài khoản hoạt động và vai trò Admin/Staff.
-- [ ] Kiểm thử C++ đúng/sai thông tin, tài khoản vô hiệu hóa và quyền; cập nhật tài liệu.
+- [x] Cài `UserRepository` đọc/ghi `users.txt` và tra ID/tên đăng nhập; kiểm thử tích hợp đạt.
+- [x] Cài `AuthService` đăng nhập/đăng xuất, kiểm tra tài khoản hoạt động và vai trò Admin/Staff; kiểm thử tích hợp đạt.
+- [x] Kiểm thử C++ đúng/sai thông tin, tài khoản vô hiệu hóa và quyền; cập nhật tài liệu (14 nhóm đạt, 2026-11-12).
 
 ### Bước 06 – Quản lý phòng và ghế
 
