@@ -133,3 +133,12 @@ Showtime* Room::findShowtime(const std::string& showtimeId) {
 int Room::getShowtimeCount() const {
     return this->showtimes.nodeCount();
 }
+Seat* Room::getSeatAt(int index)
+{
+    ListNode<Seat*>* node = seats.getAt(index);
+    if (node == nullptr)
+    {
+        return nullptr;
+    }
+    return node->data;
+}

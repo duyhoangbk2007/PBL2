@@ -36,6 +36,7 @@ public:
     bool linkShowtime(Showtime* showtime);
     Showtime* findShowtime(const std::string& showtimeId);
     int getShowtimeCount() const;
+    Seat* getSeatAt(int index);
 };
 
 #endif
