@@ -55,15 +55,19 @@ bool MovieService::removeMovie(const string& movieId)
     return movieRepo.removeById(movieId);
 }
 
-Movie* MovieService::findMovieById(const string& movieId)
+const Movie* MovieService::findMovieById(const string& movieId)
 {
+    authService.requireLogin();
+
     return movieRepo.findById(movieId);
 }
-Movie* MovieService::getMovieAt(int index)
+const Movie* MovieService::getMovieAt(int index)
 {
+    authService.requireLogin();
     return movieRepo.getAt(index);
 }
 int MovieService::getMovieCount()
 {
+    authService.requireLogin();
     return movieRepo.count();
 }

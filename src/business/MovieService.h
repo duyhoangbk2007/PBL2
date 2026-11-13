@@ -24,8 +24,8 @@ public:
     bool updateMovie(const Movie& newValues);
     bool removeMovie(const string& movieId);
     // Tra cuu phim
-    Movie* findMovieById(const string& movieId);
-    Movie* getMovieAt(int index);
+    const Movie* findMovieById(const string& movieId);
+    const Movie* getMovieAt(int index);
     int getMovieCount();
 };
 
