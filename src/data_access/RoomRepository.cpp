@@ -7,7 +7,7 @@
 using namespace std;
 
 RoomRepository::RoomRepository(const string& filePath)
-    : repo(filePath, getRoomId, parseRoom, serializeRoom)
+    : repo(filePath, getRoomId, stringToRoom, roomToString)
 {}
 
 string RoomRepository::getRoomId(Room* room)
@@ -29,11 +29,7 @@ bool RoomRepository::isValidRoom(const Room* room)
     {
         return false;
     }
-    if (room->getName().empty())
-    {
-        return false;
-    }
-    if (room->getName().find('|') != string::npos)
+    if (!Validator::isValidText(room->getName()))
     {
         return false;
     }
@@ -48,7 +44,7 @@ bool RoomRepository::isValidRoom(const Room* room)
     return true;
 }
  
-Room* RoomRepository::parseRoom(const string& line)
+Room* RoomRepository::stringToRoom(const string& line)
 {
     vector<string> fields;
     size_t start = 0;
@@ -111,7 +107,7 @@ Room* RoomRepository::parseRoom(const string& line)
     return room;
 }
 
-string RoomRepository::serializeRoom(Room* room)
+string RoomRepository::roomToString(Room* room)
 {
     if (!isValidRoom(room))
     {

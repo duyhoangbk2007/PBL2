@@ -5,25 +5,6 @@
 
 using namespace std;
 
-static bool isValidMovieId(const string& id)
-{
-    //kiểm tra độ dài và 3 kí tự đầu có phải là MOV k
-    if (id.length() != 7 || id.substr(0, 3) != "MOV")
-    {
-        return false;
-    }
-    //kí tự còn lại là chữ số
-    for (int i = 3; i < 7; i++)
-    {
-        if (id[i] < '0' || id[i] > '9')
-        {
-            return false;
-        }
-    }
-    //có ít nhất 1 chữ khác 0
-    return id.substr(3) != "0000";
-}
-
 // Kiem tra toan bo du lieu Movie
 
 bool MovieRepository::isValidMovie(const Movie* movie)
@@ -32,7 +13,7 @@ bool MovieRepository::isValidMovie(const Movie* movie)
     {
         return false;
     }
-    if (!isValidMovieId(movie->getMovieId()))
+    if (!Validator::isValidId(movie->getMovieId(), "MOV"))
     {
         return false;
     }

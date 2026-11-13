@@ -11,8 +11,8 @@ private:
     Repository<Room> repo;
 
     static std::string getRoomId(Room* room);
-    static Room* parseRoom(const std::string& line);
-    static std::string serializeRoom(Room* room);
+    static Room* stringToRoom(const std::string& line);
+    static std::string roomToString(Room* room);
     static bool isValidRoom(const Room* room);
 
 public:

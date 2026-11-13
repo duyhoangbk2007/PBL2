@@ -5,23 +5,6 @@
 
 using namespace std;
 
-
-static bool isValidUserId(const string& id)
-{
-    if (id.length() != 7 || id.substr(0, 3) != "USR")
-    {
-        return false;
-    }
-    for (int i = 3; i < 7; i++)
-    {
-        if (id[i] < '0' || id[i] > '9')
-        {
-            return false;
-        }
-    }
-    return id.substr(3) != "0000";
-}
-
 // Kiem tra du lieu User
 bool UserRepository::isValidUser(const User* user)
 {
@@ -29,7 +12,7 @@ bool UserRepository::isValidUser(const User* user)
     {
         return false;
     }
-    if (!isValidUserId(user->getUserId()))
+    if (!Validator::isValidId(user->getUserId(), "USR"))
     {
         return false;
     }
