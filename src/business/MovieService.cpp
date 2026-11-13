@@ -2,8 +2,8 @@
 
 using namespace std;
 
-MovieService::MovieService(MovieRepository& movieRepo)
-    : movieRepo(movieRepo)
+MovieService::MovieService(MovieRepository& movieRepo, AuthService& authService)
+    : movieRepo(movieRepo), authService(authService)
 {}
 bool MovieService::load()
 {
@@ -13,19 +13,22 @@ bool MovieService::save()
 {
     return movieRepo.save();
 }
+
 bool MovieService::addMovie(Movie* movie)
 {
+    authService.requireAdmin();
     return movieRepo.add(movie);
 }
-
 bool MovieService::updateMovie(const Movie& newValues)
 {
+    authService.requireAdmin();
+
     if (!movieRepo.isLoaded())
     {
         return false;
     }
     // Tim phim hien tai
-    Movie* movie = findMovieById(newValues.getMovieId());
+    Movie* movie = movieRepo.findById(newValues.getMovieId());
     if (movie == nullptr)
     {
         return false;
@@ -46,7 +49,11 @@ bool MovieService::updateMovie(const Movie& newValues)
     // Repository kiem tra dinh dang va cap nhat
     return movieRepo.update(newValues);
 }
-
+bool MovieService::removeMovie(const string& movieId)
+{
+    authService.requireAdmin();
+    return movieRepo.removeById(movieId);
+}
 
 Movie* MovieService::findMovieById(const string& movieId)
 {

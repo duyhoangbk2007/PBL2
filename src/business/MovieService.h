@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../data_access/MovieRepository.h"
+#include "AuthService.h"
 
 using namespace std;
 
@@ -10,9 +11,9 @@ class MovieService
 {
 private:
     MovieRepository& movieRepo;
-
+    AuthService& authService;
 public:
-    MovieService(MovieRepository& movieRepo);
+    MovieService(MovieRepository& movieRepo, AuthService& authService);
 
     // Quan ly du lieu
     bool load();
@@ -21,6 +22,7 @@ public:
     // Them phim
     bool addMovie(Movie* movie);
     bool updateMovie(const Movie& newValues);
+    bool removeMovie(const string& movieId);
     // Tra cuu phim
     Movie* findMovieById(const string& movieId);
     Movie* getMovieAt(int index);

@@ -105,8 +105,8 @@ const User& AuthService::requireLogin() const //yêu cầu đăng nhập để t
 const User& AuthService::requireAdmin() const
 {
     const User& user = requireLogin();
-    if (user.getRole() != UserRole::ADMIN) {
-        throw runtime_error("Thao tac yeu cau quyen Admin");
+    if (user.getRole() != UserRole::ADMIN) { 
+       throw runtime_error("Thao tac yeu cau quyen Admin");
     }
     return user;
 }
