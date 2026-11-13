@@ -60,8 +60,9 @@ bool MovieRepository::isValidMovie(const Movie* movie)
 }
 
 MovieRepository::MovieRepository(const string& filePath)
-    : repo(filePath, getMovieId, parseMovie, serializeMovie)
-{}
+    : repo(filePath, getMovieId, stringToMovie, movieToString)
+{
+}
 string MovieRepository::getMovieId(Movie* movie)
 {
     if (movie == nullptr)
@@ -71,7 +72,7 @@ string MovieRepository::getMovieId(Movie* movie)
     return movie->getMovieId();
 }
 
-Movie* MovieRepository::parseMovie(const string& line)
+Movie* MovieRepository::stringToMovie(const string& line)
 {
     vector<string> fields; //lưu dữ liệu sau khi tách chuỗi
     size_t start = 0;
@@ -139,7 +140,7 @@ Movie* MovieRepository::parseMovie(const string& line)
 }
 
 // Chuyen Movie thanh mot dong TXT
-string MovieRepository::serializeMovie(Movie* movie)
+string MovieRepository::movieToString(Movie* movie)
 {
     if (!isValidMovie(movie))
     {

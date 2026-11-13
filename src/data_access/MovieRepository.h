@@ -15,8 +15,8 @@ private:
 
     // Cac ham cung cap cho Repository<Movie>
     static string getMovieId(Movie* movie);
-    static Movie* parseMovie(const string& line);
-    static string serializeMovie(Movie* movie);
+    static Movie* stringToMovie(const string& line);
+    static string movieToString(Movie* movie);
 
     // Kiem tra du lieu Movie
     static bool isValidMovie(const Movie* movie);
