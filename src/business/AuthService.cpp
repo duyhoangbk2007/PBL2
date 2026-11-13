@@ -1,32 +1,47 @@
 #include "AuthService.h"
-#include "../data_access/UserRepository.h"
-
 #include <stdexcept>
 
 using namespace std;
 
-AuthService::AuthService(UserRepository& userRepository)
-    : userRepository(userRepository)
-{
-}
+AuthService::AuthService(UserRepository& userRepo)
+    : userRepo(userRepo)
+{}
 
 bool AuthService::login(const string& username, const string& password)
 {
+    // Xoa phien dang nhap cu
     logout();
-    if (!userRepository.isLoaded()) {
+    // Kiem tra du lieu da load
+    if (!userRepo.isLoaded())
+    {
         throw runtime_error("Chua nap du lieu tai khoan");
     }
-    if (username.empty() || password.empty()) return false;
-
-    const User* user = userRepository.findByUsername(username);
-    if (user == nullptr || user->getPassword() != password || !user->isActive()) {
+    // Kiem tra thong tin dang nhap
+    if (username.empty() || password.empty())
+    {
         return false;
     }
-    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF) {
+    // Tim tai khoan theo username
+    const User* user = userRepo.findByUsername(username);
+    if (user == nullptr)
+    {
         return false;
     }
-
-    // Luu ID bat bien, khong sao chep Model hay luu mat khau trong phien.
+    // Kiem tra mat khau
+    if (user->getPassword() != password)
+    {
+        return false;
+    }
+    // Kiem tra trang thai tai khoan
+    if (!user->isActive())
+    {
+        return false;
+    }
+    // Kiem tra vai tro
+    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
+    {
+        return false;
+    }
     currentUserId = user->getUserId();
     return true;
 }
@@ -36,20 +51,32 @@ void AuthService::logout()
     currentUserId.clear();
 }
 
-const User* AuthService::getCurrentUser() const
+const User* AuthService::getCurrentUser() const //lấy thông tin tài khoản đang đăng nhập vào hệ thống
 {
-    if (currentUserId.empty() || !userRepository.isLoaded()) return nullptr;
-
-    const User* user = userRepository.findById(currentUserId);
-    // Kiem tra lai trang thai tu repo o moi lan su dung quyen.
-    if (user == nullptr || !user->isActive()) return nullptr;
-    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF) {
+    if (currentUserId.empty() || !userRepo.isLoaded())
+    {
+        return nullptr;
+    }
+    // Tim tai khoan hien tai
+    const User* user = userRepo.findById(currentUserId);
+    if (user == nullptr)
+    {
+        return nullptr;
+    }
+    // Kiem tra tai khoan con hoat dong
+    if (!user->isActive())
+    {
+        return nullptr;
+    }
+    // Kiem tra vai tro
+    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
+    {
         return nullptr;
     }
     return user;
 }
 
-bool AuthService::isLoggedIn() const
+bool AuthService::isLoggedIn() const // kiểm tra hiện tại tài khoản có đăng nhập hợp lệ hay k
 {
     return getCurrentUser() != nullptr;
 }
@@ -66,7 +93,7 @@ bool AuthService::isStaff() const
     return user != nullptr && user->getRole() == UserRole::STAFF;
 }
 
-const User& AuthService::requireLogin() const
+const User& AuthService::requireLogin() const //yêu cầu đăng nhập để thực hiện nghiệp vụ
 {
     const User* user = getCurrentUser();
     if (user == nullptr) {
