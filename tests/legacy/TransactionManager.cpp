@@ -1,5 +1,5 @@
 #include "TransactionManager.h"
-#include "FileHandler.h"
+#include "../../src/utils/FileIO.h"
 #include <iostream>
 #include <stdexcept>
 #include <filesystem>
@@ -20,7 +20,7 @@ void TransactionManager::prepareFiles(const vector<TransactionFile> &files, cons
         string backupPath = transactionPath + "/backup/" + fileName;
 
         // new
-        if (!FileHandler::writeLines(newPath, files[i].newLines))
+        if (!FileIO::writeLines(newPath, files[i].newLines))
         {
             throw runtime_error("Khong the ghi file moi: " + newPath);
         }
@@ -57,7 +57,7 @@ void TransactionManager::writeManifest(const std::vector<TransactionFile> &files
             lines.push_back(files[i].path + "|" + existed);
         }
         // Ghi manifest
-        if (!FileHandler::writeLines(manifestPath, lines))
+        if (!FileIO::writeLines(manifestPath, lines))
         {
             throw runtime_error("Khong the ghi manifest: " + manifestPath);
         }
@@ -65,7 +65,7 @@ void TransactionManager::writeManifest(const std::vector<TransactionFile> &files
 
     else if (status == "COMMITTED")
     {
-        if (!FileHandler::readlines(manifestPath, lines))
+        if (!FileIO::readLines(manifestPath, lines))
         {
             throw runtime_error("Khong the doc manifest");
         }
@@ -79,7 +79,7 @@ void TransactionManager::writeManifest(const std::vector<TransactionFile> &files
 
         string tempPath = transactionPath + "/manifest.tmp";
 
-        if (!FileHandler::writeLines(tempPath, lines))
+        if (!FileIO::writeLines(tempPath, lines))
         {
             throw runtime_error("Khong the ghi manifest tam");
         }
@@ -136,7 +136,7 @@ void TransactionManager::rollback(const string &transactionPath)
     vector<string> lines;
     string manifestPath = transactionPath + "/manifest.txt";
 
-    if (!FileHandler::readlines(manifestPath, lines))
+    if (!FileIO::readLines(manifestPath, lines))
     {
         throw runtime_error("Khong the doc manifest");
     }
@@ -253,7 +253,7 @@ void TransactionManager::recover(const string& transactionDir) {
 
         vector<string> lines;
 
-        if (!FileHandler::readlines(manifestPath, lines)) {
+        if (!FileIO::readLines(manifestPath, lines)) {
             throw runtime_error("Khong the doc manifest");
         }
 

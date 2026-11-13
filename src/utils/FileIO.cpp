@@ -1,9 +1,9 @@
-#include "FileHandler.h"
+#include "FileIO.h"
 #include <fstream>
 
 using namespace std;
 
-bool FileHandler::readlines(const string& path, vector<string>& lines) {
+bool FileIO::readLines(const string& path, vector<string>& lines) {
     ifstream file(path);
 
     if (!file.is_open())
@@ -21,7 +21,7 @@ bool FileHandler::readlines(const string& path, vector<string>& lines) {
     return true;
 }
 
-bool FileHandler::writeLines(const string& path, const vector<string>& lines) {
+bool FileIO::writeLines(const string& path, const vector<string>& lines) {
     ofstream file(path);
     if (!file.is_open())
         return false;

@@ -1,12 +1,12 @@
 # Task của Hoàng — lộ trình PBL2 15 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. Chỉ đánh dấu `[x]` khi có bằng chứng trong mã/nhật ký. Các mục `[x]` ở Bước 01–02 xác nhận hiện vật hoặc kiểm tra đã đối chiếu, không xác nhận toàn bước hoàn thành hay quy tác giả của từng file. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Hiện ở branch `feature/b02-hoang-models-relation`; chưa có PR.
+Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b04-hoang-dalc`.
 
 **Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi cả Hoàng và Kiệt đã xong, tích hợp và kiểm thử đạt. Khi tiếp tục Bước XX của Hoàng, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Kiệt khi chỉ làm phần Hoàng.
 
 ### Bước 01 – Khởi tạo dự án
 
-**Trạng thái:** Đang thực hiện
+**Trạng thái hiện hành:** Đã hoàn thành theo xác nhận nhóm. **Tại mốc ghi checklist cũ:** Đang thực hiện.
 
 **Branch:** `feature/b02-hoang-models-relation`
 
@@ -26,9 +26,9 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Ghi chú:** Đã có `main.cpp`; chưa có `CMakeLists.txt` và chưa có bằng chứng build/chạy ứng dụng tối thiểu từ CMake. Commit `bf171f9` chỉ thêm `.gitignore` và bỏ theo dõi hai file `.exe`.
 
-### Bước 02 – Hoàn thiện Models và quan hệ con trỏ
+### Bước 02 – Xây dựng Models và quan hệ Model
 
-**Trạng thái:** Đang thực hiện
+**Trạng thái hiện hành:** Đã hoàn thành theo xác nhận nhóm. **Tại mốc ghi checklist cũ:** Đang thực hiện.
 
 **Branch:** `feature/b02-hoang-models-relation`
 
@@ -45,279 +45,121 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Ghi chú:** `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime` đã có liên kết hai chiều. Ghi chú cũ về việc cấm copy/move không còn đúng: người thực hiện dự án chủ động không dùng `= delete` trong cả tám Model. Quyền sở hữu object, gỡ liên kết và nạp lại dữ liệu sẽ xem xét ở DAL/Repository. Kiểm thử và tích hợp còn trong checklist chưa hoàn thành; các quan hệ giao dịch thuộc phần Kiệt.
 
-### Bước 03 – Hạ tầng lưu trữ dữ liệu
+### Bước 03 – Xây dựng tiện ích lưu trữ dữ liệu ban đầu
 
-**Trạng thái:** Đã triển khai `FileHandler`, `TransactionManager` và kiểm thử chức năng cơ bản; sẵn sàng chuyển sang Bước 04, còn kiểm tra độ bền vững và tích hợp chính thức.
+**Trạng thái hiện hành:** Đã hoàn thành theo xác nhận nhóm. `FileIO` đã có ở `src/utils/` và bài thử đọc/ghi cơ bản đã chạy đạt; các mục review/tích hợp còn mở trong checklist lịch sử tại thời điểm ghi.
 
-**Branch:** `feature/b03-hoang-storage`
+**Branch lúc triển khai Bước 03:** `feature/b03-hoang-storage`. Hiện đang ở `feature/b04-hoang-dalc`.
 
 **Checklist công việc:**
 
-- [x] Tích hợp `FileHandler` với `TransactionManager` để đọc/ghi dữ liệu TXT.
-- [x] Cài `TransactionManager` hỗ trợ giao dịch nhiều file, backup và rollback.
-- [x] Cài `execute()` để thực hiện giao dịch và xử lý ngoại lệ.
-- [x] Cài `recover()` xử lý giao dịch PREPARED và COMMITTED.
-- [x] Bổ sung dọn thư mục giao dịch sau commit và rollback thành công.
-- [x] Kiểm thử execute thành công và rollback khi giả lập lỗi.
-- [x] Kiểm thử recovery với PREPARED và COMMITTED.
-- [x] Kiểm thử cơ bản `FileHandler` và `TransactionManager` trong `test_all_utils.cpp` bản chạy thông thường; người dùng xác nhận đã chạy và không có FAILED.
-- [ ] Chạy và ghi kết quả riêng bản biên dịch `-DTEST_ROLLBACK`; chưa có bằng chứng PASS cho bản này.
+- [x] Có `FileIO::readLines(...)` và `FileIO::writeLines(...)` để đọc/ghi các dòng TXT.
+- [x] Chuyển `FileIO.h/.cpp` vào `src/utils/` và cập nhật nơi gọi theo tên mới.
+- [x] Biên dịch, chạy `test_all_utils.cpp`: phần `FileIO` đạt; lần kiểm tra sau chuyển thư mục có 4 PASS, 0 FAILED cho toàn bộ bài thử.
+- [ ] Đối chiếu API `FileIO` với nhu cầu đọc/ghi toàn bộ file của Repository; kiểm tra cách báo lỗi và xử lý file thiếu.
 - [ ] Review và tích hợp với `IdGenerator`, `DateTime` của Kiệt.
 - [ ] Kiểm tra tích hợp sau khi merge.
 
-**Điều kiện hoàn thành:** Các chức năng lưu trữ chính hoạt động trong những trường hợp đã kiểm thử. Bước 03 chung chỉ hoàn thành sau khi tích hợp phần Kiệt và kiểm tra lại.
+**Điều kiện hoàn thành:** Đọc/ghi TXT qua `FileIO` đúng định dạng và báo lỗi khi thất bại; phần Hoàng, Kiệt được review và kiểm tra tích hợp. Không yêu cầu cơ chế giao dịch nhiều file.
 
 **Pull Request:** Chưa tạo PR cho Bước 03.
 
-**Ghi chú:**
-- `FileHandler` cung cấp hàm đọc/ghi file TXT.
-- `TransactionManager` thực hiện chuẩn bị file mới, backup, manifest, thay file, rollback và recovery.
-- Đã kiểm tra các luồng chính bằng chương trình test C++17.
-- Các bài test được sử dụng trong quá trình phát triển. `test_all_utils.cpp` hiện có trong cây làm việc và người dùng báo cáo bản chạy thông thường không có FAILED; Codex chưa chạy lại bài test này trong lần cập nhật tài liệu.
-- Bốn tiện ích đã cùng có mặt trong cây mã và được bài test chung gọi; việc review/merge và kiểm tra tích hợp sau merge vẫn còn mở.
-- Chưa bảo đảm đầy đủ tính bền vững khi mất điện đột ngột hoặc lỗi hệ điều hành.
-- Cần kiểm tra thêm lỗi ghi manifest, backup thiếu/hỏng, vùng giao dịch thiếu manifest và các đường dẫn trùng tên file trước khi dựa vào phục hồi trong nghiệp vụ thật.
-- `Validator` được hoãn sang bước DAL/Repository.
-- Ghi chú trước đây “chưa tích hợp code của Kiệt” phản ánh thời điểm cũ; hiện `IdGenerator` và `DateTime` đã có trong cây làm việc, còn tích hợp chính thức chưa được xác nhận.
+**Ghi chú:** `FileIO` chỉ đọc/ghi dòng TXT; Repository kiểm tra định dạng, khóa và tham chiếu. Ghi nhiều file tuần tự không nguyên tử, nên phải kiểm tra từng lần ghi và báo lỗi rõ. `Validator` vẫn hoãn đến khi Repository cần hàm kiểm tra cụ thể. [Nhật ký Bước 03](../Buoc03_HaTangLuuTruDuLieu.md) giữ nguyên lịch sử các thử nghiệm trước khi đổi thiết kế; đó không còn là checklist công việc hiện hành.
 
-### Bước 04 – Xây dựng DALC
+### Bước 04 – Quản lý phim
 
-**Trạng thái:** Chưa bắt đầu
+**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** `MovieRepository` đã được cài và kiểm thử riêng; `MovieService` đã có phần thêm, sửa và tra cứu. Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
 
-**Branch:** Chưa tạo
+- [x] Chuyển bản nháp sang thư mục mới và dùng `FileIO`; kiểm tra cú pháp C++17.
+- [x] Cài `MovieRepository`: đọc/ghi TXT, thêm/sửa/xóa, tra cứu, phát hiện mã trùng và dữ liệu lỗi; kiểm thử riêng đạt 40/40.
+- [ ] Bổ sung thông báo lỗi có tên file và số dòng khi nạp dữ liệu sai; kiểm tra hành vi khi ghi file thất bại.
+- [ ] Hoàn thiện `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu. Hiện chỉ có thêm, sửa và tra cứu.
+- [ ] Kiểm thử `MovieService` và toàn bộ nghiệp vụ phim; test Repository hiện có đã kiểm tra dữ liệu hợp lệ/lỗi và lưu/nạp lại.
 
-**Checklist công việc:**
+**Kiểm tra 2026-11-12:** Trên commit `73ebf68`, biên dịch và chạy `tests/test_movie_repository.cpp` bằng g++ C++17: 40 PASS, 0 FAILED. `MovieService.cpp` qua kiểm tra cú pháp C++17. Chưa có test Service; Bước 04 chưa hoàn thành.
 
-- [ ] Cài `MovieDALC` đọc/ghi, tìm và kiểm mã phim.
-- [ ] Cài `RoomDALC` và `SeatDALC`, đối chiếu ghế với phòng.
-- [ ] Cài `ShowtimeDALC`, kiểm mã phim/phòng tham chiếu.
-- [ ] Tích hợp DLL hoặc STL khi cần và thử nạp/lưu lại dữ liệu.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Bốn DALC quản lý được bản ghi TXT đúng schema và trả dữ liệu cho BLL. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Cần API lưu file Bước 03 và thống nhất quan hệ Model với DALC của Kiệt.
+**Điều kiện hoàn thành:** Repository và Service phim hoạt động, có bằng chứng kiểm thử; bản nháp riêng lẻ chưa đủ.
 
 ### Bước 05 – Đăng nhập và phân quyền
 
-**Trạng thái:** Chưa bắt đầu
+**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
 
-**Branch:** Chưa tạo
+- [ ] Hoàng thống nhất cách Service quản trị nhận thông tin vai trò từ `AuthService` của Kiệt.
+- [ ] Hỗ trợ thử quyền Admin/Staff ở các chức năng Hoàng phụ trách khi API đăng nhập đã có.
 
-**Checklist công việc:**
+### Bước 06 – Quản lý phòng và ghế
 
-- [ ] Lập ma trận quyền Admin/Staff cho thao tác quản trị.
-- [ ] Thử truy cập hợp lệ và bị từ chối qua BLL.
-- [ ] Kiểm tra nghiệp vụ quản trị không chỉ dựa vào ẩn nút GUI.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị triển khai.** Tạm để Bước 04 đang thực hiện để chuyển sang Bước 06. Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
 
-**Điều kiện hoàn thành:** Quyền Admin/Staff được kiểm tra trong BLL với ca thử thành công và từ chối. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+- [x] Đối chiếu hiện trạng Model, tầng lưu trữ và định dạng `rooms.txt`/`seats.txt`; lập nhật ký và checklist Bước 06.
+- [ ] Chốt vòng đời object, thứ tự nạp/liên kết và điều kiện sửa/xóa khi còn suất chiếu hoặc vé tham chiếu.
+- [ ] Cài `RoomRepository` để đọc/ghi, tra cứu và quản lý phòng; kiểm tra dữ liệu, mã trùng và lỗi file.
+- [ ] Cài `SeatRepository` để đọc/ghi, tra cứu ghế theo `(roomId, seatId)`; kiểm tra phòng, loại ghế, vị trí trong sơ đồ và vị trí trùng.
+- [ ] Cài `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra quan hệ phòng–ghế và quyền khi có API xác thực.
+- [ ] Kiểm thử C++ dữ liệu hợp lệ/lỗi, quyền, tham chiếu, lỗi ghi và nạp lại; ghi lệnh và kết quả vào nhật ký.
 
-**Pull Request:** Chưa có
+### Bước 07 – Quản lý nhân viên
 
-**Ghi chú:** Phối hợp `AuthService` và `UserManager` của Kiệt.
+**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
 
-### Bước 06 – Quản lý phim và thành viên
+- [ ] Hỗ trợ kiểm tra quyền Admin trong luồng quản trị khi Kiệt tích hợp `StaffService`.
 
-**Trạng thái:** Chưa bắt đầu
+### Bước 08 – Quản lý suất chiếu
 
-**Branch:** Chưa tạo
+**Phụ trách chính: Hoàng. Trạng thái: chưa bắt đầu.**
 
-**Checklist công việc:**
+- [ ] Cài `ShowtimeRepository` và `ShowtimeService` để tạo, sửa, hủy, tra cứu suất.
+- [ ] Kiểm tra quan hệ phim–phòng–suất, lịch cùng phòng và khoảng nghỉ theo quy tắc hiện hành.
+- [ ] Kiểm thử C++ trường hợp lịch hợp lệ/trùng, tham chiếu sai và lưu/nạp; cập nhật tài liệu.
 
-- [ ] Cài `MovieManager` thêm và tìm phim với dữ liệu hợp lệ.
-- [ ] Cài sửa/ngừng phim và điều kiện xóa khi chưa được tham chiếu.
-- [ ] Thử mã trùng, dữ liệu sai và quyền thao tác.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+### Bước 09 – Quản lý thành viên
 
-**Điều kiện hoàn thành:** CRUD phim tuân thủ quyền và quy tắc tham chiếu. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
 
-**Pull Request:** Chưa có
+- [ ] Thống nhất dữ liệu thành viên cần cho bán vé và thống kê khi API của Kiệt có sẵn.
 
-**Ghi chú:** Cần `MovieDALC` Bước 04; Kiệt triển khai thành viên song song.
+### Bước 10 – Giá vé, ưu đãi và tích điểm
 
-### Bước 07 – Quản lý phòng và ghế
+**Kiệt chính, Hoàng hỗ trợ. Trạng thái: chưa bắt đầu.**
 
-**Trạng thái:** Chưa bắt đầu
+- [ ] Hoàng kiểm tra giá theo loại ghế và dữ liệu ghế mà phần tính giá sử dụng.
+- [ ] Cùng Kiệt thử mức giá/ưu đãi liên quan loại ghế; giữ quy tắc ưu đãi không cộng dồn.
 
-**Branch:** Chưa tạo
+### Bước 11 – Bán vé tại quầy
 
-**Checklist công việc:**
+**Kiệt chính, Hoàng hỗ trợ tích hợp. Trạng thái: chưa bắt đầu.**
 
-- [ ] Cài `RoomManager` cho phòng, trạng thái và kích thước.
-- [ ] Cài `SeatManager` cho vị trí, loại ghế và kiểm trùng.
-- [ ] Kiểm tra điều kiện sửa phòng/ghế đã có dữ liệu liên quan.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+- [ ] Cung cấp và kiểm tra API phim, phòng, ghế, suất chiếu cho `BookingService`.
+- [ ] Thử ghế thuộc đúng phòng/suất, ghế đã bán theo suất và lỗi ghi file liên quan.
+- [ ] Kiểm thử tích hợp với phần Kiệt, ghi kết quả và cập nhật tài liệu.
 
-**Điều kiện hoàn thành:** Phòng và ghế được quản lý nhất quán, không tạo vị trí trùng hoặc phá dữ liệu lịch sử. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+### Bước 12 – Hủy vé, lịch sử hóa đơn và thống kê
 
-**Pull Request:** Chưa có
+**Cùng phụ trách; Hoàng làm thống kê. Trạng thái: chưa bắt đầu.**
 
-**Ghi chú:** Phối hợp Kiệt về sơ đồ hai chiều và ghế đôi.
+- [ ] Cài `ReportService` dùng dữ liệu vé, hóa đơn và suất chiếu.
+- [ ] Thống kê tiền bán/hoàn, doanh thu thuần, số vé bán/hủy và top phim.
+- [ ] Kiểm thử C++ dữ liệu thường, vé hủy và trường hợp biên; phối hợp truy vấn lịch sử với Kiệt.
 
-### Bước 08 – Quản lý suất chiếu và giá vé
+### Bước 13 – Xây dựng giao diện Qt
 
-**Trạng thái:** Chưa bắt đầu
+**Cùng phụ trách; Hoàng làm giao diện quản trị. Trạng thái: chưa bắt đầu.**
 
-**Branch:** Chưa tạo
+- [ ] Xây dựng `MovieManagementView`, `RoomManagementView`, `ShowtimeManagementView`, `ReportView`.
+- [ ] Cùng Kiệt thống nhất `MainWindow`, dashboard Admin/Staff, `SeatMapView` và CMake/Qt.
+- [ ] GUI chỉ gọi Service; kiểm tra hiển thị kết quả và lỗi.
 
-**Checklist công việc:**
+### Bước 14 – Kiểm thử tích hợp và sửa lỗi
 
-- [ ] Cài `ShowtimeManager` tạo/sửa/hủy suất theo quyền.
-- [ ] Kiểm tra thời gian, trùng lịch cùng phòng và khoảng nghỉ.
-- [ ] Thử suất tham chiếu phim/phòng không hợp lệ.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
+**Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 
-**Điều kiện hoàn thành:** Lịch chiếu không có xung đột và tuân thủ điều kiện sửa/hủy. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
+- [ ] Thử luồng Admin, phim/phòng/ghế/suất/thống kê qua GUI → Business → Data Access → TXT.
+- [ ] Cùng Kiệt thử quyền, dữ liệu sai, lỗi ghi và sửa lỗi có bằng chứng.
 
-**Pull Request:** Chưa có
+### Bước 15 – Đóng gói, hoàn thiện tài liệu và bàn giao
 
-**Ghi chú:** Kiệt phụ trách cấu hình giá và điểm, cần thống nhất dữ liệu đầu ra.
+**Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 
-### Bước 09 – Chọn ghế và Undo
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Tạo truy vấn trạng thái ghế trống/đã bán theo suất.
-- [ ] Kiểm tra ghế thuộc phòng của suất và không bị bán trùng.
-- [ ] Cung cấp dữ liệu trạng thái cho `BookingService` qua BLL.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Booking nhận được trạng thái ghế đúng theo `(showtimeId, seatId)`. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Kiệt giữ giỏ tạm và Undo bằng `std::stack`; không ghi file ở giai đoạn chọn tạm.
-
-### Bước 10 – Thanh toán và lưu vé/hóa đơn
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Thử phòng, suất và ghế ngay trước khi ghi giao dịch.
-- [ ] Thử lưu nhiều file thành công và lỗi giữa chừng.
-- [ ] Kiểm tra rollback/phục hồi không để vé, hóa đơn, điểm lệch nhau.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Giao dịch nhiều file có bằng chứng thành công và phục hồi khi lỗi. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Phối hợp `BookingService`, `BookingDALC` của Kiệt với `TransactionManager` của Hoàng.
-
-### Bước 11 – Hủy vé, lịch sử và báo cáo
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Cài `ReportService` tính tiền bán, tiền hoàn, doanh thu thuần.
-- [ ] Thống kê số vé bán/hủy và top phim theo dữ liệu hợp lệ.
-- [ ] Thử bộ lọc thời gian, nhân viên/phim và dữ liệu hủy.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Báo cáo khớp vé/hóa đơn lưu và xử lý hoàn tiền. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Cần dữ liệu lịch sử do Kiệt quản lý; có thể dùng `std::priority_queue` nếu phù hợp.
-
-### Bước 12 – Nền tảng Qt
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Tạo `MainWindow` và điều hướng màn hình theo BLL.
-- [ ] Tạo `AdminDashboard` với các lối vào quản trị.
-- [ ] Thiết lập bố cục, tài nguyên và build Qt Widgets.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Cửa sổ quản trị mở được, điều hướng đúng và không truy cập DAL trực tiếp. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Phối hợp luồng đăng nhập của Kiệt.
-
-### Bước 13 – Giao diện các chức năng
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Tạo `MovieManagementView` và `RoomManagementView`.
-- [ ] Tạo `ShowtimeManagementView` và `ReportView`.
-- [ ] Tạo `MovieTableModel` khi bảng phim cần Qt Model/View.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Các màn hình quản trị gọi BLL và hiển thị kết quả/lỗi đúng. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Kiệt làm các màn hình Staff; thống nhất dữ liệu BLL trả về.
-
-### Bước 14 – Kiểm thử tích hợp toàn hệ thống
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Thử luồng Admin quản lý phim, phòng, suất và báo cáo.
-- [ ] Thử dữ liệu sai, quyền từ chối và lỗi GUI quản trị.
-- [ ] Kiểm tra tích hợp GUI → BLL → DAL → DB và lỗi bộ nhớ.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Các ca quản trị và tích hợp đạt; lỗi nghiêm trọng đã xử lý. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Phối hợp Kiệt thử luồng Staff/booking, đặc biệt dữ liệu dùng chung.
-
-### Bước 15 – Đóng gói và hoàn thiện
-
-**Trạng thái:** Chưa bắt đầu
-
-**Branch:** Chưa tạo
-
-**Checklist công việc:**
-
-- [ ] Hoàn thiện cấu hình CMake cho build phát hành.
-- [ ] Đóng gói chương trình Windows và chạy thử bản đóng gói.
-- [ ] Tổng hợp tài liệu kiến trúc và chuẩn bị phần bảo vệ.
-- [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
-
-**Điều kiện hoàn thành:** Bản Windows chạy được và tài liệu kiến trúc khớp mã. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
-
-**Pull Request:** Chưa có
-
-**Ghi chú:** Kiệt chuẩn bị hướng dẫn, báo cáo và demo; cả hai thử gói cuối.
+- [ ] Hoàng phụ trách cấu hình build/đóng gói Windows và tài liệu kiến trúc.
+- [ ] Cùng Kiệt thử bản đóng gói, hoàn thiện báo cáo, demo và bàn giao.
 

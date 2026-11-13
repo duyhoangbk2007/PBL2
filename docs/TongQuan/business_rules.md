@@ -8,7 +8,7 @@
 - Staff bán vé, quản lý thông tin liên hệ thành viên, xem hóa đơn của mình trong ngày và tra cứu hóa đơn cũ của mình theo mã.
 - Mọi tài khoản dùng chung mô hình User với role ADMIN/STAFF; không cần lớp con Admin/Staff. Service kiểm tra quyền mỗi nghiệp vụ. Tài khoản vô hiệu hóa không được đăng nhập. Chức năng sửa Staff không được đổi vai trò.
 - Không quản lý ca, online, thanh toán điện tử, hạng thẻ hoặc đổi điểm.
-- Giữ khóa độc quyền bộ dữ liệu suốt phiên ứng dụng, từ chối phiên ghi thứ hai. Phải lấy khóa trước khi phục hồi/tải dữ liệu và nhả khóa khi thoát; khóa treo sau sự cố phải được nhận diện an toàn, không chỉ kiểm tra một file có tồn tại hay không.
+- Bản PBL2 chạy như ứng dụng tại quầy trên một bộ dữ liệu TXT. Nếu sau này cho phép nhiều tiến trình cùng ghi, cần thiết kế cơ chế đồng bộ riêng trước khi sử dụng.
 
 ## 2. Phim, phòng và suất chiếu
 
@@ -43,7 +43,7 @@
 - Lấy tỷ lệ giảm cao nhất đủ điều kiện, không cộng dồn. Tiền giảm = `(giá gốc × tỷ lệ) / 100` và giữ phần thập phân; thực trả = giá gốc − tiền giảm.
 - Điểm mỗi vé = phần nguyên `thực trả / 10000` nếu có thành viên, ngược lại bằng 0. Điểm hóa đơn là tổng điểm từng vé.
 - Thành viên có mã, họ tên, số điện thoại duy nhất và điểm không âm; khởi tạo 0 điểm. Không chỉnh điểm trực tiếp.
-- Chỉ cộng điểm khi giao dịch lưu thành công. Không xóa thành viên đã có hóa đơn.
+- Chỉ báo cộng điểm thành công khi các lần ghi liên quan đã thành công. Không xóa thành viên đã có hóa đơn.
 - Lưu giá gốc, tiền giảm, thực trả và điểm trên vé tại thời điểm bán; đổi cấu hình không làm thay đổi lịch sử.
 - Bản PBL2 chưa có đổi điểm nên số điểm luôn đủ để thu hồi khi dữ liệu hợp lệ. Nếu bổ sung đổi điểm sau này, phải thiết kế sổ giao dịch điểm hoặc quy tắc số dư điều chỉnh trước khi giữ cơ chế chặn hủy do thiếu điểm.
 
@@ -54,8 +54,8 @@
 3. Mỗi lần chọn ghế đẩy mã ghế vào stack. Undo bỏ ghế chọn gần nhất. Bản đầu chỉ hỗ trợ bỏ lựa chọn theo thứ tự undo; đổi suất hoặc bỏ giao dịch xóa danh sách và stack.
 4. Chọn loại vé từng ghế, gắn tối đa một thành viên và xem lại giá.
 5. Xác nhận thu tiền tại quầy; service kiểm tra lại quyền, giờ chiếu, ghế, thành viên và việc xác nhận độ tuổi.
-6. Tạo một hóa đơn không rỗng với các vé cùng suất; lưu hóa đơn, vé, điểm, bộ đếm mã như một giao dịch.
-7. Sau commit mới cập nhật bộ nhớ và thông báo thành công.
+6. Tạo một hóa đơn không rỗng với các vé cùng suất; ghi lần lượt hóa đơn, vé, điểm và bộ đếm mã vào các file TXT liên quan.
+7. Kiểm tra từng lần ghi; chỉ thông báo thành công sau khi tất cả lần ghi thành công. Nếu có lỗi, báo rõ file bị lỗi và dữ liệu có thể không nhất quán để người dùng xử lý.
 
 Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh toán không lưu vé/hóa đơn/điểm. Không tích hợp cổng thanh toán; xác nhận thu/hoàn tiền là thao tác tại quầy.
 
@@ -63,7 +63,7 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 
 - Chỉ Admin, chỉ vé SOLD, trước giờ bắt đầu suất.
 - Cho phép hủy từng vé trong hóa đơn. Hoàn toàn bộ giá thực trả; lưu thời điểm, người hủy, lý do và tiền hoàn.
-- Chuyển vé sang CANCELLED, trả ghế cho suất đó và thu hồi đúng điểm đã cộng; lưu cùng giao dịch.
+- Chuyển vé sang CANCELLED, trả ghế cho suất đó và thu hồi đúng điểm đã cộng; kiểm tra từng lần ghi liên quan và báo lỗi nếu lưu chưa hoàn tất.
 - Không xóa vé, không đổi tổng tiền ban đầu của hóa đơn, không hủy lần hai.
 - Trạng thái hóa đơn không lưu lặp mà suy ra bằng một hàm nghiệp vụ dùng chung: ACTIVE nếu mọi vé còn SOLD, PARTIALLY_CANCELLED nếu có cả SOLD và CANCELLED, CANCELLED nếu mọi vé đã hủy. Tiền còn lại = tổng tiền ban đầu − tổng tiền hoàn.
 - Giữ pointsEarned ban đầu trên vé để đối chiếu dù đã thu hồi điểm. Nếu điểm thành viên không đủ thu hồi, chặn và báo dữ liệu không nhất quán, không ép về 0.
@@ -71,11 +71,11 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 ## 6. Lịch sử và báo cáo
 
 - Khoảng thời gian dùng `[từ, đến)`. Ngày cuối người dùng chọn được chuyển thành 00:00 ngày kế tiếp.
-- Lịch sử lọc thời điểm lập hóa đơn. BST dùng `(createdAt, invoiceId)` để phân biệt hóa đơn cùng giây.
+- Lịch sử lọc theo thời điểm lập hóa đơn; dùng thêm `invoiceId` để phân biệt hóa đơn cùng giây. Có thể lọc/sắp xếp bằng STL trên dữ liệu đã nạp.
 - Báo cáo dòng tiền: tiền bán theo thời điểm hóa đơn, tiền hoàn theo thời điểm hủy; doanh thu thuần = tiền bán − tiền hoàn. Có thể âm trong ngày có nhiều khoản hoàn giao dịch cũ.
 - Đếm vé tạo trong kỳ theo thời điểm hóa đơn, vé hủy trong kỳ theo thời điểm hủy. Một vé đôi tính một vé; thống kê số người thì tính hai chỗ.
 - Top phim theo kỳ bán: chỉ lấy vé thuộc hóa đơn lập trong kỳ còn SOLD tại lúc xem; cộng giá thực trả hoặc đếm vé. Chỉ tiêu này có thể khác doanh thu dòng tiền nếu hoàn ở kỳ khác.
-- Max heap dựng theo bộ lọc, xếp giảm dần theo chỉ tiêu; bằng nhau thì mã phim tăng dần.
+- Xếp hạng phim giảm dần theo chỉ tiêu; bằng nhau thì mã phim tăng dần. Có thể dùng `std::sort` trên kết quả đã lọc.
 
 ## 7. Sửa/xóa và toàn vẹn
 
@@ -85,4 +85,4 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 - Giá, thời gian suất và mã liên kết lịch sử được giữ nguyên. Tên phim/phòng/nhân viên hiển thị theo danh mục hiện tại; bản đầu chưa lưu lịch sử đổi tên.
 - movieId là danh tính bất biến của một phim. Chỉ sửa thông tin của cùng phim; không biến bản ghi cũ thành một phim khác để tái sử dụng mã. Phim khác phải được tạo với movieId mới.
 - Lỗi dữ liệu hoặc tham chiếu mất phải báo file/dòng và chặn ghi, không bỏ qua dòng lỗi rồi ghi đè.
-- Phục hồi giao dịch dang dở trước khi tải dữ liệu. Xem [định dạng dữ liệu](data_format.md).
+- Khi đọc dữ liệu lỗi hoặc thiếu tham chiếu, báo file/dòng và chặn thao tác ghi có thể làm mất dữ liệu. Ghi nhiều file TXT tuần tự không nguyên tử; xem [định dạng dữ liệu](data_format.md).
