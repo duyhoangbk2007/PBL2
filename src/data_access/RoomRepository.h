@@ -27,7 +27,6 @@ public:
 
     Room* findById(const std::string& roomId);
     Room* getAt(int index);
-
     int count();
     bool isLoaded();
 };
