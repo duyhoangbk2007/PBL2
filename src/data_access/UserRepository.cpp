@@ -277,38 +277,29 @@ bool UserRepository::update(const User& newValues)
     {
         return false;
     }
-
-    // Tim User can cap nhat
     User* user = findById(newValues.getUserId());
-
     if (user == nullptr)
     {
         return false;
     }
-
     // Khong cho phep thay doi role
     if (user->getRole() != newValues.getRole())
     {
         return false;
     }
-
     // Kiem tra username moi co bi trung khong
     User* existingUser = findByUsername(newValues.getUsername());
-
     if (existingUser != nullptr && existingUser != user)
     {
         return false;
     }
-
     string oldUsername = user->getUsername();
     string newUsername = newValues.getUsername();
-
     // Neu username thay doi, them khoa moi vao map
     if (oldUsername != newUsername)
     {
         usersByUsername[newUsername] = user;
     }
-
     // Cap nhat thong tin User
     try
     {
@@ -323,7 +314,6 @@ bool UserRepository::update(const User& newValues)
         {
             usersByUsername.erase(newUsername);
         }
-
         throw;
     }
 
@@ -332,6 +322,5 @@ bool UserRepository::update(const User& newValues)
     {
         usersByUsername.erase(oldUsername);
     }
-
     return true;
 }

@@ -194,7 +194,7 @@ bool SeatRepository::load()
 
 bool SeatRepository::add(Seat* seat)
 {
-    if (!repo.isLoaded() || !isValidSeat(seat))
+    if (!repo.isLoaded() || !roomRepo.isLoaded() || !isValidSeat(seat))
     {
         return false;
     }
