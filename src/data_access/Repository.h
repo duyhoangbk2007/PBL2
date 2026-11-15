@@ -51,9 +51,9 @@ void Repository<T>::clear()
 {
     while (items.nodeCount() > 0)
     {
-        ListNode<T*>* node = items.getAt(0);
-        delete node->data; //giải phóng đối tượng
+        T* item = items.getAt(0)->data;
         items.popFront(); //xóa khỏi danh sách
+        delete item; //giải phóng đối tượng
     }
     loaded = false;
 }
@@ -115,6 +115,26 @@ bool Repository<T>::add(T* item)
 }
 
 template <typename T>
+bool Repository<T>::removeById(const string& id)
+{
+    if (!loaded)
+    {
+        return false;
+    }
+    for (int i = 0; i < count(); i++)
+    {
+        T* item = getAt(i);
+        if (getId(item) == id)
+        {
+            items.erase(i);
+            delete item;
+            return true;
+        }
+    }
+    return false;
+}
+
+template <typename T>
 bool Repository<T>::load()
 {
     vector<string> lines;
@@ -139,7 +159,7 @@ bool Repository<T>::load()
                 delete item;
                 throw runtime_error("ID rong tai dong " + to_string(i + 1));
             }
-            bool duplicate = false;
+            bool duplicate = false; // xử lý lặp
             for (int j = 0; j < tempItems.nodeCount(); j++)
             {
                 ListNode<T*>* node = tempItems.getAt(j);
@@ -196,26 +216,5 @@ bool Repository<T>::save()
     }
     return FileIO::writeLines(filePath, lines);
 }
-
-template <typename T>
-bool Repository<T>::removeById(const string& id)
-{
-    if (!loaded)
-    {
-        return false;
-    }
-    for (int i = 0; i < count(); i++)
-    {
-        T* item = getAt(i);
-        if (getId(item) == id)
-        {
-            items.erase(i);
-            delete item;
-            return true;
-        }
-    }
-    return false;
-}
-
 
 #endif

@@ -51,6 +51,29 @@ void Room::setActive(bool active) {
     this->active = active;
 }
 
+bool Room::unlinkSeat(Seat* seat)
+{
+    if (seat == nullptr)
+    {
+        return false;
+    }
+    if (seat->getRoom() != this)
+    {
+        return false;
+    }
+    for (int i = 0; i < seats.nodeCount(); i++)
+    {
+        ListNode<Seat*>* node = seats.getAt(i);
+        if (node->data == seat)
+        {
+            seats.erase(i);
+            seat->room = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Room::linkSeat(Seat* seat) {
     if (seat == nullptr) 
         return false;
@@ -132,4 +155,13 @@ Showtime* Room::findShowtime(const std::string& showtimeId) {
 
 int Room::getShowtimeCount() const {
     return this->showtimes.nodeCount();
+}
+Seat* Room::getSeatAt(int index)
+{
+    ListNode<Seat*>* node = seats.getAt(index);
+    if (node == nullptr)
+    {
+        return nullptr;
+    }
+    return node->data;
 }
