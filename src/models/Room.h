@@ -30,6 +30,7 @@ public:
     void setColumnCount(int columnCount);
     void setActive(bool active);
 
+    bool unlinkSeat(Seat* seat);
     bool linkSeat(Seat* seat);
     Seat* findSeat(const std::string& seatId);
     int getSeatCount() const;
