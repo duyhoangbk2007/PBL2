@@ -17,7 +17,7 @@ private:
 
 public:
     RoomRepository(const std::string& filePath);
-
+    
     bool load();
     bool save();
 

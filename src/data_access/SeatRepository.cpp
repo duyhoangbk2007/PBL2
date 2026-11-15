@@ -9,6 +9,17 @@ SeatRepository::SeatRepository(const string& filePath, RoomRepository& roomRepo)
     : repo(filePath, getSeatKey, stringToSeat, seatToString), roomRepo(roomRepo)
 {}
 
+SeatRepository::~SeatRepository()
+{
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Seat* seat = repo.getAt(i);
+        if (seat != nullptr && seat->getRoom() != nullptr)
+        {
+            seat->getRoom()->unlinkSeat(seat);
+        }
+    }
+}
 string SeatRepository::getSeatKey(Seat* seat) //(roomId + seatId)
 {
     if (seat == nullptr)

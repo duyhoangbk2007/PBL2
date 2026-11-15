@@ -51,9 +51,9 @@ void Repository<T>::clear()
 {
     while (items.nodeCount() > 0)
     {
-        ListNode<T*>* node = items.getAt(0);
+        T* item = items.getAt(0)->data;
         items.popFront(); //xóa khỏi danh sách
-        delete node->data; //giải phóng đối tượng
+        delete item; //giải phóng đối tượng
     }
     loaded = false;
 }

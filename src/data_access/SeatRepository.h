@@ -19,7 +19,7 @@ private:
 
 public:
     SeatRepository(const std::string& filePath, RoomRepository& roomRepo);
-
+    ~SeatRepository();
     bool load();
     bool save();
 

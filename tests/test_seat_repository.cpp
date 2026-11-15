@@ -332,6 +332,40 @@ void testMissingFile()
     check("Khong load duoc file Seat thieu", seatRepo.load(), false);
     check("Khong loaded khi thieu file", seatRepo.isLoaded(), false);
 }
+void testDestructor()
+{
+    cout << "\n===== TEST SEAT DESTRUCTOR =====\n";
+
+    prepareFiles(
+        "ROM0001|A1|1|1|STANDARD\n"
+        "ROM0001|A2|1|2|VIP\n"
+    );
+
+    RoomRepository roomRepo(ROOM_FILE);
+
+    check("Load Room", roomRepo.load(), true);
+
+    Room* room = roomRepo.findById("ROM0001");
+
+    {
+        SeatRepository seatRepo(SEAT_FILE, roomRepo);
+
+        check("Load Seat", seatRepo.load(), true);
+
+        check("Room co 2 ghe",
+              room->getSeatCount() == 2, true);
+    }
+    // seatRepo da bi huy tai day
+
+    check("Room khong con ghe sau khi huy SeatRepo",
+          room->getSeatCount() == 0, true);
+
+    check("Khong con lien ket A1",
+          room->findSeat("A1") == nullptr, true);
+
+    check("Khong con lien ket A2",
+          room->findSeat("A2") == nullptr, true);
+}
 
 int main()
 {
