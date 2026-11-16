@@ -443,6 +443,14 @@ bool ShowtimeRepository::removeById(const string& showtimeId)
         }
         return false;
     }
-    return repo.removeById(showtimeId);
+    if (!repo.removeById(showtimeId))
+    {
+        if (!movie->linkShowtime(showtime) || !room->linkShowtime(showtime))
+        {
+            throw runtime_error("Khong the khoi phuc lien ket Showtime");
+        }
+        return false;
+    }
+    return true;
 }
 
