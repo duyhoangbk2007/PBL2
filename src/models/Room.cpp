@@ -142,6 +142,27 @@ bool Room::linkShowtime(Showtime* showtime) {
 
     return true;
 }
+
+bool Room::unlinkShowtime(Showtime* showtime)
+{
+    if (showtime == nullptr || showtime->getRoom() != this)
+    {
+        return false;
+    }
+    for (int i = 0; i < showtimes.nodeCount(); i++)
+    {
+        ListNode<Showtime*>* node = showtimes.getAt(i);
+
+        if (node->data == showtime)
+        {
+            showtimes.erase(i);
+            showtime->room = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
 Showtime* Room::findShowtime(const std::string& showtimeId) {
     int n = this->showtimes.nodeCount();
     for (int i = 0; i < n; i++) {

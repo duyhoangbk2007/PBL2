@@ -85,3 +85,41 @@ bool Validator::isValidId(const string& id, const string& prefix)
     }
     return true;
 }
+
+bool Validator::isValidDateTime(const string& dateTime)
+{
+    if (dateTime.length() != 19)
+    {
+        return false;
+    }
+    if (dateTime[10] != 'T' ||
+        dateTime[13] != ':' ||
+        dateTime[16] != ':')
+    {
+        return false;
+    }
+    if (!isValidDate(dateTime.substr(0, 10)))
+    {
+        return false;
+    }
+    for (int i = 11; i < 19; i++)
+    {
+        if (i == 13 || i == 16)
+        {
+            continue;
+        }
+
+        if (dateTime[i] < '0' || dateTime[i] > '9')
+        {
+            return false;
+        }
+    }
+
+    int hour = stoi(dateTime.substr(11, 2));
+    int minute = stoi(dateTime.substr(14, 2));
+    int second = stoi(dateTime.substr(17, 2));
+
+    return hour >= 0 && hour <= 23 &&
+           minute >= 0 && minute <= 59 &&
+           second >= 0 && second <= 59;
+}

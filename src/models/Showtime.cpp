@@ -75,3 +75,23 @@ Movie* Showtime::getMovie() const {
 Room* Showtime::getRoom() const {
     return this->room;
 }
+
+bool Showtime::setMovieId(const string& movieId)
+{
+    if (movie != nullptr)
+    {
+        return false;
+    }
+    this->movieId = movieId;
+    return true;
+}
+
+bool Showtime::setRoomId(const string& roomId)
+{
+    if (room != nullptr)
+    {
+        return false;
+    }
+    this->roomId = roomId;
+    return true;
+}
