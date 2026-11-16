@@ -69,6 +69,7 @@ Kiểm tra quyền và các quy tắc nghiệp vụ trước khi gọi Repositor
 | MovieRepository | Movie | Quản lý phim |
 | RoomRepository | Room | Quản lý phòng chiếu |
 | SeatRepository | Seat | Quản lý ghế và liên kết phòng |
+| ShowtimeRepository | Showtime | Quản lý suất chiếu, liên kết phim/phòng và lịch cùng phòng |
 
 ## 4. RoomRepository
 
@@ -173,6 +174,7 @@ Phân chia này giúp tránh lặp lại logic và giữ trách nhiệm của t�
 - `MovieRepository.md`
 - `RoomRepository.md`
 - `SeatRepository.md`
+- [`ShowtimeRepository.md`](ShowtimeRepository.md)
 
 Các Repository khác được tham khảo theo tài liệu tương ứng trong thư mục.
 

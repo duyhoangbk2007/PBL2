@@ -12,7 +12,7 @@ Khi chuẩn bị Bước 04 theo kế hoạch cũ, nhóm dùng tên DALC và đ�
 
 ## Mục tiêu hiện hành và phân công
 
-**Hoàng phụ trách chính.** Thực hiện theo thứ tự: Repository → Service → kiểm thử C++ → cập nhật tài liệu. Kiệt có thể làm Bước 05 đăng nhập song song sau khi thống nhất phần API dùng chung. Qt Widgets chưa thuộc Bước 04; giao diện phim nằm ở Bước 13.
+**Hoàng phụ trách chính.** Thực hiện theo thứ tự: Repository → Service → kiểm thử C++ → cập nhật tài liệu. Kiệt có thể làm Bước 05 đăng nhập song song sau khi thống nhất phần API dùng chung. Qt Widgets chưa thuộc Bước 04; giao diện phim nằm ở Bước 12.
 
 | Thành phần | Công việc |
 | --- | --- |
@@ -34,6 +34,6 @@ Khi chuẩn bị Bước 04 theo kế hoạch cũ, nhóm dùng tên DALC và đ�
 
 ## Bằng chứng hiện có và điều kiện hoàn thành
 
-Tại mốc chuyển thư mục trước đây, mã ứng dụng C++17 từng biên dịch và liên kết được; `tests/test_all_utils.cpp` từng chạy **4 PASS, 0 FAILED** cho `FileIO`, `DateTime`, `IdGenerator` và bài thử giao dịch lịch sử. Kết quả lịch sử đó **không phải** kiểm thử chức năng `MovieRepository`/`MovieService` và không chứng minh trạng thái build hiện nay. Hiện hai file Repository cũ đã bị xóa khỏi cây làm việc, `MovieService` chưa có mã, chưa có kiểm thử chức năng phim. Bước 04 ở trạng thái **chuẩn bị viết lại**, chưa nghiệm thu thành phần nào của chức năng phim.
+Tại mốc chuyển thư mục trước đây, mã ứng dụng C++17 từng biên dịch và liên kết được; `tests/test_all_utils.cpp` từng chạy **4 PASS, 0 FAILED** cho `FileIO`, `DateTime`, `IdGenerator` và bài thử giao dịch lịch sử. Kết quả lịch sử đó **không phải** kiểm thử chức năng `MovieRepository`/`MovieService` và không chứng minh trạng thái build hiện nay. Ở mốc lịch sử đó, hai file Repository cũ đã bị xóa, `MovieService` chưa có mã và chưa có kiểm thử chức năng phim. Hiện `MovieRepository` đã đạt 40/40 kiểm thử riêng, `MovieService` đã có mã bước đầu nhưng chưa có test riêng; Bước 04 vẫn chưa hoàn thành.
 
-Bước 04 chỉ hoàn thành khi chức năng phim qua Repository và Service chạy đúng quy tắc, có kiểm thử C++ và tài liệu tương ứng. Sau đó tiếp tục các chức năng theo [lộ trình 15 bước](PhanCongCongViec.md); không cần đợi tất cả Repository mới bắt đầu Service.
+Bước 04 chỉ hoàn thành khi chức năng phim qua Repository và Service chạy đúng quy tắc, có kiểm thử C++ và tài liệu tương ứng. Sau đó tiếp tục các chức năng theo [lộ trình 14 bước](PhanCongCongViec.md); không cần đợi tất cả Repository mới bắt đầu Service.

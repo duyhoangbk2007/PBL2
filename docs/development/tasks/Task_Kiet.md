@@ -1,4 +1,4 @@
-# Task của Kiệt — lộ trình PBL2 15 bước
+# Task của Kiệt — lộ trình PBL2 14 bước
 
 Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài khoản, bán vé, giao diện Staff và tài liệu sử dụng. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Kiệt. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b04-hoang-dalc`.
 
@@ -69,23 +69,24 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 
 ### Bước 04 – Quản lý phim
 
-**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị viết lại từ đầu.** `MovieRepository` cũ chuyển từ `MovieDALC` đã bị xóa khỏi cây làm việc và chưa nghiệm thu. Hoàng sẽ viết lại Repository, xây dựng `MovieService` và kiểm thử C++; Kiệt phối hợp thống nhất API cần dùng cho các bước sau.
+**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** `MovieRepository` hiện đã có và được kiểm thử riêng; `MovieService` còn việc nghiệp vụ và kiểm thử. Kiệt phối hợp thống nhất API cần dùng cho các bước sau.
 
 - [ ] Kiệt thống nhất API phim cần cho đăng nhập, bán vé và các chức năng sau khi Hoàng triển khai.
 
 ### Bước 05 – Đăng nhập và phân quyền
 
-**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách chính: Kiệt. Trạng thái: đã có mã Repository và Service, chưa xác minh nghiệm thu.**
 
-- [ ] Cài `UserRepository` đọc/ghi `users.txt` và tra ID/tên đăng nhập.
-- [ ] Cài `AuthService` đăng nhập, kiểm tra tài khoản hoạt động và vai trò Admin/Staff.
+- [ ] Kiểm tra và hoàn thiện `UserRepository` đọc/ghi `users.txt` và tra ID/tên đăng nhập.
+- [ ] Kiểm tra và hoàn thiện `AuthService` đăng nhập, kiểm tra tài khoản hoạt động và vai trò Admin/Staff.
 - [ ] Kiểm thử C++ đúng/sai thông tin, tài khoản vô hiệu hóa và quyền; cập nhật tài liệu.
 
-### Bước 06 – Quản lý phòng và ghế
+### Bước 06 – Quản lý phòng, ghế và suất chiếu
 
-**Phụ trách chính: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách chính: Hoàng. Trạng thái: Hoàng đang thực hiện; phần phối hợp của Kiệt chưa hoàn thành.**
 
 - [ ] Kiệt thống nhất dữ liệu phòng/ghế cần cho chọn ghế và bán vé với Hoàng.
+- [ ] Kiệt thống nhất API suất chiếu cần cho bán vé; phối hợp thử dữ liệu tham chiếu khi Hoàng hoàn thành.
 
 ### Bước 07 – Quản lý nhân viên
 
@@ -95,13 +96,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Cài `StaffService` thêm, sửa, tìm kiếm, vô hiệu hóa Staff; kiểm tra quyền Admin.
 - [ ] Kiểm thử C++ tài khoản trùng, trạng thái, quyền và lưu/nạp; cập nhật tài liệu.
 
-### Bước 08 – Quản lý suất chiếu
-
-**Phụ trách chính: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt thống nhất API suất chiếu cần cho bán vé; phối hợp thử dữ liệu tham chiếu khi Hoàng hoàn thành.
-
-### Bước 09 – Quản lý thành viên
+### Bước 08 – Quản lý thành viên
 
 **Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
 
@@ -109,7 +104,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Kiểm tra số điện thoại duy nhất và không cho sửa điểm trực tiếp.
 - [ ] Kiểm thử C++ dữ liệu hợp lệ/trùng/sai và lưu/nạp; cập nhật tài liệu.
 
-### Bước 10 – Giá vé, ưu đãi và tích điểm
+### Bước 09 – Giá vé, ưu đãi và tích điểm
 
 **Kiệt chính, Hoàng hỗ trợ. Trạng thái: chưa bắt đầu.**
 
@@ -117,7 +112,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Tính tiền và điểm theo quy tắc hiện hành; chỉ tạo `PricingService` nếu có lý do rõ.
 - [ ] Hoàng hỗ trợ kiểm giá theo loại ghế; Kiệt kiểm thử C++ giá, ưu đãi và điểm, cập nhật tài liệu.
 
-### Bước 11 – Bán vé tại quầy
+### Bước 10 – Bán vé tại quầy
 
 **Kiệt chính, Hoàng hỗ trợ tích hợp. Trạng thái: chưa bắt đầu.**
 
@@ -126,7 +121,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Xác nhận thu tiền, tạo một hóa đơn nhiều vé, cập nhật điểm và ghi TXT qua Repository/`FileIO`.
 - [ ] Cùng Hoàng tích hợp phim/phòng/ghế/suất; kiểm thử C++ bán vé, trùng ghế và lỗi ghi; cập nhật tài liệu.
 
-### Bước 12 – Hủy vé, lịch sử hóa đơn và thống kê
+### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
 
 **Cùng phụ trách; Kiệt làm hủy/lịch sử. Trạng thái: chưa bắt đầu.**
 
@@ -134,7 +129,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Giữ lịch sử vé đã hủy; cung cấp truy vấn hóa đơn cho `ReportService` của Hoàng.
 - [ ] Kiểm thử C++ hủy hợp lệ/không hợp lệ, điểm và lịch sử; cập nhật tài liệu.
 
-### Bước 13 – Xây dựng giao diện Qt
+### Bước 12 – Xây dựng giao diện Qt
 
 **Cùng phụ trách; Kiệt làm giao diện Staff. Trạng thái: chưa bắt đầu.**
 
@@ -142,14 +137,14 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách tài kho�
 - [ ] Cùng Hoàng thống nhất `MainWindow`, dashboard Admin/Staff, `SeatMapView` và CMake/Qt.
 - [ ] GUI chỉ gọi Service; kiểm tra hiển thị kết quả và lỗi.
 
-### Bước 14 – Kiểm thử tích hợp và sửa lỗi
+### Bước 13 – Kiểm thử tích hợp và sửa lỗi
 
 **Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 
 - [ ] Thử đăng nhập, quyền, thành viên, bán/hủy vé và lịch sử qua GUI → Business → Data Access → TXT.
 - [ ] Cùng Hoàng thử dữ liệu sai, lỗi ghi và sửa lỗi có bằng chứng.
 
-### Bước 15 – Đóng gói, hoàn thiện tài liệu và bàn giao
+### Bước 14 – Đóng gói, hoàn thiện tài liệu và bàn giao
 
 **Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 

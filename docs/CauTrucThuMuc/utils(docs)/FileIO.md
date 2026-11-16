@@ -10,4 +10,4 @@ Nếu ghi lỗi giữa chừng, file đích có thể chỉ có một phần d�
 
 ## Hiện trạng mã nguồn
 
-`src/utils/FileIO.h/.cpp` đã được chuyển và đổi tên từ `core/utils/FileHandler.h/.cpp`; phương thức đọc đã đổi từ `readlines` thành `readLines`. Code `MovieRepository` cũ từng dùng API mới nhưng chưa được nghiệm thu; hai file Repository hiện đã bị xóa khỏi cây làm việc và sẽ được viết lại trong [Bước 04](../../development/Buoc04_QuanLyPhim.md).
+`src/utils/FileIO.h/.cpp` đã được chuyển và đổi tên từ `core/utils/FileHandler.h/.cpp`; phương thức đọc đã đổi từ `readlines` thành `readLines`. `MovieRepository` cũ từng dùng API mới nhưng chưa được nghiệm thu; bản hiện tại đã được tạo lại và có kết quả kiểm thử riêng trong [Bước 04](../../development/Buoc04_QuanLyPhim.md).

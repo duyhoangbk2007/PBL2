@@ -1,4 +1,4 @@
-# Task của Hoàng — lộ trình PBL2 15 bước
+# Task của Hoàng — lộ trình PBL2 14 bước
 
 Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b04-hoang-dalc`.
 
@@ -87,16 +87,20 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [ ] Hoàng thống nhất cách Service quản trị nhận thông tin vai trò từ `AuthService` của Kiệt.
 - [ ] Hỗ trợ thử quyền Admin/Staff ở các chức năng Hoàng phụ trách khi API đăng nhập đã có.
 
-### Bước 06 – Quản lý phòng và ghế
+### Bước 06 – Quản lý phòng, ghế và suất chiếu
 
-**Phụ trách chính: Hoàng. Trạng thái: chuẩn bị triển khai.** Tạm để Bước 04 đang thực hiện để chuyển sang Bước 06. Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
+**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện; chưa hoàn thành toàn bộ.** Tạm để Bước 04 đang thực hiện để chuyển sang Bước 06. Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
 
 - [x] Đối chiếu hiện trạng Model, tầng lưu trữ và định dạng `rooms.txt`/`seats.txt`; lập nhật ký và checklist Bước 06.
 - [ ] Chốt vòng đời object, thứ tự nạp/liên kết và điều kiện sửa/xóa khi còn suất chiếu hoặc vé tham chiếu.
-- [ ] Cài `RoomRepository` để đọc/ghi, tra cứu và quản lý phòng; kiểm tra dữ liệu, mã trùng và lỗi file.
-- [ ] Cài `SeatRepository` để đọc/ghi, tra cứu ghế theo `(roomId, seatId)`; kiểm tra phòng, loại ghế, vị trí trong sơ đồ và vị trí trùng.
-- [ ] Cài `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra quan hệ phòng–ghế và quyền khi có API xác thực.
+- [x] Đã có `RoomRepository` để đọc/ghi, tra cứu và quản lý phòng; kiểm tra dữ liệu, mã trùng và lỗi file.
+- [x] Đã có `SeatRepository` để đọc/ghi, tra cứu ghế theo `(roomId, seatId)`; kiểm tra phòng, loại ghế, vị trí trong sơ đồ và vị trí trùng.
+- [ ] Hoàn thiện và nghiệm thu `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra quan hệ phòng–ghế và quyền khi có API xác thực.
 - [ ] Kiểm thử C++ dữ liệu hợp lệ/lỗi, quyền, tham chiếu, lỗi ghi và nạp lại; ghi lệnh và kết quả vào nhật ký.
+- [x] Triển khai `ShowtimeRepository`: đọc/ghi, kiểm tra tham chiếu, trùng lịch cùng phòng, nghỉ tối thiểu 15 phút và liên kết Movie/Room.
+- [x] Kiểm thử riêng `ShowtimeRepository`: **89/89 PASS theo kết quả Hoàng cung cấp**, Codex chưa chạy lại.
+- [ ] Triển khai `ShowtimeService` và kiểm thử nghiệp vụ tạo/sửa/hủy suất.
+- [ ] Kiểm thử tích hợp phim/phòng/ghế/suất, ghi kết quả vào nhật ký Bước 06.
 
 ### Bước 07 – Quản lý nhân viên
 
@@ -104,28 +108,20 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 - [ ] Hỗ trợ kiểm tra quyền Admin trong luồng quản trị khi Kiệt tích hợp `StaffService`.
 
-### Bước 08 – Quản lý suất chiếu
-
-**Phụ trách chính: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Cài `ShowtimeRepository` và `ShowtimeService` để tạo, sửa, hủy, tra cứu suất.
-- [ ] Kiểm tra quan hệ phim–phòng–suất, lịch cùng phòng và khoảng nghỉ theo quy tắc hiện hành.
-- [ ] Kiểm thử C++ trường hợp lịch hợp lệ/trùng, tham chiếu sai và lưu/nạp; cập nhật tài liệu.
-
-### Bước 09 – Quản lý thành viên
+### Bước 08 – Quản lý thành viên
 
 **Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
 
 - [ ] Thống nhất dữ liệu thành viên cần cho bán vé và thống kê khi API của Kiệt có sẵn.
 
-### Bước 10 – Giá vé, ưu đãi và tích điểm
+### Bước 09 – Giá vé, ưu đãi và tích điểm
 
 **Kiệt chính, Hoàng hỗ trợ. Trạng thái: chưa bắt đầu.**
 
 - [ ] Hoàng kiểm tra giá theo loại ghế và dữ liệu ghế mà phần tính giá sử dụng.
 - [ ] Cùng Kiệt thử mức giá/ưu đãi liên quan loại ghế; giữ quy tắc ưu đãi không cộng dồn.
 
-### Bước 11 – Bán vé tại quầy
+### Bước 10 – Bán vé tại quầy
 
 **Kiệt chính, Hoàng hỗ trợ tích hợp. Trạng thái: chưa bắt đầu.**
 
@@ -133,7 +129,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [ ] Thử ghế thuộc đúng phòng/suất, ghế đã bán theo suất và lỗi ghi file liên quan.
 - [ ] Kiểm thử tích hợp với phần Kiệt, ghi kết quả và cập nhật tài liệu.
 
-### Bước 12 – Hủy vé, lịch sử hóa đơn và thống kê
+### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
 
 **Cùng phụ trách; Hoàng làm thống kê. Trạng thái: chưa bắt đầu.**
 
@@ -141,7 +137,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [ ] Thống kê tiền bán/hoàn, doanh thu thuần, số vé bán/hủy và top phim.
 - [ ] Kiểm thử C++ dữ liệu thường, vé hủy và trường hợp biên; phối hợp truy vấn lịch sử với Kiệt.
 
-### Bước 13 – Xây dựng giao diện Qt
+### Bước 12 – Xây dựng giao diện Qt
 
 **Cùng phụ trách; Hoàng làm giao diện quản trị. Trạng thái: chưa bắt đầu.**
 
@@ -149,14 +145,14 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [ ] Cùng Kiệt thống nhất `MainWindow`, dashboard Admin/Staff, `SeatMapView` và CMake/Qt.
 - [ ] GUI chỉ gọi Service; kiểm tra hiển thị kết quả và lỗi.
 
-### Bước 14 – Kiểm thử tích hợp và sửa lỗi
+### Bước 13 – Kiểm thử tích hợp và sửa lỗi
 
 **Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 
 - [ ] Thử luồng Admin, phim/phòng/ghế/suất/thống kê qua GUI → Business → Data Access → TXT.
 - [ ] Cùng Kiệt thử quyền, dữ liệu sai, lỗi ghi và sửa lỗi có bằng chứng.
 
-### Bước 15 – Đóng gói, hoàn thiện tài liệu và bàn giao
+### Bước 14 – Đóng gói, hoàn thiện tài liệu và bàn giao
 
 **Cùng phụ trách. Trạng thái: chưa bắt đầu.**
 

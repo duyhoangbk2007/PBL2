@@ -21,7 +21,7 @@
 - Suất có trạng thái SCHEDULED/CANCELLED; trạng thái đã kết thúc suy ra từ thời gian.
 - Khi tạo/sửa suất: phim/phòng hoạt động, bắt đầu ở tương lai, ngày chiếu thuộc khoảng phát hành phim.
 - Kết thúc = bắt đầu + thời lượng phim khi tạo/sửa suất. Lưu thời điểm kết thúc riêng; đổi thời lượng phim không tự đổi lịch cũ.
-- Khoảng nghỉ mặc định 15 phút, đặt trong SchedulingConfig.h. Hai suất cùng phòng trùng nếu các khoảng `[bắt đầu, kết thúc + khoảng nghỉ)` giao nhau. Bỏ qua suất hủy và chính suất đang sửa.
+- Khoảng nghỉ tối thiểu 15 phút; code hiện tại khai báo `DateTime::BREAK_MINUTES = 15`. Hai suất cùng phòng trùng nếu các khoảng `[bắt đầu, kết thúc + khoảng nghỉ)` giao nhau. Bỏ qua suất hủy và chính suất đang sửa.
 - Không sửa phim/phòng/thời gian của suất đã từng có vé, kể cả vé hủy; không sửa suất đã bắt đầu.
 - Chỉ hủy suất chưa bắt đầu và không còn vé SOLD. Admin phải xử lý vé trước, không ngầm hủy hàng loạt.
 - Chặn đổi sơ đồ phòng nếu có suất tương lai chưa hủy đã từng phát sinh vé. Không đổi/xóa mã ghế từng xuất hiện trong vé; sơ đồ mới không tương thích cần tạo phòng mới.

@@ -40,13 +40,15 @@ PBL2/
 │   │   ├── InvoiceHistoryView.cpp        [Dự kiến]
 │   │   ├── ReportView.h                  [Dự kiến]
 │   │   └── ReportView.cpp                [Dự kiến]
-│   ├── business/                          [Dự kiến: xử lý nghiệp vụ]
-│   │   ├── AuthService.h                 [Dự kiến]
-│   │   ├── AuthService.cpp               [Dự kiến]
-│   │   ├── MovieService.h                [Dự kiến]
-│   │   ├── MovieService.cpp              [Dự kiến]
-│   │   ├── RoomService.h                 [Dự kiến]
-│   │   ├── RoomService.cpp               [Dự kiến]
+│   ├── business/                          [Đã có Service xác thực, phim, phòng, ghế]
+│   │   ├── AuthService.h
+│   │   ├── AuthService.cpp
+│   │   ├── MovieService.h
+│   │   ├── MovieService.cpp
+│   │   ├── RoomService.h
+│   │   ├── RoomService.cpp
+│   │   ├── SeatService.h
+│   │   ├── SeatService.cpp
 │   │   ├── ShowtimeService.h             [Dự kiến]
 │   │   ├── ShowtimeService.cpp           [Dự kiến]
 │   │   ├── MemberService.h               [Dự kiến]
@@ -57,17 +59,17 @@ PBL2/
 │   │   ├── BookingService.cpp            [Dự kiến]
 │   │   ├── ReportService.h               [Dự kiến]
 │   │   └── ReportService.cpp             [Dự kiến]
-│   ├── data_access/                       [Dự kiến: truy xuất TXT]
-│   │   ├── MovieRepository.h             [Dự kiến viết lại ở Bước 04]
-│   │   ├── MovieRepository.cpp           [Dự kiến viết lại ở Bước 04]
-│   │   ├── RoomRepository.h              [Dự kiến]
-│   │   ├── RoomRepository.cpp            [Dự kiến]
-│   │   ├── SeatRepository.h              [Dự kiến]
-│   │   ├── SeatRepository.cpp            [Dự kiến]
-│   │   ├── ShowtimeRepository.h          [Dự kiến]
-│   │   ├── ShowtimeRepository.cpp        [Dự kiến]
-│   │   ├── UserRepository.h              [Dự kiến]
-│   │   ├── UserRepository.cpp            [Dự kiến]
+│   ├── data_access/                       [Đã có Repository phim, phòng, ghế, suất, tài khoản]
+│   │   ├── MovieRepository.h
+│   │   ├── MovieRepository.cpp
+│   │   ├── RoomRepository.h
+│   │   ├── RoomRepository.cpp
+│   │   ├── SeatRepository.h
+│   │   ├── SeatRepository.cpp
+│   │   ├── ShowtimeRepository.h
+│   │   ├── ShowtimeRepository.cpp
+│   │   ├── UserRepository.h
+│   │   ├── UserRepository.cpp
 │   │   ├── MemberRepository.h            [Dự kiến]
 │   │   ├── MemberRepository.cpp          [Dự kiến]
 │   │   ├── TicketRepository.h            [Dự kiến]
@@ -151,7 +153,7 @@ PBL2/
 
 ## 2. Vai trò từng file mã nguồn
 
-Với các cặp `.h` và `.cpp` trong bảng, `.h` khai báo class và hàm; `.cpp` cài đặt chúng. Tám cặp Model, `FileIO`, `DateTime` và `IdGenerator` đã có ở `src/`; các cặp còn lại vẫn là đề xuất. Hai file `MovieRepository` cũ đã bị xóa khỏi cây làm việc; Hoàng sẽ viết lại từ đầu trong Bước 04. API cụ thể phải đối chiếu mã khi triển khai.
+Với các cặp `.h` và `.cpp` trong bảng, `.h` khai báo class và hàm; `.cpp` cài đặt chúng. Tám cặp Model, `FileIO`, `DateTime`, `IdGenerator` và các Repository phim, phòng, ghế, suất chiếu, tài khoản đã có ở `src/`; các cặp đánh dấu dự kiến vẫn là đề xuất. API cụ thể phải đối chiếu mã khi triển khai.
 
 ### `src/gui/` — giao diện
 
@@ -187,16 +189,16 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 | `BookingService.h/.cpp` | Chọn ghế, Undo trước thanh toán, tính giá/ưu đãi, bán/hủy vé và điều phối lưu. |
 | `ReportService.h/.cpp` | Thống kê tiền bán, tiền hoàn, doanh thu và vé. |
 
-`StaffService` thuộc Bước 07 và dùng lại `UserRepository` của Bước 05; không mặc định thêm `StaffRepository`. `PricingService` chỉ tạo ở Bước 10 nếu có lý do rõ. Chưa mặc định thêm Service cho từng Model. Business gọi Repository, không đọc hoặc ghi TXT trực tiếp.
+`StaffService` thuộc Bước 07 và dùng lại `UserRepository` của Bước 05; không mặc định thêm `StaffRepository`. `PricingService` chỉ tạo ở Bước 09 nếu có lý do rõ. Chưa mặc định thêm Service cho từng Model. Business gọi Repository, không đọc hoặc ghi TXT trực tiếp.
 
 ### `src/data_access/` — truy xuất dữ liệu
 
 | Cặp file | Vai trò dự kiến |
 | --- | --- |
-| `MovieRepository.h/.cpp` | Dự kiến viết lại trong Bước 04 để quản lý tập `Movie`, đọc/ghi `movies.txt`, tra phim theo mã; code cũ chưa nghiệm thu đã bị xóa khỏi cây làm việc. |
+| `MovieRepository.h/.cpp` | Đã có trên nhánh hiện tại; quản lý `Movie`, đọc/ghi `movies.txt` và tra phim theo mã. |
 | `RoomRepository.h/.cpp` | Quản lý `Room`, đọc/ghi `rooms.txt`, kiểm tra mã phòng. |
 | `SeatRepository.h/.cpp` | Quản lý `Seat`, đọc/ghi `seats.txt`, kiểm tra phòng và vị trí ghế. |
-| `ShowtimeRepository.h/.cpp` | Quản lý `Showtime`, đọc/ghi `showtimes.txt`, kiểm tra tham chiếu phim/phòng. |
+| [`ShowtimeRepository.h/.cpp`](<data_acess(docs)/ShowtimeRepository.md>) | Quản lý `Showtime`, đọc/ghi `showtimes.txt`, kiểm tra tham chiếu phim/phòng và lịch cùng phòng. |
 | `UserRepository.h/.cpp` | Quản lý `User`, đọc/ghi `users.txt`, tra ID và tên đăng nhập. |
 | `MemberRepository.h/.cpp` | Quản lý `Member`, đọc/ghi `members.txt`, lưu điểm đã được Service tính. |
 | `TicketRepository.h/.cpp` | Quản lý `Ticket`, đọc/ghi `tickets.txt`, giữ vé đã hủy để tra lịch sử. |
@@ -264,7 +266,7 @@ src/gui/ → src/business/ → src/data_access/ → data/*.txt
 
 `src/models/` và `src/data_structures/` hỗ trợ việc giữ dữ liệu trong RAM; `src/utils/` hỗ trợ kỹ thuật, không phải tầng nghiệp vụ thứ tư. Ví dụ Admin thêm phim: `MovieManagementView` gọi `MovieService`; Service kiểm tra quyền và dữ liệu; `MovieRepository` cập nhật tập phim và dùng `FileIO` lưu `movies.txt` khi cần. Khi cấp mã, luồng tạo còn phải lưu nội dung `updatedSequences` của `IdGenerator` vào `sequences.txt`.
 
-Ví dụ bán vé (Bước 11; GUI triển khai ở Bước 13): `BookingView` gọi `BookingService`; Service kiểm tra suất, ghế, giá, thành viên và quyền; các Repository liên quan chuẩn bị vé, hóa đơn, điểm và bộ đếm rồi ghi các file TXT tương ứng. **Ghi nhiều file tuần tự không nguyên tử**: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Phải kiểm tra từng lần ghi, báo lỗi và không âm thầm bỏ dữ liệu sai.
+Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` gọi `BookingService`; Service kiểm tra suất, ghế, giá, thành viên và quyền; các Repository liên quan chuẩn bị vé, hóa đơn, điểm và bộ đếm rồi ghi các file TXT tương ứng. **Ghi nhiều file tuần tự không nguyên tử**: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Phải kiểm tra từng lần ghi, báo lỗi và không âm thầm bỏ dữ liệu sai.
 
 ## 5. Đường dẫn hiện có và việc chuyển thư mục
 
@@ -274,11 +276,11 @@ Ví dụ bán vé (Bước 11; GUI triển khai ở Bước 13): `BookingView` g
 | --- | --- | --- |
 | `main.cpp` | `src/main.cpp` | Đã chuyển; hiện vẫn là chương trình thử, chưa phải GUI. |
 | `core/dal/models/*.h`, `*.cpp` | `src/models/` | Đã chuyển tám Model và giữ quan hệ/định dạng hiện hành. |
-| `core/dal/dalc/MovieDALC.h/.cpp` | `src/data_access/MovieRepository.h/.cpp` | Từng chuyển và đổi tên; hai file Repository cũ hiện đã bị xóa, chưa nghiệm thu; Bước 04 sẽ viết lại từ đầu. |
+| `core/dal/dalc/MovieDALC.h/.cpp` | `src/data_access/MovieRepository.h/.cpp` | Từng chuyển và đổi tên; bản cũ đã bị xóa ở mốc lịch sử Bước 04, bản `MovieRepository` hiện tại đã được tạo lại. |
 | `core/data_structures/DoublyLinkedList.h` | `src/data_structures/` | Đã chuyển cấu trúc dữ liệu tự cài đặt. |
 | `core/utils/FileHandler.h/.cpp` | `src/utils/FileIO.h/.cpp` | Đã đổi tên class và phương thức đọc thành `readLines`. |
 | `core/utils/DateTime.h/.cpp` | `src/utils/` | Đã chuyển, chưa đổi API. |
 | `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
-Hiện `src/` đã có tám Model, `DoublyLinkedList`, `FileIO`, `DateTime`, `IdGenerator` và `main.cpp` thử nghiệm. Hai file `MovieRepository` cũ đã bị xóa khỏi cây làm việc; Bước 04 sẽ viết lại từ đầu. Repository hiện hành, Service, GUI Qt và `CMakeLists.txt` chưa có. `data/` trống; một số `.exe` thử nghiệm còn ở gốc cây làm việc và không thuộc cây mã nguồn mục tiêu.
+Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản, Service phim/phòng/ghế/xác thực và `main.cpp` thử nghiệm. `ShowtimeService`, GUI Qt và `CMakeLists.txt` chưa có. `data/` trống; một số `.exe` thử nghiệm còn ở gốc cây làm việc và không thuộc cây mã nguồn mục tiêu.

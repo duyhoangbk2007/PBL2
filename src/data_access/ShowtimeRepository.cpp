@@ -224,79 +224,77 @@ bool ShowtimeRepository::load()
     {
         return false;
     }
-    // gọi load trong Repo chung để đưa txt thành các đối tượng
+    // 1. Doc du lieu Showtime tu file
     if (!repo.load())
     {
         return false;
     }
-    // duyệt từng showtime trong danh sách
-    for (int i = 0; i < repo.count(); i++)
+    // 2. Kiem tra tham chieu va trung lich
+    try
     {
-        Showtime* showtime = repo.getAt(i);
-        Movie* movie = movieRepo.findById(showtime->getMovieId());
-        Room* room = roomRepo.findById(showtime->getRoomId());
-        if (movie == nullptr || room == nullptr)
+        for (int i = 0; i < repo.count(); i++)
         {
-            repo.clear();
-            throw runtime_error("Showtime tham chieu Movie hoac Room khong ton tai");
-        }
-        // Kiểm tra trùng lịch
-        for (int j = 0; j < i; j++)
-        {
-            Showtime* other = repo.getAt(j);
-            if (showtime->getStatus() == ShowtimeStatus::CANCELLED ||
-                other->getStatus() == ShowtimeStatus::CANCELLED)
+            Showtime* showtime = repo.getAt(i);
+            Movie* movie = movieRepo.findById(showtime->getMovieId());
+            Room* room = roomRepo.findById(showtime->getRoomId());
+
+            if (movie == nullptr || room == nullptr)
             {
-                continue;
+                throw runtime_error("Showtime tham chieu Movie hoac Room khong ton tai");
             }
-            //nếu hai suất thuộc cùng phòng và thời gian chồng lên nhau
-            if (showtime->getRoomId() == other->getRoomId() &&
-                DateTime::isOverlapping(
-                    showtime->getStartAt(),
-                    showtime->getEndAt(),
-                    other->getStartAt(),
-                    other->getEndAt()))
+            // Kiem tra trung lich voi cac suat truoc do
+            for (int j = 0; j < i; j++)
             {
-                repo.clear();
-                throw runtime_error("Trung lich Showtime trong file");
+                Showtime* other = repo.getAt(j);
+                if (showtime->getStatus() == ShowtimeStatus::CANCELLED ||
+                    other->getStatus() == ShowtimeStatus::CANCELLED)
+                {
+                    continue;
+                }
+                if (showtime->getRoomId() == other->getRoomId() &&
+                    DateTime::isOverlapping(
+                        showtime->getStartAt(),
+                        showtime->getEndAt(),
+                        other->getStartAt(),
+                        other->getEndAt()))
+                {
+                    throw runtime_error("Trung lich Showtime trong file");
+                }
+            }
+        }
+
+        // Lien ket Showtime voi Movie va Room
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Showtime* showtime = repo.getAt(i);
+            Movie* movie = movieRepo.findById(showtime->getMovieId());
+            Room* room = roomRepo.findById(showtime->getRoomId());
+            if (!showtime->linkMovie(movie) || !showtime->linkRoom(room))
+            {
+                throw runtime_error("Khong the lien ket Showtime voi Movie va Room");
             }
         }
     }
-
-    // Lien ket Showtime voi Movie va Room
-    for (int i = 0; i < repo.count(); i++)
+    catch (...)
     {
-        Showtime* showtime = repo.getAt(i);
-        Movie* movie = movieRepo.findById(showtime->getMovieId());
-        Room* room = roomRepo.findById(showtime->getRoomId());
-
-        //liên kết showtime với movie
-        bool linkedMovie = showtime->linkMovie(movie);
-        bool linkedRoom = false;
-        if (linkedMovie)
+        // Hoan tac cac lien ket da tao
+        for (int i = 0; i < repo.count(); i++)
         {
-            // khi showtime liên kết với movie thì mới liên kết với room
-            linkedRoom = showtime->linkRoom(room);
-        }
-        if (!linkedMovie || !linkedRoom)
-        {
-            // Thao tat ca lien ket da tao
-            for (int j = 0; j <= i; j++)
+            Showtime* showtime = repo.getAt(i);
+            if (showtime->getMovie() != nullptr)
             {
-                Showtime* current = repo.getAt(j);
-                if (current->getMovie() != nullptr)
-                {
-                    current->getMovie()->unlinkShowtime(current);
-                }
-                if (current->getRoom() != nullptr)
-                {
-                    current->getRoom()->unlinkShowtime(current);
-                }
+                showtime->getMovie()->unlinkShowtime(showtime);
             }
-            repo.clear();
-            throw runtime_error("Khong the lien ket Showtime voi Movie va Room");
+            if (showtime->getRoom() != nullptr)
+            {
+                showtime->getRoom()->unlinkShowtime(showtime);
+            }
         }
+
+        repo.clear();
+        throw;
     }
+
     return true;
 }
 
@@ -332,6 +330,11 @@ bool ShowtimeRepository::add(Showtime* showtime)
         return false;
     }
     if (!isValidShowtime(showtime))
+    {
+        return false;
+    }
+    // không thêm Showtime đã được liên kết từ trước
+    if (showtime->getMovie() != nullptr || showtime->getRoom() != nullptr)
     {
         return false;
     }
@@ -432,7 +435,12 @@ bool ShowtimeRepository::removeById(const string& showtimeId)
     //nếu k hủy liên kết showtime với room được thì phải khôi phục lại liên kết showtime với movie
     if (!room->unlinkShowtime(showtime))
     {
-        movie->linkShowtime(showtime);
+        if (!movie->linkShowtime(showtime))
+        {
+            throw runtime_error(
+                "Khong the khoi phuc lien ket Movie"
+            );
+        }
         return false;
     }
     return repo.removeById(showtimeId);
