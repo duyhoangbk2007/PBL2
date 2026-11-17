@@ -28,6 +28,6 @@ Các helper private gồm `getShowtimeId`, `stringToShowtime`, `showtimeToString
 
 ## Ranh giới và kiểm thử
 
-Repository kiểm tra định dạng, tham chiếu và trùng lịch. `ShowtimeService` hiện kiểm tra quyền Admin và một số điều kiện lịch khi thêm/sửa; chưa có test riêng. `cancelShowtime()` và `removeShowtime()` vẫn trả `false` ở nhánh cần xét vé, nên chưa bảo đảm đầy đủ điều kiện tham chiếu vé. Không coi các quy tắc ở Service là bảo đảm của Repository. `save()` ghi một file; không cung cấp giao dịch nhiều file.
+Repository kiểm tra định dạng, tham chiếu và trùng lịch. [ShowtimeService](<../business(docs)/ShowtimeService.md>) kiểm tra quyền Admin và điều kiện lịch khi thêm/sửa; test riêng đạt 89/89 trong phạm vi hiện có. `cancelShowtime()` và `removeShowtime()` vẫn trả `false` vì chưa có `TicketRepository`, nên chưa bảo đảm đầy đủ điều kiện tham chiếu vé. Không coi các quy tắc ở Service là bảo đảm của Repository. `save()` ghi một file; không cung cấp giao dịch nhiều file.
 
-`tests/test_showtime_repository.cpp` kiểm tra thêm/sửa/xóa, đọc/ghi, khoảng nghỉ 14/15 phút, liên kết, dữ liệu lỗi và rollback. **89/89 PASS** khi Codex biên dịch C++17 và chạy lại test trong thư mục tạm ngày 2026-11-17. Bước tiếp theo là triển khai và kiểm thử `ShowtimeService` trong [Bước 06](../../development/Buoc06_QuanLyPhongVaGhe.md).
+`tests/test_showtime_repository.cpp` kiểm tra thêm/sửa/xóa, đọc/ghi, khoảng nghỉ 14/15 phút, liên kết, dữ liệu lỗi và rollback. **89/89 PASS** khi Codex biên dịch C++17 và chạy lại test trong thư mục tạm ngày 2026-11-17. `ShowtimeService` cũng có test riêng 89/89; xem [Bước 06](../../development/Buoc06_QuanLyPhongVaGhe.md) để biết phần còn thiếu.

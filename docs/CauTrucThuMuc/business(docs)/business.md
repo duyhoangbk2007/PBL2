@@ -41,7 +41,7 @@ Các Service được xây dựng theo những nguyên tắc:
 
 ## 3. Phân quyền
 
-Các Service quản lý Movie, Room và Seat sử dụng AuthService.
+Các Service quản lý Movie, Room, Seat và Showtime sử dụng AuthService.
 
 Quy tắc chung:
 
@@ -79,6 +79,7 @@ Khi không đáp ứng điều kiện, AuthService ném ngoại lệ.
 | MovieService | Quản lý phim |
 | RoomService | Quản lý phòng chiếu |
 | SeatService | Quản lý ghế ngồi |
+| ShowtimeService | Tạo/sửa/tra cứu suất chiếu; hủy/xóa chưa hoàn thiện |
 
 ## 5. MovieService
 
@@ -130,7 +131,11 @@ SeatRepository chịu trách nhiệm kiểm tra vị trí, loại ghế và liê
 
 Tài liệu chi tiết: `SeatService.md`.
 
-## 8. Phân chia trách nhiệm Service và Repository
+## 8. ShowtimeService
+
+Service kiểm tra quyền, thời điểm bắt đầu trong tương lai, ngày chiếu nằm trong khoảng phát hành phim và thời lượng suất khớp phim. Repository kiểm tra tham chiếu, trùng lịch cùng phòng và khoảng nghỉ 15 phút. `test_showtime_service.cpp` đạt **89/89 PASS, 0 FAIL** ngày 2026-11-17 cho phạm vi hiện có. `cancelShowtime()` và `removeShowtime()` đang trả `false` để chờ `TicketRepository`; xem [tài liệu ShowtimeService](ShowtimeService.md).
+
+## 9. Phân chia trách nhiệm Service và Repository
 
 Ví dụ với Room:
 
@@ -168,7 +173,7 @@ SeatRepository
 Repository<Seat>
 ```
 
-## 9. Quy tắc trả kết quả
+## 10. Quy tắc trả kết quả
 
 Các thao tác quản lý thường trả về `bool`.
 
@@ -182,7 +187,7 @@ Các thao tác tra cứu trả về `const Model*`.
 
 Các thao tác yêu cầu quyền có thể ném `runtime_error` nếu người dùng không đáp ứng điều kiện xác thực hoặc phân quyền.
 
-## 10. Các nghiệp vụ cần hoàn thiện khi tích hợp
+## 11. Các nghiệp vụ cần hoàn thiện khi tích hợp
 
 Các module hiện tại mới xử lý những ràng buộc đã có đủ dữ liệu.
 
@@ -191,14 +196,14 @@ Khi tích hợp Showtime và Ticket, cần tiếp tục xem xét:
 - Giới hạn chỉnh sửa phòng khi đã có lịch chiếu và vé.
 - Không xóa ghế đang được vé tham chiếu.
 - Không thay đổi loại ghế nếu ảnh hưởng đến vé đã bán.
-- Kiểm tra điều kiện tạo suất chiếu.
+- Kiểm tra vé trước khi hủy hoặc xóa suất chiếu.
 - Kiểm tra trạng thái ghế khi bán và hủy vé.
 
 Những chức năng này chưa được coi là đã triển khai.
 
-## 11. Kết luận
+## 12. Kết luận
 
-Tầng Business hiện có các Service quản lý xác thực, phim, phòng chiếu và ghế ngồi.
+Tầng Business hiện có các Service quản lý xác thực, phim, phòng chiếu, ghế ngồi và suất chiếu.
 
 Các Service sử dụng cùng một phong cách thiết kế: nhận Repository và AuthService thông qua tham chiếu, kiểm tra quyền, thực hiện nghiệp vụ rồi gọi Repository.
 

@@ -9,8 +9,8 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 | 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng — Backend; Kiệt tham gia theo lịch sử | **Đã hoàn thành theo xác nhận nhóm**; kết quả kiểm thử lịch sử giữ nguyên. Thiết kế mới dùng `FileIO`, `DateTime`, `IdGenerator`. | [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) |
 | 04 | Quản lý phim | Hoàng | **Đang thực hiện, tạm dừng để làm Bước 06**: `MovieRepository` đạt 40/40, `MovieService` đạt 45/45 trong phạm vi test hiện có; nghiệp vụ đổi trạng thái phim còn thiếu. | [Bước 04](Buoc04_QuanLyPhim.md) |
 | 05 | Đăng nhập và phân quyền | Hoàng | **Đang thực hiện, chưa nghiệm thu**: `UserRepository` và `AuthService` đã có; `test_auth.cpp` đạt 9/14, còn 5 ca lỗi. | [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) |
-| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89 trong các test đã ghi. `ShowtimeService` có mã tạo/sửa/tra cứu và kiểm tra quyền nhưng hủy/xóa chưa hoàn thiện, chưa có test riêng; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
-| 07 | Quản lý nhân viên | Hoàng | Chưa bắt đầu. | Chưa tạo |
+| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89. `ShowtimeService` có test riêng **89/89 PASS, 0 FAIL** cho phạm vi hiện có. Hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
+| 07 | Quản lý nhân viên | Hoàng | Chưa bắt đầu; chuẩn bị đối chiếu API `UserRepository`/`AuthService` và quy tắc nhân viên trước khi triển khai `StaffService`. | Chưa tạo |
 | 08 | Quản lý thành viên | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 09 | Giá vé, ưu đãi và tích điểm | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 10 | Bán vé tại quầy | Hoàng | Chưa bắt đầu; `Ticket`/`Invoice` Model không đồng nghĩa bán vé đã có. | Chưa tạo |
@@ -23,6 +23,6 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 
 ## Hiện trạng mã và cách đọc lịch sử
 
-Mã hiện có tám Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `DateTime`, `IdGenerator` ở `src/utils/` và `src/main.cpp` thử nghiệm. Đã có `MovieRepository` và `MovieService`, mỗi lớp có test riêng đạt nhưng Service còn thiếu nghiệp vụ đổi trạng thái; đã có Repository/Service phòng và ghế cùng `ShowtimeRepository` với test riêng đạt; `ShowtimeService` mới triển khai một phần, chưa có test riêng; chưa có GUI Qt hoặc CMake. `TransactionManager` cũ ở `tests/legacy/` chỉ để đối chiếu và giữ bài thử lịch sử.
+Mã hiện có tám Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `DateTime`, `IdGenerator` ở `src/utils/` và `src/main.cpp` thử nghiệm. Đã có `MovieRepository` và `MovieService`, mỗi lớp có test riêng đạt nhưng Service còn thiếu nghiệp vụ đổi trạng thái; đã có Repository/Service phòng và ghế cùng `ShowtimeRepository` với test riêng đạt. `ShowtimeService` có test riêng đạt 89/89 cho phạm vi hiện có, nhưng chưa thực hiện hủy/xóa suất vì thiếu dữ liệu vé; chưa có GUI Qt hoặc CMake. `TransactionManager` cũ ở `tests/legacy/` chỉ để đối chiếu và giữ bài thử lịch sử.
 
 Nhật ký Bước 01–03 được viết trước quyết định lộ trình mới nên có thể ghi trạng thái và tên thư mục cũ. Không sửa lịch sử để suy ra những lần build, test hoặc merge chưa xảy ra. Quy tắc TXT hiện hành: mọi file, kể cả `sequences.txt`, không có dòng schema hoặc tiêu đề; xem [định dạng dữ liệu](../TongQuan/data_format.md). Bước 04 chỉ hoàn thành khi cả `MovieRepository` và `MovieService` xử lý nghiệp vụ phim, có kiểm thử C++ và tài liệu tương ứng.

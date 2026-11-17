@@ -87,21 +87,25 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 06 – Quản lý phòng, ghế và suất chiếu
 
-**Phụ trách: Hoàng. Trạng thái: đang thực hiện; ShowtimeService chưa hoàn thiện.** Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; phần tạo/sửa/tra cứu suất đã có test đạt, hủy/xóa còn phụ thuộc vé.** Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
 
 - [x] Có `RoomRepository`, `RoomService`; test C++17 riêng đạt lần lượt **78/78** và **54/54**.
 - [x] Có `SeatRepository`, `SeatService`; test C++17 riêng đạt lần lượt **85/85** và **59/59**.
 - [x] Có `ShowtimeRepository`; test C++17 riêng đạt **89/89**, gồm lịch cùng phòng với khoảng nghỉ 15 phút và liên kết Movie/Room.
 - [x] Kiểm thử liên kết Movie/Room–Showtime bằng `test_showtime_link.cpp` đạt **31/31**.
-- [ ] Hoàn thiện và kiểm thử `ShowtimeService`; mã hiện tại có kiểm tra lịch cơ bản nhưng `cancelShowtime()` và `removeShowtime()` chưa thực hiện nghiệp vụ.
+- [x] Có `ShowtimeService` cho tạo/sửa/tra cứu, kiểm tra quyền và lịch chiếu; `test_showtime_service.cpp` **89/89 PASS, 0 FAIL** khi chạy C++17 ngày 2026-11-17.
+- [ ] Hoàn thiện `cancelShowtime()` và `removeShowtime()` sau khi có `TicketRepository` để kiểm tra ràng buộc vé; hiện hai hàm trả `false` và test chỉ xác nhận hành vi từ chối này.
 - [ ] Kiểm tra tích hợp phòng/ghế/suất với vé, lỗi file, con trỏ và quyền; chưa có đủ các Repository vé để nghiệm thu toàn Bước 06.
 
 **Kết quả kiểm tra:** Codex biên dịch và chạy các bài test trên trong thư mục tạm ngày 2026-11-17; tất cả thoát mã 0. Kết quả chỉ xác nhận phạm vi của các bài test hiện có.
+
+**Kiểm tra bổ sung 2026-11-17:** Biên dịch và chạy riêng `test_showtime_service.cpp`: **89 PASS, 0 FAIL**, thoát mã 0. Kết quả không nghiệm thu hủy/xóa hoặc toàn Bước 06.
 
 ### Bước 07 – Quản lý nhân viên
 
 **Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
+- [ ] Đối chiếu `UserRepository`, `AuthService` và quy tắc nhân viên trước khi chốt API `StaffService`; giữ kiểm tra quyền ở Service.
 - [ ] Dùng lại `UserRepository`, triển khai `StaffService` cho thêm/sửa/tìm/vô hiệu hóa Staff và kiểm tra quyền Admin.
 - [ ] Kiểm thử C++ dữ liệu trùng, quyền, trạng thái và lưu/nạp; cập nhật tài liệu.
 

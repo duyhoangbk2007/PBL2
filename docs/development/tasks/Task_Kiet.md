@@ -61,7 +61,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 ## Công việc hiện hành: GUI Bước 12–14
 
-Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI.
+Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI. Bước 06 hiện có `ShowtimeService` và `test_showtime_service.cpp` đạt 89/89, nhưng hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`; Kiệt chưa có task Backend hoặc GUI được đánh dấu hoàn thành từ kết quả này.
 
 ### Bước 12 – Xây dựng giao diện Qt
 

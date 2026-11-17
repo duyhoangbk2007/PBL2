@@ -283,4 +283,4 @@ Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` g
 | `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
-Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản, Service phim/phòng/ghế/suất/xác thực và `main.cpp` thử nghiệm. `ShowtimeService` mới triển khai một phần, chưa có test riêng; GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.
+Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản, Service phim/phòng/ghế/suất/xác thực và `main.cpp` thử nghiệm. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.
