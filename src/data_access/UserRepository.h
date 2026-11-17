@@ -24,10 +24,10 @@ private:
 
 public:
     UserRepository(const string& filePath);
-    // Khong sao chep repo so huu cac con tro User.
 
     bool load();
     bool save();
+    
     // Quan ly tai khoan
     bool add(User* user);
     bool update(const User& newValues);

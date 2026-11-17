@@ -103,11 +103,12 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 07 – Quản lý nhân viên
 
-**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: `StaffService` và test riêng đã đạt; còn các giới hạn nêu dưới đây.** Xem [Bước 07](../Buoc07_QuanLyNhanVien.md).
 
-- [ ] Đối chiếu `UserRepository`, `AuthService` và quy tắc nhân viên trước khi chốt API `StaffService`; giữ kiểm tra quyền ở Service.
-- [ ] Dùng lại `UserRepository`, triển khai `StaffService` cho thêm/sửa/tìm/vô hiệu hóa Staff và kiểm tra quyền Admin.
-- [ ] Kiểm thử C++ dữ liệu trùng, quyền, trạng thái và lưu/nạp; cập nhật tài liệu.
+- [x] Dùng chung `UserRepository` với `AuthService`; `StaffService` kiểm tra quyền Admin trước khi thêm/sửa/vô hiệu hóa/tra cứu Staff.
+- [x] Triển khai thêm, sửa, tìm theo ID/username, duyệt/đếm Staff và vô hiệu hóa tài khoản; giữ Admin ngoài các thao tác này.
+- [x] Kiểm thử riêng `test_staff_service.cpp`: mốc đã ghi **59/59 PASS**; lần chạy trên nhánh hiện tại **67/67 PASS, 0 FAIL** với C++17.
+- [ ] Đối chiếu phụ thuộc lịch sử hóa đơn khi các Repository giao dịch có sẵn; chưa có xóa vật lý hoặc kích hoạt lại Staff.
 
 ### Bước 08 – Quản lý thành viên
 
