@@ -135,11 +135,11 @@ bool UserRepository::load()
 {
     if (repo.isLoaded()) // không load lại khi đã có dữ liệu
     {
-        return false;
+        throw runtime_error("Du lieu User da duoc nap: " + repo.getFilePath());
     }
     if (!repo.load())
     {
-        return false;
+        throw runtime_error("Khong the nap file User: " + repo.getFilePath());
     }
     // Xoa chi muc cu
     usersById.clear();
@@ -154,7 +154,8 @@ bool UserRepository::load()
             if (usersById.find(user->getUserId()) != usersById.end() ||
                 usersByUsername.find(user->getUsername()) != usersByUsername.end())
             {
-                throw runtime_error("Trung ID hoac username tai dong " + to_string(i + 1));
+                throw runtime_error(
+                    "Trung ID hoac username trong file " + repo.getFilePath() + " tai dong " + to_string(i + 1));            
             }
 
             usersById[user->getUserId()] = user;
@@ -173,7 +174,17 @@ bool UserRepository::load()
 
 bool UserRepository::save()
 {
-    return repo.save();
+    if (!repo.isLoaded())
+    {
+        throw runtime_error("Chua nap du lieu User");
+    }
+    if (!repo.save())
+    {
+        throw runtime_error(
+            "Khong the ghi file User: " + repo.getFilePath()
+        );
+    }
+    return true;
 }
 
 User* UserRepository::findById(const string& userId)
