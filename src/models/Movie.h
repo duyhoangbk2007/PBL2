@@ -45,6 +45,7 @@ public:
     void setActive(bool active);
 
     bool linkShowtime(Showtime* showtime);
+    bool unlinkShowtime(Showtime* showtime);
     Showtime* findShowtime(const std::string& showtimeId);
     int getShowtimeCount() const;
 };

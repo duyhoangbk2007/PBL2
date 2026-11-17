@@ -1,5 +1,7 @@
 # Bước 01 — Khởi tạo Project
 
+> Ghi chú hiện hành: các đường dẫn `core/` và `ui/` bên dưới là nhật ký cấu trúc tại thời điểm khảo sát. Mã Backend hiện ở `src/models/`, `src/data_access/`, `src/business/`, `src/data_structures/` và `src/utils/`; xem [tiến độ hiện tại](TongQuanTienDo.md).
+
 ## Checklist công việc
 
 - [x] Khảo sát lại toàn bộ file, thư mục, mã nguồn và tài liệu hiện có (2026-10-11).
@@ -32,7 +34,7 @@
 | `data/` | Dữ liệu văn bản `.txt` của ứng dụng và vùng giao dịch/phục hồi sau này. Định dạng cụ thể theo `docs/data_format.md`. | Có thư mục, chưa có file dữ liệu. |
 | `docs/` | Tài liệu thiết kế, quy tắc và ghi chép học tập; không phải mã chạy của ứng dụng. | Có tài liệu thiết kế, `DS/` và `development/`. |
 | `docs/DS/` | Giải thích cấu trúc dữ liệu đã làm để dễ học lại và đối chiếu với mã. | Đã bổ sung tổng quan DLL, HashTable và Stack trong lần này. |
-| `docs/development/` | Theo dõi trạng thái 15 bước và nhật ký của bước đã thực sự bắt đầu; giúp khôi phục ngữ cảnh. | Có file tổng quan và nhật ký Bước 01. |
+| `docs/development/` | Theo dõi trạng thái 14 bước và nhật ký của bước đã thực sự bắt đầu; giúp khôi phục ngữ cảnh. | Có file tổng quan và nhật ký Bước 01. |
 | `tests/` | Nơi dự kiến đặt bài kiểm tra cấu trúc dữ liệu, repository, service và dữ liệu mẫu. | Chưa có thư mục; chưa chạy kiểm thử. |
 
 **Cập nhật 2026-10-11:** Đã viết tài liệu tổng quan trong `docs/DS/DLL.md`, `HashTable.md`, `Stack.md` dựa trên ba header hiện có. Không sửa `.h`, `.cpp`, `main.cpp` hoặc `CMakeLists.txt`. Kiến thức ghi nhận: thư mục thể hiện trách nhiệm của từng tầng; template CTDL được cài trong header để trình biên dịch thấy phần định nghĩa khi dùng kiểu cụ thể. Chưa build hoặc chạy test nên chưa xác nhận tính đúng của ba CTDL.
@@ -58,3 +60,7 @@
 4. **Kiểm chứng:** cấu hình, build, chạy chương trình C++17; ghi lệnh, kết quả, lỗi và cách khắc phục; cập nhật hướng dẫn build.
 
 Sau mỗi phần, cập nhật checklist, kiến thức học được, thay đổi code, lỗi, kết quả kiểm thử và việc tiếp theo ngay trong ba mục trên; giữ lịch sử những lần cập nhật. Không chuyển phần hoặc bước khi chưa được yêu cầu.
+
+## Ghi chú phân công hiện hành (2026-11-17)
+
+Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11; Kiệt phụ trách GUI Qt và tích hợp giao diện với Backend từ Bước 12. Các phân công, checkbox và kết quả kiểm thử ghi ở trên là lịch sử tại thời điểm thực hiện, không bị đổi trạng thái bởi quyết định phân công mới.

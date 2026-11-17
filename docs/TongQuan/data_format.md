@@ -61,7 +61,7 @@ seatType = STANDARD/VIP/COUPLE. Khóa `(roomId, seatId)` và vị trí `(roomId,
 showtimeId|movieId|roomId|startAt|endAt|status
 ```
 
-status = SCHEDULED/CANCELLED. endAt > startAt, chốt theo thời lượng phim lúc tạo/sửa suất.
+status = SCHEDULED/CANCELLED. endAt > startAt, chốt theo thời lượng phim lúc tạo/sửa suất. `ShowtimeRepository` hiện kiểm tra lịch cùng phòng với khoảng nghỉ tối thiểu 15 phút; nạp MovieRepository và RoomRepository trước ShowtimeRepository để nối các tham chiếu.
 
 ### invoices.txt
 

@@ -40,6 +40,8 @@ public:
 	void setStartAt(const std::string& startAt);
 	void setEndAt(const std::string& endAt);
 	void setStatus(ShowtimeStatus status);
+	bool setMovieId(const std::string& movieId);
+	bool setRoomId(const std::string& roomId);
 
 	Movie* getMovie() const;
 	Room* getRoom() const;

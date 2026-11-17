@@ -1,6 +1,6 @@
 # `src/gui/` — giao diện Qt Widgets
 
-**Đến hết Bước 03:** thư mục đã được dành chỗ trong cây `src/`, nhưng **chưa có mã GUI Qt**. Giao diện dự kiến xây dựng ở Bước 13 sau khi các chức năng C++ được triển khai và kiểm thử.
+**Đến hết Bước 03:** thư mục đã được dành chỗ trong cây `src/`, nhưng **chưa có mã GUI Qt**. Giao diện dự kiến xây dựng ở Bước 12 sau khi các chức năng C++ được triển khai và kiểm thử.
 
 ## Ý nghĩa và ranh giới
 
@@ -19,4 +19,4 @@ src/gui/
 
 Đây là **sơ đồ tên file dự kiến**, chưa có file mã tương ứng. Nếu dùng Qt Designer, chỉ tạo `.ui` cho màn hình thật sự cần. Khi viết một View, sườn luồng là: lấy thao tác → gọi Service tương ứng → hiển thị dữ liệu hoặc lỗi trả về. Không tự tạo màn hình chỉ để khớp cây tài liệu.
 
-Xem [business.md](business.md) cho tầng được GUI gọi và [lộ trình](../development/PhanCongCongViec.md) cho phân công GUI Bước 13.
+Xem [business.md](business.md) cho tầng được GUI gọi và [lộ trình](../development/PhanCongCongViec.md) cho phân công GUI Bước 12.

@@ -19,9 +19,9 @@
 
 | Quan hệ | API/thuộc tính hiện có | Giới hạn cần nhớ |
 | --- | --- | --- |
-| `Movie` ↔ `Showtime` | `Movie::linkShowtime`, danh sách suất; `Showtime::linkMovie`, con trỏ phim. | Mã phim phải khớp; việc nạp và nối lại từ TXT chưa phải chức năng Bước 02–03. |
+| `Movie` ↔ `Showtime` | `Movie::linkShowtime`, danh sách suất; `Showtime::linkMovie`, con trỏ phim. | Mã phim phải khớp; hiện `ShowtimeRepository` nạp và nối lại từ TXT sau Movie/Room. |
 | `Room` ↔ `Seat` | `Room::linkSeat`, danh sách ghế; `Seat::linkRoom`, con trỏ phòng. | Không nhầm ghế trong phòng với ghế đã bán theo suất. |
-| `Room` ↔ `Showtime` | `Room::linkShowtime`, danh sách suất; `Showtime::linkRoom`, con trỏ phòng. | Kiểm tra lịch trùng thuộc nghiệp vụ sau này. |
+| `Room` ↔ `Showtime` | `Room::linkShowtime`, danh sách suất; `Showtime::linkRoom`, con trỏ phòng. | `ShowtimeRepository` hiện kiểm tra trùng lịch cùng phòng; các quy tắc nghiệp vụ khác chờ `ShowtimeService`. |
 | `Invoice` ↔ `Ticket` | `Invoice::linkTicket`, danh sách vé; `Ticket::linkInvoice`, con trỏ hóa đơn. | Một hóa đơn có thể có nhiều vé cùng suất; giữ lịch sử vé hủy. |
 | `User`/`Member` ↔ `Invoice` | `Invoice::linkSeller`, `linkMember`; `User` và `Member` có danh sách hóa đơn. | Thành viên có thể không có; người bán phải được ghi đúng ID. |
 | Tham chiếu khác | `Invoice::linkShowtime`; `Ticket::linkShowtime`, `linkSeat`. | Không suy ra chiều ngược đã có ở mọi lớp. |
