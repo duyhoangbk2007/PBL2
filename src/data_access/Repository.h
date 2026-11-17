@@ -30,6 +30,7 @@ public:
     int count();
     bool isLoaded();
     void clear();
+    const string& getFilePath() const;
 };
 
 //----
@@ -148,7 +149,19 @@ bool Repository<T>::load()
     {
         for (int i = 0; i < (int)lines.size(); i++) //duyệt từng dòng trong lines
         {
-            T* item = parse(lines[i]);
+            T* item = nullptr;
+            try
+            {
+                item = parse(lines[i]);
+            }
+            catch (const exception& e)
+            {
+                throw runtime_error(
+                    "Loi doc file " + filePath +
+                    " tai dong " + to_string(i + 1) +
+                    ": " + e.what()
+                );
+            }
             if (item == nullptr)
             {
                 throw runtime_error("Du lieu khong hop le tai dong " + to_string(i + 1));
@@ -172,7 +185,10 @@ bool Repository<T>::load()
             if (duplicate)
             {
                 delete item;
-                throw runtime_error("Trung ID tai dong " + to_string(i + 1));
+               throw runtime_error(
+                    "Trung ID trong file " + filePath +
+                    " tai dong " + to_string(i + 1)
+                );
             }
             tempItems.pushBack(item);
         }
@@ -215,6 +231,11 @@ bool Repository<T>::save()
         lines.push_back(line);
     }
     return FileIO::writeLines(filePath, lines);
+}
+template <typename T>
+const string& Repository<T>::getFilePath() const
+{
+    return filePath;
 }
 
 #endif
