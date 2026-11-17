@@ -1,5 +1,7 @@
 # Bước 02 — Xây dựng Models
 
+> Ghi chú hiện hành: các đường dẫn `core/dal/models/` và lệnh build bên dưới là bằng chứng lịch sử. Tám Model hiện ở `src/models/`; xem [tiến độ hiện tại](TongQuanTienDo.md).
+
 > **Đối chiếu lộ trình từ commit `9925283`:** Bước 02 hiện gồm hoàn thiện Models, quan hệ con trỏ và rà soát `DoublyLinkedList<T>` khi Model dùng. Bước 03 **mới** là hạ tầng lưu trữ dữ liệu; không còn bước riêng về CTDL. Các mốc, đường dẫn và nhận xét về “Bước 03” trong phần lịch sử bên dưới được giữ theo thời điểm ghi, không phải kế hoạch hiện hành. Xem [tiến độ mới](TongQuanTienDo.md).
 
 ## Checklist công việc

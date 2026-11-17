@@ -1,6 +1,6 @@
 # Task của Hoàng — lộ trình PBL2 14 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11: Models, Data Access, Business Logic, nghiệp vụ và kiểm thử C++. Từ Bước 12, Hoàng hỗ trợ API và sửa lỗi Backend khi Kiệt tích hợp GUI. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b06-hoang-room-seat-management`.
+Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11: Models, Data Access, Business Logic, nghiệp vụ và kiểm thử C++. Từ Bước 12, Hoàng hỗ trợ API và sửa lỗi Backend khi Kiệt tích hợp GUI. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước đã kiểm tra cú pháp các Model bằng C++17; mã hiện hành ở `src/models/`.
 
 **Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi phần việc của bước đó có kiểm thử và nghiệm thu phù hợp; việc đổi phân công không làm thay đổi checkbox lịch sử. Khi tiếp tục Bước XX của Hoàng, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Kiệt khi chỉ làm phần Hoàng.
 
@@ -34,11 +34,11 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 **Checklist công việc:**
 
-- [x] Có đủ `Movie`, `Room`, `Seat`, `Showtime` ở `core/dal/models/`.
+- [x] Có đủ `Movie`, `Room`, `Seat`, `Showtime` ở `src/models/`.
 - [x] Biên dịch cú pháp bốn Model và toàn bộ tám `.cpp` bằng C++17: đạt ở lần rà soát này.
 - [x] Nối hai chiều và kiểm tra mã/trùng cho `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime`.
 - [x] Kiểm thử liên kết Movie/Room–Showtime và ghế/phòng qua các test hiện có: `test_showtime_link.cpp` đạt 31/31, `test_seat_repository.cpp` đạt 85/85; phạm vi các bài test này được ghi riêng.
-- [ ] Kiểm thử tích hợp quan hệ của cả tám Model, gồm Invoice/Ticket/User/Member; bài `tests/model_relations_test.cpp` được nhắc trong nhật ký cũ nhưng không có trên nhánh hiện tại.
+- [ ] Kiểm thử tích hợp quan hệ giao dịch Invoice/Ticket/User/Member với các Model còn lại; bài `tests/model_relations_test.cpp` được nhắc trong nhật ký cũ nhưng không có trên nhánh hiện tại.
 
 **Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán và có kiểm thử chạy đạt. Có bằng chứng biên dịch/chạy thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 

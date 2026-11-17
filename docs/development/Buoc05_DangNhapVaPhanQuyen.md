@@ -17,7 +17,7 @@ Hoàn thiện `UserRepository` để quản lý tài khoản trong `users.txt` v
 - [x] Có mã `UserRepository` và `AuthService` cùng bài test xác thực.
 - [x] Kiểm thử các luồng đăng nhập/quyền cơ bản: Admin, Staff, tài khoản vô hiệu hóa, đăng xuất/chuyển tài khoản và thông tin đăng nhập sai đều đạt trong lần chạy hiện tại.
 - [ ] Hoàn thiện hợp đồng lỗi khi Repository chưa nạp, file thiếu, bản ghi sai/trùng, từ chối reload và lỗi ghi.
-- [ ] Chạy lại toàn bộ `test_auth.cpp` đạt, ghi bằng chứng và đối chiếu quyền từ các Service sử dụng `AuthService`.
+- [ ] Chạy lại toàn bộ `test_auth.cpp` đạt; lần kiểm tra đã ghi ngày 2026-11-17 còn 5 ca lỗi. Đối chiếu tiếp quyền từ các Service sử dụng `AuthService`.
 - [ ] Cập nhật tài liệu theo hành vi đã kiểm chứng và nghiệm thu Bước 05.
 
 ## Kiểm thử và vướng mắc

@@ -15,7 +15,8 @@
 - [x] Đã có mã `RoomRepository` cho nạp/lưu và thao tác dữ liệu phòng; các trường hợp lỗi và nghiệm thu giữ ở mục kiểm thử bên dưới.
 - [x] Đã có mã `SeatRepository` cho nạp/lưu và tra cứu theo khóa `(roomId, seatId)`; các ràng buộc vị trí và lỗi dữ liệu tiếp tục kiểm thử. Không dùng riêng `seatId` làm khóa toàn cục.
 - [ ] Liên kết ghế với phòng sau khi nạp và kiểm tra tham chiếu trước khi công bố dữ liệu; không để con trỏ treo khi nạp lại hoặc xóa. Xác định cách báo lỗi có file và dòng khi bản ghi sai.
-- [ ] Hoàn thiện và nghiệm thu `RoomService` cho nghiệp vụ phòng và sơ đồ ghế: thêm/sửa/tìm phòng, thay đổi loại ghế và trạng thái, quản lý vị trí ghế, kiểm tra quyền Admin khi API xác thực có sẵn. GUI chỉ gọi Service.
+- [x] Có `RoomService` cho thêm/sửa/tìm phòng và kiểm tra quyền; `test_room_service.cpp` đạt 54/54 trong phạm vi hiện có. Quản lý ghế thuộc `SeatService`, có test riêng đạt 59/59.
+- [ ] Kiểm chứng ràng buộc thay đổi sơ đồ khi đã có vé, quan hệ con trỏ và quyền trong luồng tích hợp trước khi nghiệm thu phòng/ghế.
 - [x] Chạy các test Repository/Service phòng và ghế hiện có bằng C++17: RoomRepository 78/78, RoomService 54/54, SeatRepository 85/85, SeatService 59/59 PASS.
 - [ ] Kiểm thử tích hợp sâu với vé, các trường hợp lỗi file/con trỏ và toàn bộ quyền khi các thành phần liên quan sẵn sàng.
 

@@ -9,7 +9,7 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 | 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng — Backend; Kiệt tham gia theo lịch sử | **Đã hoàn thành theo xác nhận nhóm**; kết quả kiểm thử lịch sử giữ nguyên. Thiết kế mới dùng `FileIO`, `DateTime`, `IdGenerator`. | [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) |
 | 04 | Quản lý phim | Hoàng | **Đang thực hiện, tạm dừng để làm Bước 06**: `MovieRepository` đạt 40/40, `MovieService` đạt 45/45 trong phạm vi test hiện có; nghiệp vụ đổi trạng thái phim còn thiếu. | [Bước 04](Buoc04_QuanLyPhim.md) |
 | 05 | Đăng nhập và phân quyền | Hoàng | **Đang thực hiện, chưa nghiệm thu**: `UserRepository` và `AuthService` đã có; `test_auth.cpp` đạt 9/14, còn 5 ca lỗi. | [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) |
-| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89 trong các test hiện có. `ShowtimeService` còn nghiệp vụ chưa triển khai, chưa có test riêng; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
+| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89 trong các test đã ghi. `ShowtimeService` có mã tạo/sửa/tra cứu và kiểm tra quyền nhưng hủy/xóa chưa hoàn thiện, chưa có test riêng; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
 | 07 | Quản lý nhân viên | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 08 | Quản lý thành viên | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 09 | Giá vé, ưu đãi và tích điểm | Hoàng | Chưa bắt đầu. | Chưa tạo |

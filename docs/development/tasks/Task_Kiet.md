@@ -1,6 +1,6 @@
 # Task của Kiệt — lộ trình PBL2 14 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn bộ GUI Qt và tích hợp giao diện với Backend từ Bước 12. Các đóng góp Backend của Kiệt ở Bước 01–03 được giữ nguyên như lịch sử; Backend hiện hành do Hoàng phụ trách. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Kiệt. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b06-hoang-room-seat-management`.
+Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn bộ GUI Qt và tích hợp giao diện với Backend từ Bước 12. Các đóng góp Backend của Kiệt ở Bước 01–03 được giữ nguyên như lịch sử; Backend hiện hành do Hoàng phụ trách. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Kiệt. **Theo xác nhận của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Mã Model hiện hành ở `src/models/`.
 
 **Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi phần việc của bước đó có kiểm thử và nghiệm thu phù hợp; việc đổi phân công không làm thay đổi checkbox lịch sử. Khi tiếp tục Bước XX của Kiệt, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Hoàng khi chỉ làm phần Kiệt.
 
@@ -29,7 +29,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 **Checklist công việc:**
 
-- [x] Có đủ `User`, `Member`, `Ticket`, `Invoice` ở `core/dal/models/`.
+- [x] Có đủ `User`, `Member`, `Ticket`, `Invoice` ở `src/models/`.
 - [x] `Member::setPoints()` và `Ticket::markCancelled()` hiện có trong mã.
 - [x] Biên dịch cú pháp toàn bộ tám Model bằng C++17: đạt ở lần rà soát này.
 - [x] Nối các quan hệ `Invoice`–`Ticket`, `User/Member`–`Invoice`.
@@ -59,53 +59,9 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 **Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`, phối hợp với `FileIO` của Hoàng. `IdGenerator` chỉ tính nội dung bộ đếm mới, chưa tự ghi `sequences.txt`; Repository cần lưu nội dung này khi tạo bản ghi. Tại thời điểm ghi chú cũ, `DateTime` mới có `getCurrentDateTime()`; hiện mã còn có `addMinutes()`, `isBefore()` và `isOverlapping()`. Phần kiểm tra Backend tiếp theo thuộc Hoàng. Review và tích hợp chính thức chưa được xác nhận. `Validator` hoãn sang Repository, chỉ cài hàm kiểm tra TXT thật sự cần dùng.
 
-### Bước 04 – Quản lý phim
+## Công việc hiện hành: GUI Bước 12–14
 
-**Backend: Hoàng. Trạng thái: đang thực hiện; Repository đã có kiểm thử riêng, Service chưa nghiệm thu.**
-
-- [ ] Kiệt ghi nhận yêu cầu màn hình phim và hợp đồng dữ liệu cần từ Service khi chuẩn bị GUI; không triển khai Repository/Service.
-
-### Bước 05 – Đăng nhập và phân quyền
-
-**Backend: Hoàng. Trạng thái: đã có `UserRepository` và `AuthService`, chưa xác minh nghiệm thu.**
-
-- [ ] Kiệt thống nhất dữ liệu đăng nhập, thông báo lỗi và vai trò cần hiển thị trên GUI; không triển khai mã xác thực Backend.
-
-### Bước 06 – Quản lý phòng, ghế và suất chiếu
-
-**Backend: Hoàng. Trạng thái: đang thực hiện; `ShowtimeRepository` đạt 89/89 khi Codex chạy lại C++17 ngày 2026-11-17, toàn bước chưa nghiệm thu.**
-
-- [ ] Kiệt thống nhất dữ liệu sơ đồ ghế, phòng và suất chiếu cần hiển thị; phối hợp kiểm tra hợp đồng Service khi Kiệt tích hợp GUI.
-
-### Bước 07 – Quản lý nhân viên
-
-**Backend: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt xác định thao tác và dữ liệu màn hình nhân viên cần từ `StaffService`; chưa triển khai GUI ở bước Backend này.
-
-### Bước 08 – Quản lý thành viên
-
-**Backend: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt xác định dữ liệu màn hình thành viên cần từ `MemberService`; chưa triển khai GUI ở bước Backend này.
-
-### Bước 09 – Giá vé, ưu đãi và tích điểm
-
-**Backend: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt thống nhất cách giao diện hiển thị giá, ưu đãi và điểm do Backend tính; không tính lại nghiệp vụ trong GUI.
-
-### Bước 10 – Bán vé tại quầy
-
-**Backend: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt thống nhất dữ liệu và trạng thái cần cho màn hình chọn ghế, Undo và thanh toán; không triển khai `BookingService` hoặc Repository.
-
-### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
-
-**Backend: Hoàng. Trạng thái: chưa bắt đầu.**
-
-- [ ] Kiệt thống nhất dữ liệu màn hình hủy vé, lịch sử và báo cáo cần từ Service; không triển khai nghiệp vụ Backend.
+Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI.
 
 ### Bước 12 – Xây dựng giao diện Qt
 

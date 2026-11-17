@@ -1,5 +1,7 @@
 # Bước 01 — Khởi tạo Project
 
+> Ghi chú hiện hành: các đường dẫn `core/` và `ui/` bên dưới là nhật ký cấu trúc tại thời điểm khảo sát. Mã Backend hiện ở `src/models/`, `src/data_access/`, `src/business/`, `src/data_structures/` và `src/utils/`; xem [tiến độ hiện tại](TongQuanTienDo.md).
+
 ## Checklist công việc
 
 - [x] Khảo sát lại toàn bộ file, thư mục, mã nguồn và tài liệu hiện có (2026-10-11).

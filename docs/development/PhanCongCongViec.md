@@ -15,7 +15,7 @@ Kiến trúc mục tiêu: **GUI (`src/gui/`) → Business (`src/business/`) → 
 | 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng — Backend; Kiệt tham gia theo lịch sử | Giữ kết quả lịch sử; thiết kế hiện hành dùng `FileIO`, `DateTime`, `IdGenerator`. |
 | 04 | Quản lý phim | Hoàng | `MovieRepository` và `MovieService` đã có test riêng đạt; tiếp tục nghiệp vụ đổi trạng thái, lỗi file và kiểm thử bổ sung trước nghiệm thu. |
 | 05 | Đăng nhập và phân quyền | Hoàng | `UserRepository`, `AuthService`, kiểm tra tài khoản hoạt động và quyền Admin/Staff; [nhật ký Bước 05](Buoc05_DangNhapVaPhanQuyen.md) ghi 9/14 test đạt, còn 5 ca lỗi. |
-| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | `RoomRepository`, `SeatRepository`, `ShowtimeRepository`; `RoomService`, `SeatService`, `ShowtimeService`; sơ đồ ghế, lịch cùng phòng và nghỉ 15 phút, kiểm thử. |
+| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | `RoomRepository`, `SeatRepository`, `ShowtimeRepository`, `RoomService`, `SeatService` đã có test riêng đạt theo [tiến độ](TongQuanTienDo.md). `ShowtimeService` đã có mã nhưng còn thiếu hủy/xóa suất và test riêng; tiếp tục kiểm tra sơ đồ ghế, lịch cùng phòng và nghỉ 15 phút. |
 | 07 | Quản lý nhân viên | Hoàng | `StaffService` dùng lại `UserRepository`, thêm/sửa/tìm/vô hiệu hóa Staff, kiểm tra quyền Admin, kiểm thử. |
 | 08 | Quản lý thành viên | Hoàng | `MemberRepository`, `MemberService`, thông tin liên hệ và số điện thoại duy nhất, kiểm thử. |
 | 09 | Giá vé, ưu đãi và tích điểm | Hoàng | Xử lý giá theo cấu hình, loại ghế, ưu đãi học sinh/thành viên, tiền và điểm; kiểm thử C++. |
