@@ -95,8 +95,9 @@ int main()
             // NHOM 1: LOAD VA SAVE
             // ======================================
 
-            check(!staffService.save(),
-                  "Save before load");
+            check(throwsRuntimeError([&]() {
+            staffService.save();
+            }), "Save before load throws runtime_error");
 
             check(staffService.load(),
                   "Load successfully");
@@ -104,8 +105,9 @@ int main()
             check(staffRepo.isLoaded(),
                   "Repository is loaded");
 
-            check(!staffService.load(),
-                  "Cannot load twice");
+            check(throwsRuntimeError([&]() {
+            staffService.load();
+            }), "Cannot load twice");
 
             check(staffService.save(),
                   "Save successfully");
