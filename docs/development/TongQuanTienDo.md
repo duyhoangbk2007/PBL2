@@ -10,7 +10,7 @@ Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là tr
 | 04 | Quản lý phim | Hoàng | **Đang thực hiện, tạm dừng để làm Bước 06**: `MovieRepository` đạt 40/40, `MovieService` đạt 45/45 trong phạm vi test hiện có; nghiệp vụ đổi trạng thái phim còn thiếu. | [Bước 04](Buoc04_QuanLyPhim.md) |
 | 05 | Đăng nhập và phân quyền | Hoàng | **Đang thực hiện, chưa nghiệm thu**: `UserRepository` và `AuthService` đã có; `test_auth.cpp` đạt 9/14, còn 5 ca lỗi. | [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) |
 | 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89. `ShowtimeService` có test riêng **89/89 PASS, 0 FAIL** cho phạm vi hiện có. Hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
-| 07 | Quản lý nhân viên | Hoàng | Chưa bắt đầu; chuẩn bị đối chiếu API `UserRepository`/`AuthService` và quy tắc nhân viên trước khi triển khai `StaffService`. | Chưa tạo |
+| 07 | Quản lý nhân viên | Hoàng | **Đang thực hiện**: `StaffService` thêm/sửa/tìm/duyệt/đếm/vô hiệu hóa Staff và kiểm tra quyền Admin đã có; test riêng từng được ghi 59/59, lần chạy hiện tại đạt **67/67 PASS, 0 FAIL**. Chưa có kích hoạt lại/xóa vật lý; phụ thuộc lịch sử hóa đơn chưa kiểm chứng. | [Bước 07](Buoc07_QuanLyNhanVien.md) |
 | 08 | Quản lý thành viên | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 09 | Giá vé, ưu đãi và tích điểm | Hoàng | Chưa bắt đầu. | Chưa tạo |
 | 10 | Bán vé tại quầy | Hoàng | Chưa bắt đầu; `Ticket`/`Invoice` Model không đồng nghĩa bán vé đã có. | Chưa tạo |

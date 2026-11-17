@@ -200,7 +200,7 @@ if (authService.login("admin01", "123456"))
 
 **File:** `tests/test_staff_service.cpp`
 
-**Kết quả do người phát triển xác nhận:** 59/59 bài kiểm thử PASS, 0 FAIL.
+**Mốc do người phát triển xác nhận trước đây:** 59/59 PASS, 0 FAIL. **Lần kiểm tra trên nhánh hiện tại:** biên dịch và chạy C++17, **67/67 PASS, 0 FAIL**, thoát mã 0. Hai kết quả thuộc hai lần chạy khác nhau.
 
 Các nhóm đã kiểm thử:
 - Nạp/lưu dữ liệu và không nạp lại khi đã load.
@@ -232,4 +232,4 @@ if ($LASTEXITCODE -eq 0) {
 - Chưa có `activateStaff()` để kích hoạt lại tài khoản đã vô hiệu hóa.
 - Chưa có thao tác xóa nhân viên; giữ tài khoản để bảo toàn liên kết lịch sử hóa đơn.
 - Các thao tác thay đổi dữ liệu chưa tự động gọi `save()`; cần thống nhất thời điểm lưu dữ liệu trong ứng dụng.
-- Không được xem 59 test PASS là bằng chứng cho mọi tình huống chưa được kiểm thử.
+- Không được xem kết quả test đạt là bằng chứng cho ràng buộc với hóa đơn/vé khi các Repository giao dịch chưa được tích hợp.
