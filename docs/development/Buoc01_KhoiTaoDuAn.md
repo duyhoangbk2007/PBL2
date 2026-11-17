@@ -58,3 +58,7 @@
 4. **Kiểm chứng:** cấu hình, build, chạy chương trình C++17; ghi lệnh, kết quả, lỗi và cách khắc phục; cập nhật hướng dẫn build.
 
 Sau mỗi phần, cập nhật checklist, kiến thức học được, thay đổi code, lỗi, kết quả kiểm thử và việc tiếp theo ngay trong ba mục trên; giữ lịch sử những lần cập nhật. Không chuyển phần hoặc bước khi chưa được yêu cầu.
+
+## Ghi chú phân công hiện hành (2026-11-17)
+
+Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11; Kiệt phụ trách GUI Qt và tích hợp giao diện với Backend từ Bước 12. Các phân công, checkbox và kết quả kiểm thử ghi ở trên là lịch sử tại thời điểm thực hiện, không bị đổi trạng thái bởi quyết định phân công mới.

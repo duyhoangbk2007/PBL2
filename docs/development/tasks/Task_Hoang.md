@@ -1,8 +1,8 @@
 # Task của Hoàng — lộ trình PBL2 14 bước
 
-Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản lý rạp, giao diện Admin, build và đóng gói. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b04-hoang-dalc`.
+Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11: Models, Data Access, Business Logic, nghiệp vụ và kiểm thử C++. Từ Bước 12, Hoàng hỗ trợ API và sửa lỗi Backend khi Kiệt tích hợp GUI. [Tổng quan tiến độ](../TongQuanTienDo.md) ghi trạng thái chung; file này ghi checklist riêng của Hoàng. **Theo xác nhận mới của nhóm, Bước 01–03 đã hoàn thành.** Các checkbox và nhận xét trong ba mục đó là bằng chứng/lịch sử tại thời điểm ghi, không được tự đổi thành kết quả kiểm thử mới. Lần rà soát trước, `g++ -std=c++17 -Wall -Wextra -pedantic -fsyntax-only core/dal/models/*.cpp` chạy đạt. Nhánh hiện tại: `feature/b06-hoang-room-seat-management`.
 
-**Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi cả Hoàng và Kiệt đã xong, tích hợp và kiểm thử đạt. Khi tiếp tục Bước XX của Hoàng, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Kiệt khi chỉ làm phần Hoàng.
+**Quy tắc đồng bộ:** Sau khi hoàn thành một task, cập nhật file này và nhật ký bước nếu đã có. Chỉ đánh dấu bước chung hoàn thành ở `TongQuanTienDo.md` khi phần việc của bước đó có kiểm thử và nghiệm thu phù hợp; việc đổi phân công không làm thay đổi checkbox lịch sử. Khi tiếp tục Bước XX của Hoàng, đọc mục tương ứng, nhật ký bước và mã liên quan rồi chọn checkbox chưa hoàn thành tiếp theo. Không sửa Task của Kiệt khi chỉ làm phần Hoàng.
 
 ### Bước 01 – Khởi tạo dự án
 
@@ -14,11 +14,11 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 - [x] Đối chiếu cây thư mục và tài liệu cấu trúc hiện có.
 - [ ] Hoàn thiện các thư mục tối thiểu phục vụ Bước 01.
+- [ ] Hoàn thiện hướng dẫn build C++17 trong `README.md` khi đã có lệnh chạy được kiểm chứng.
 - [ ] Viết `CMakeLists.txt` cấu hình C++17 và nguồn hiện có.
 - [x] Có `main.cpp` tối thiểu trong cây hiện tại.
 - [ ] Build và chạy chương trình tối thiểu trên Windows.
 - [ ] Viết và chạy kiểm thử liên quan.
-- [ ] Review và tích hợp với phần của Kiệt.
 
 **Điều kiện hoàn thành:** Build ứng dụng C++17 từ CMake và chạy được chương trình tối thiểu. Có bằng chứng biên dịch/chạy thử hoặc kiểm thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
@@ -37,7 +37,8 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 - [x] Có đủ `Movie`, `Room`, `Seat`, `Showtime` ở `core/dal/models/`.
 - [x] Biên dịch cú pháp bốn Model và toàn bộ tám `.cpp` bằng C++17: đạt ở lần rà soát này.
 - [x] Nối hai chiều và kiểm tra mã/trùng cho `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime`.
-- [ ] Viết và chạy kiểm thử các quan hệ trên, gồm mã sai, `nullptr`, trùng và kết quả ở cả hai phía.
+- [x] Kiểm thử liên kết Movie/Room–Showtime và ghế/phòng qua các test hiện có: `test_showtime_link.cpp` đạt 31/31, `test_seat_repository.cpp` đạt 85/85; phạm vi các bài test này được ghi riêng.
+- [ ] Kiểm thử tích hợp quan hệ của cả tám Model, gồm Invoice/Ticket/User/Member; bài `tests/model_relations_test.cpp` được nhắc trong nhật ký cũ nhưng không có trên nhánh hiện tại.
 
 **Điều kiện hoàn thành:** Bốn Model quản lý rạp liên kết nhất quán và có kiểm thử chạy đạt. Có bằng chứng biên dịch/chạy thử phù hợp và không còn lỗi nghiêm trọng chưa xử lý.
 
@@ -49,16 +50,14 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 **Trạng thái hiện hành:** Đã hoàn thành theo xác nhận nhóm. `FileIO` đã có ở `src/utils/` và bài thử đọc/ghi cơ bản đã chạy đạt; các mục review/tích hợp còn mở trong checklist lịch sử tại thời điểm ghi.
 
-**Branch lúc triển khai Bước 03:** `feature/b03-hoang-storage`. Hiện đang ở `feature/b04-hoang-dalc`.
+**Branch lúc triển khai Bước 03:** `feature/b03-hoang-storage`. Hiện đang ở `feature/b06-hoang-room-seat-management`.
 
 **Checklist công việc:**
 
 - [x] Có `FileIO::readLines(...)` và `FileIO::writeLines(...)` để đọc/ghi các dòng TXT.
 - [x] Chuyển `FileIO.h/.cpp` vào `src/utils/` và cập nhật nơi gọi theo tên mới.
-- [x] Biên dịch, chạy `test_all_utils.cpp`: phần `FileIO` đạt; lần kiểm tra sau chuyển thư mục có 4 PASS, 0 FAILED cho toàn bộ bài thử.
+- [x] Biên dịch, chạy `test_all_utils.cpp`: phần `FileIO` đạt; Codex chạy lại C++17 ngày 2026-11-17 với mã giao dịch lịch sử, kết quả 4 PASS, 0 FAILED.
 - [ ] Đối chiếu API `FileIO` với nhu cầu đọc/ghi toàn bộ file của Repository; kiểm tra cách báo lỗi và xử lý file thiếu.
-- [ ] Review và tích hợp với `IdGenerator`, `DateTime` của Kiệt.
-- [ ] Kiểm tra tích hợp sau khi merge.
 
 **Điều kiện hoàn thành:** Đọc/ghi TXT qua `FileIO` đúng định dạng và báo lỗi khi thất bại; phần Hoàng, Kiệt được review và kiểm tra tích hợp. Không yêu cầu cơ chế giao dịch nhiều file.
 
@@ -68,94 +67,91 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách quản l�
 
 ### Bước 04 – Quản lý phim
 
-**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện.** `MovieRepository` đã được cài và kiểm thử riêng; `MovieService` đã có phần thêm, sửa và tra cứu. Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; chưa đủ nghiệp vụ đổi trạng thái phim.** Xem [nhật ký Bước 04](../Buoc04_QuanLyPhim.md).
 
-- [x] Chuyển bản nháp sang thư mục mới và dùng `FileIO`; kiểm tra cú pháp C++17.
-- [x] Cài `MovieRepository`: đọc/ghi TXT, thêm/sửa/xóa, tra cứu, phát hiện mã trùng và dữ liệu lỗi; kiểm thử riêng đạt 40/40.
-- [ ] Bổ sung thông báo lỗi có tên file và số dòng khi nạp dữ liệu sai; kiểm tra hành vi khi ghi file thất bại.
-- [ ] Hoàn thiện `MovieService`: thêm, sửa, tìm kiếm, cập nhật trạng thái và xóa khi đủ điều kiện; kiểm tra quyền và tham chiếu. Hiện chỉ có thêm, sửa và tra cứu.
-- [ ] Kiểm thử `MovieService` và toàn bộ nghiệp vụ phim; test Repository hiện có đã kiểm tra dữ liệu hợp lệ/lỗi và lưu/nạp lại.
+- [x] Có `MovieRepository`; `test_movie_repository.cpp` chạy đạt 40/40.
+- [x] Có `MovieService` cho thêm/sửa/xóa/tra cứu với kiểm tra quyền; `test_movie_service.cpp` chạy đạt 45/45 cho phạm vi hiện có.
+- [ ] Hoàn thiện nghiệp vụ bật/tắt trạng thái phim và điều kiện tham chiếu theo quy tắc dự án; API hiện tại từ chối đổi `active` trong `updateMovie()`.
+- [ ] Kiểm tra lỗi ghi, thông báo file/dòng khi nạp sai và kiểm thử lại phần nghiệp vụ mới trước khi nghiệm thu toàn Bước 04.
 
-**Kiểm tra 2026-11-12:** Trên commit `73ebf68`, biên dịch và chạy `tests/test_movie_repository.cpp` bằng g++ C++17: 40 PASS, 0 FAILED. `MovieService.cpp` qua kiểm tra cú pháp C++17. Chưa có test Service; Bước 04 chưa hoàn thành.
-
-**Điều kiện hoàn thành:** Repository và Service phim hoạt động, có bằng chứng kiểm thử; bản nháp riêng lẻ chưa đủ.
+**Kết quả kiểm tra:** Codex biên dịch C++17 và chạy hai bài test trên trong thư mục tạm ngày 2026-11-17; cả hai thoát mã 0. Kết quả này không xác nhận chức năng đổi trạng thái chưa có.
 
 ### Bước 05 – Đăng nhập và phân quyền
 
-**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; chưa nghiệm thu.** Xem [nhật ký Bước 05](../Buoc05_DangNhapVaPhanQuyen.md).
 
-- [ ] Hoàng thống nhất cách Service quản trị nhận thông tin vai trò từ `AuthService` của Kiệt.
-- [ ] Hỗ trợ thử quyền Admin/Staff ở các chức năng Hoàng phụ trách khi API đăng nhập đã có.
+- [x] Có mã `UserRepository` và `AuthService`; các luồng đăng nhập và quyền cơ bản đã đạt trong `test_auth.cpp`.
+- [ ] Hoàn thiện hợp đồng lỗi khi thiếu file/chưa load, dữ liệu sai hoặc trùng, reload và lỗi ghi.
+- [ ] Chạy lại toàn bộ `test_auth.cpp` đạt; lần kiểm tra C++17 ngày 2026-11-17 đạt **9/14**, còn 5 ca không đạt.
+- [ ] Kiểm tra phân quyền trong các Service và nghiệm thu Bước 05.
 
 ### Bước 06 – Quản lý phòng, ghế và suất chiếu
 
-**Phụ trách chính: Hoàng. Trạng thái: đang thực hiện; chưa hoàn thành toàn bộ.** Tạm để Bước 04 đang thực hiện để chuyển sang Bước 06. Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; ShowtimeService chưa hoàn thiện.** Xem [nhật ký Bước 06](../Buoc06_QuanLyPhongVaGhe.md).
 
-- [x] Đối chiếu hiện trạng Model, tầng lưu trữ và định dạng `rooms.txt`/`seats.txt`; lập nhật ký và checklist Bước 06.
-- [ ] Chốt vòng đời object, thứ tự nạp/liên kết và điều kiện sửa/xóa khi còn suất chiếu hoặc vé tham chiếu.
-- [x] Đã có `RoomRepository` để đọc/ghi, tra cứu và quản lý phòng; kiểm tra dữ liệu, mã trùng và lỗi file.
-- [x] Đã có `SeatRepository` để đọc/ghi, tra cứu ghế theo `(roomId, seatId)`; kiểm tra phòng, loại ghế, vị trí trong sơ đồ và vị trí trùng.
-- [ ] Hoàn thiện và nghiệm thu `RoomService` quản lý phòng, sơ đồ ghế và loại ghế; kiểm tra quan hệ phòng–ghế và quyền khi có API xác thực.
-- [ ] Kiểm thử C++ dữ liệu hợp lệ/lỗi, quyền, tham chiếu, lỗi ghi và nạp lại; ghi lệnh và kết quả vào nhật ký.
-- [x] Triển khai `ShowtimeRepository`: đọc/ghi, kiểm tra tham chiếu, trùng lịch cùng phòng, nghỉ tối thiểu 15 phút và liên kết Movie/Room.
-- [x] Kiểm thử riêng `ShowtimeRepository`: **89/89 PASS theo kết quả Hoàng cung cấp**, Codex chưa chạy lại.
-- [ ] Triển khai `ShowtimeService` và kiểm thử nghiệp vụ tạo/sửa/hủy suất.
-- [ ] Kiểm thử tích hợp phim/phòng/ghế/suất, ghi kết quả vào nhật ký Bước 06.
+- [x] Có `RoomRepository`, `RoomService`; test C++17 riêng đạt lần lượt **78/78** và **54/54**.
+- [x] Có `SeatRepository`, `SeatService`; test C++17 riêng đạt lần lượt **85/85** và **59/59**.
+- [x] Có `ShowtimeRepository`; test C++17 riêng đạt **89/89**, gồm lịch cùng phòng với khoảng nghỉ 15 phút và liên kết Movie/Room.
+- [x] Kiểm thử liên kết Movie/Room–Showtime bằng `test_showtime_link.cpp` đạt **31/31**.
+- [ ] Hoàn thiện và kiểm thử `ShowtimeService`; mã hiện tại có kiểm tra lịch cơ bản nhưng `cancelShowtime()` và `removeShowtime()` chưa thực hiện nghiệp vụ.
+- [ ] Kiểm tra tích hợp phòng/ghế/suất với vé, lỗi file, con trỏ và quyền; chưa có đủ các Repository vé để nghiệm thu toàn Bước 06.
+
+**Kết quả kiểm tra:** Codex biên dịch và chạy các bài test trên trong thư mục tạm ngày 2026-11-17; tất cả thoát mã 0. Kết quả chỉ xác nhận phạm vi của các bài test hiện có.
 
 ### Bước 07 – Quản lý nhân viên
 
-**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
-- [ ] Hỗ trợ kiểm tra quyền Admin trong luồng quản trị khi Kiệt tích hợp `StaffService`.
+- [ ] Dùng lại `UserRepository`, triển khai `StaffService` cho thêm/sửa/tìm/vô hiệu hóa Staff và kiểm tra quyền Admin.
+- [ ] Kiểm thử C++ dữ liệu trùng, quyền, trạng thái và lưu/nạp; cập nhật tài liệu.
 
 ### Bước 08 – Quản lý thành viên
 
-**Phụ trách chính: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
-- [ ] Thống nhất dữ liệu thành viên cần cho bán vé và thống kê khi API của Kiệt có sẵn.
+- [ ] Triển khai `MemberRepository` và `MemberService`; kiểm tra số điện thoại duy nhất, điểm và tham chiếu.
+- [ ] Kiểm thử C++ dữ liệu hợp lệ/sai/trùng và lưu/nạp; cập nhật tài liệu.
 
 ### Bước 09 – Giá vé, ưu đãi và tích điểm
 
-**Kiệt chính, Hoàng hỗ trợ. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
-- [ ] Hoàng kiểm tra giá theo loại ghế và dữ liệu ghế mà phần tính giá sử dụng.
-- [ ] Cùng Kiệt thử mức giá/ưu đãi liên quan loại ghế; giữ quy tắc ưu đãi không cộng dồn.
+- [ ] Cài quy tắc giá theo loại ghế/vé và ưu đãi học sinh/thành viên; lấy mức giảm hợp lệ cao nhất, không cộng dồn.
+- [ ] Tính tiền, điểm và kiểm thử C++ các trường hợp biên; chỉ tạo `PricingService` nếu có lý do rõ.
 
 ### Bước 10 – Bán vé tại quầy
 
-**Kiệt chính, Hoàng hỗ trợ tích hợp. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
-- [ ] Cung cấp và kiểm tra API phim, phòng, ghế, suất chiếu cho `BookingService`.
-- [ ] Thử ghế thuộc đúng phòng/suất, ghế đã bán theo suất và lỗi ghi file liên quan.
-- [ ] Kiểm thử tích hợp với phần Kiệt, ghi kết quả và cập nhật tài liệu.
+- [ ] Triển khai `TicketRepository`, `InvoiceRepository`, `BookingService` và luồng chọn/Undo ghế trước thanh toán.
+- [ ] Kiểm tra ghế theo suất, xác nhận thu tiền, tạo hóa đơn nhiều vé, cập nhật điểm và ghi TXT.
+- [ ] Kiểm thử C++ trùng ghế, tham chiếu, lỗi ghi và tích hợp các Repository; cung cấp API cho GUI của Kiệt.
 
 ### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
 
-**Cùng phụ trách; Hoàng làm thống kê. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
 
-- [ ] Cài `ReportService` dùng dữ liệu vé, hóa đơn và suất chiếu.
-- [ ] Thống kê tiền bán/hoàn, doanh thu thuần, số vé bán/hủy và top phim.
-- [ ] Kiểm thử C++ dữ liệu thường, vé hủy và trường hợp biên; phối hợp truy vấn lịch sử với Kiệt.
+- [ ] Mở rộng `BookingService` cho hủy/hoàn vé, thu hồi điểm và giữ lịch sử; cung cấp truy vấn hóa đơn.
+- [ ] Triển khai `ReportService` cho tiền bán/hoàn, doanh thu thuần, vé bán/hủy và top phim.
+- [ ] Kiểm thử C++ nghiệp vụ hủy, quyền, lịch sử, thống kê và trường hợp biên; bàn giao hợp đồng dữ liệu cho GUI.
 
 ### Bước 12 – Xây dựng giao diện Qt
 
-**Cùng phụ trách; Hoàng làm giao diện quản trị. Trạng thái: chưa bắt đầu.**
+**Phụ trách GUI: Kiệt. Trạng thái: chưa bắt đầu.**
 
-- [ ] Xây dựng `MovieManagementView`, `RoomManagementView`, `ShowtimeManagementView`, `ReportView`.
-- [ ] Cùng Kiệt thống nhất `MainWindow`, dashboard Admin/Staff, `SeatMapView` và CMake/Qt.
-- [ ] GUI chỉ gọi Service; kiểm tra hiển thị kết quả và lỗi.
+- [ ] Hoàng cung cấp và giải thích API Service/Model cần cho các màn hình; hỗ trợ sửa lỗi Backend được xác nhận khi Kiệt tích hợp.
+Kiệt thực hiện View, `MainWindow` và sơ đồ ghế GUI trong bước này.
 
 ### Bước 13 – Kiểm thử tích hợp và sửa lỗi
 
-**Cùng phụ trách. Trạng thái: chưa bắt đầu.**
+**Kiệt chủ trì tích hợp GUI; Hoàng phụ trách lỗi Backend. Trạng thái: chưa bắt đầu.**
 
-- [ ] Thử luồng Admin, phim/phòng/ghế/suất/thống kê qua GUI → Business → Data Access → TXT.
-- [ ] Cùng Kiệt thử quyền, dữ liệu sai, lỗi ghi và sửa lỗi có bằng chứng.
+- [ ] Phối hợp kiểm tra luồng GUI → Service → Repository → TXT; sửa lỗi Backend có bằng chứng từ kiểm thử tích hợp.
+- [ ] Kiểm thử lại các phần Backend bị sửa và ghi kết quả.
 
 ### Bước 14 – Đóng gói, hoàn thiện tài liệu và bàn giao
 
-**Cùng phụ trách. Trạng thái: chưa bắt đầu.**
+**Kiệt phụ trách GUI và bàn giao; Hoàng hỗ trợ Backend. Trạng thái: chưa bắt đầu.**
 
-- [ ] Hoàng phụ trách cấu hình build/đóng gói Windows và tài liệu kiến trúc.
-- [ ] Cùng Kiệt thử bản đóng gói, hoàn thiện báo cáo, demo và bàn giao.
-
+- [ ] Cung cấp hướng dẫn build Backend, tài liệu kiến trúc và xử lý lỗi Backend khi đóng gói.
+- [ ] Phối hợp Kiệt kiểm tra bản bàn giao; không nhận phần lập trình GUI.

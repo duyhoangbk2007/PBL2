@@ -1,5 +1,9 @@
 # Nhật ký Bước 04 — Quản lý phim
 
+## Rà soát kiểm thử 2026-11-17
+
+Codex biên dịch C++17 và chạy test trong thư mục tạm: `tests/test_movie_repository.cpp` **40/40 PASS**, `tests/test_movie_service.cpp` **45/45 PASS**. `MovieService` hiện có thêm, sửa, xóa và tra cứu với kiểm tra quyền. `updateMovie()` từ chối đổi `active`, nên nghiệp vụ bật/tắt phim chưa hoàn thiện; test đạt không đồng nghĩa toàn Bước 04 hoàn thành. Các mô tả trước ngày này bên dưới giữ giá trị lịch sử.
+
 ## Rà soát 2026-11-12
 
 Nhánh `feature/b04-hoang-movie-management`, commit `73ebf68`: `MovieRepository` đã có CRUD, tra cứu, đọc/ghi qua `FileIO` và kiểm tra dữ liệu. Biên dịch và chạy `tests/test_movie_repository.cpp` bằng g++ C++17: 40 PASS, 0 FAILED; có kiểm tra lưu/nạp lại. `MovieService.cpp` qua kiểm tra cú pháp C++17, hiện hỗ trợ thêm, sửa và tra cứu. Service chưa có API đổi trạng thái, xóa, kiểm tra quyền hoặc test riêng. Repository chưa báo tên file/số dòng cho mọi lỗi nạp, và test chưa kiểm tra lỗi ghi. Vì vậy Bước 04 vẫn đang thực hiện. Các mô tả trạng thái bên dưới là lịch sử trước lần rà soát này.
@@ -12,7 +16,7 @@ Khi chuẩn bị Bước 04 theo kế hoạch cũ, nhóm dùng tên DALC và đ�
 
 ## Mục tiêu hiện hành và phân công
 
-**Hoàng phụ trách chính.** Thực hiện theo thứ tự: Repository → Service → kiểm thử C++ → cập nhật tài liệu. Kiệt có thể làm Bước 05 đăng nhập song song sau khi thống nhất phần API dùng chung. Qt Widgets chưa thuộc Bước 04; giao diện phim nằm ở Bước 12.
+**Hoàng phụ trách chính.** Thực hiện theo thứ tự: Repository → Service → kiểm thử C++ → cập nhật tài liệu. Hoàng cũng phụ trách Backend đăng nhập/phân quyền ở Bước 05. Kiệt phụ trách GUI và tích hợp từ Bước 12, có thể thống nhất trước hợp đồng dữ liệu màn hình phim. Qt Widgets chưa thuộc Bước 04.
 
 | Thành phần | Công việc |
 | --- | --- |
@@ -28,7 +32,7 @@ Khi chuẩn bị Bước 04 theo kế hoạch cũ, nhóm dùng tên DALC và đ�
 - [ ] Viết lại `MovieRepository` từ đầu để nạp, tra cứu, thêm/sửa/xóa và ghi toàn bộ `movies.txt`; báo lỗi file/dòng khi dữ liệu không hợp lệ. Không đánh dấu hoàn thành dựa trên code cũ.
 - [ ] Viết `MovieService` cho nghiệp vụ phim và kiểm tra quyền; chỉ thêm API thực sự cần.
 - [ ] Kiểm thử chức năng phim bằng C++ và ghi bằng chứng; kiểm tra kết quả lưu/nạp lại, không bỏ dòng đầu.
-- [ ] Cập nhật tài liệu theo hành vi đã được kiểm chứng và tích hợp với `AuthService` khi API Kiệt có sẵn.
+- [ ] Cập nhật tài liệu theo hành vi đã được kiểm chứng và tích hợp với `AuthService` trong phần Backend của Hoàng khi API đủ điều kiện.
 
 `IdGenerator` hiện trả mã và `updatedSequences` nhưng không tự ghi `sequences.txt`; khi thêm phim phải giữ quy tắc cấp mã hiện hành. Ghi nhiều file tuần tự không nguyên tử: phải kiểm tra kết quả từng lần ghi, báo lỗi và không âm thầm ghi đè dữ liệu sai.
 

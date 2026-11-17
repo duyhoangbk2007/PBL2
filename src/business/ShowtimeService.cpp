@@ -20,25 +20,24 @@ bool ShowtimeService::isValidSchedule(const Showtime& showtime)
         return false;
     }
     const string& startAt = showtime.getStartAt();
+    if (!Validator::isValidDateTime(startAt))
+    {
+        return false;
+    }
     // Suat chieu phai bat dau trong tuong lai
-    if (!DateTime::isBefore(
-            DateTime::getCurrentDateTime(), startAt))
+    if (!DateTime::isBefore(DateTime::getCurrentDateTime(), startAt))
     {
         return false;
     }
     // Ngay chieu nam trong khoang phat hanh phim
     string showDate = startAt.substr(0, 10);
-
     if (showDate < movie->getReleaseDate() ||
         showDate > movie->getEndDate())
     {
         return false;
     }
     // Thoi gian ket thuc phai khop thoi luong phim
-    string expectedEnd = DateTime::addMinutes(
-        startAt,
-        movie->getDurationMinutes()
-    );
+    string expectedEnd = DateTime::addMinutes(startAt, movie->getDurationMinutes());
     return showtime.getEndAt() == expectedEnd;
 }
 

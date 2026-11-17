@@ -1,12 +1,12 @@
 # Nhật ký Bước 06 — Quản lý phòng, ghế và suất chiếu
 
-**Phụ trách:** Hoàng. **Trạng thái:** đang thực hiện; kế hoạch ban đầu lập ngày 2026-11-12. Bước 04 đang tạm dừng; việc chuyển sang Bước 06 không đồng nghĩa Bước 04 đã hoàn thành. Giao diện Qt thuộc Bước 12.
+**Phụ trách Backend:** Hoàng. GUI và tích hợp giao diện thuộc Kiệt từ Bước 12. **Trạng thái:** đang thực hiện; kế hoạch ban đầu lập ngày 2026-11-12. Bước 04 đang tạm dừng; việc chuyển sang Bước 06 không đồng nghĩa Bước 04 đã hoàn thành. Giao diện Qt thuộc Bước 12.
 
 ## Hiện trạng và nguồn đối chiếu
 
 - Đã có `src/models/Room.h/.cpp` và `src/models/Seat.h/.cpp`. `Room::linkSeat` kiểm tra `roomId`, vị trí trong kích thước phòng, trùng `seatId` và trùng hàng/cột; `Seat::linkRoom` gọi lại hàm này. `Room` cũng giữ danh sách `Showtime*`.
 - Đã có `src/data_access/Repository.h` dùng `DoublyLinkedList`, `FileIO` để nạp/lưu bản ghi và quản lý vòng đời object. `MovieRepository` là ví dụ cách nối Model với Repository; không mặc định sao chép nguyên API hoặc hành vi của phim.
-- Nhánh hiện tại đã có `RoomRepository`, `SeatRepository`, `RoomService`, `SeatService` và các file test tương ứng; mô tả chưa có ở mốc lập kế hoạch đã cũ. Kết quả test phòng/ghế chưa được xác minh trong lần đồng bộ này. `ShowtimeRepository` đã có, `ShowtimeService` chưa có.
+- Nhánh hiện tại đã có `RoomRepository`, `SeatRepository`, `RoomService`, `SeatService` và các file test tương ứng; mô tả chưa có ở mốc lập kế hoạch đã cũ. Lần chạy C++17 ngày 2026-11-17 đã kiểm chứng test Repository/Service phòng và ghế đạt trong phạm vi hiện có. `ShowtimeRepository` và `ShowtimeService` đã có mã; chưa có bằng chứng kiểm thử/nghiệm thu `ShowtimeService`.
 - Định dạng chuẩn ở [data_format.md](../TongQuan/data_format.md): `rooms.txt` gồm `roomId|name|rowCount|columnCount|active`; `seats.txt` gồm `roomId|seatId|row|column|seatType`. Không có dòng tiêu đề. `roomId` dạng `ROM0001`; hàng/cột bắt đầu từ 1; `seatType` là `STANDARD`, `VIP` hoặc `COUPLE`.
 
 ## Công việc
@@ -16,16 +16,21 @@
 - [x] Đã có mã `SeatRepository` cho nạp/lưu và tra cứu theo khóa `(roomId, seatId)`; các ràng buộc vị trí và lỗi dữ liệu tiếp tục kiểm thử. Không dùng riêng `seatId` làm khóa toàn cục.
 - [ ] Liên kết ghế với phòng sau khi nạp và kiểm tra tham chiếu trước khi công bố dữ liệu; không để con trỏ treo khi nạp lại hoặc xóa. Xác định cách báo lỗi có file và dòng khi bản ghi sai.
 - [ ] Hoàn thiện và nghiệm thu `RoomService` cho nghiệp vụ phòng và sơ đồ ghế: thêm/sửa/tìm phòng, thay đổi loại ghế và trạng thái, quản lý vị trí ghế, kiểm tra quyền Admin khi API xác thực có sẵn. GUI chỉ gọi Service.
-- [ ] Kiểm thử C++: dữ liệu hợp lệ/sai, khóa và vị trí trùng, ghế ngoài sơ đồ, phòng thiếu, loại ghế sai, nạp/lưu lại, lỗi ghi, quyền và tham chiếu. Ghi lệnh, kết quả thực chạy và giới hạn kiểm thử vào nhật ký này.
+- [x] Chạy các test Repository/Service phòng và ghế hiện có bằng C++17: RoomRepository 78/78, RoomService 54/54, SeatRepository 85/85, SeatService 59/59 PASS.
+- [ ] Kiểm thử tích hợp sâu với vé, các trường hợp lỗi file/con trỏ và toàn bộ quyền khi các thành phần liên quan sẵn sàng.
 
 ## Suất chiếu gộp vào Bước 06
 
 - [x] Triển khai `ShowtimeRepository`: đọc/ghi `showtimes.txt`, kiểm tra dữ liệu và tham chiếu Movie/Room, trùng lịch, liên kết hai chiều và hoàn tác khi nạp lỗi.
-- [x] Kiểm thử riêng `ShowtimeRepository`: **89/89 PASS theo kết quả Hoàng cung cấp**. Codex chưa chạy lại; chưa suy ra Service hoặc toàn bước hoàn thành.
-- [ ] Triển khai `ShowtimeService` cho quyền và nghiệp vụ tạo/sửa/hủy suất.
-- [ ] Kiểm thử `ShowtimeService` và tích hợp phòng/ghế/suất với bán vé.
+- [x] Kiểm thử riêng `ShowtimeRepository`: **89/89 PASS**; Codex đã chạy lại C++17 ngày 2026-11-17. Kết quả không suy ra Service hoặc toàn bước hoàn thành.
+- [ ] Hoàn thiện `ShowtimeService` cho quyền và nghiệp vụ tạo/sửa/hủy suất; lớp đã có mã, chưa nghiệm thu.
+- [ ] Kiểm thử `ShowtimeService` và tích hợp phòng/ghế/suất với bán vé; `cancelShowtime()` và `removeShowtime()` hiện còn trả `false` để chờ kiểm tra vé.
 
 Khoảng nghỉ giữa hai suất `SCHEDULED` cùng phòng tối thiểu **15 phút**; suất `CANCELLED` không chiếm lịch. Nạp MovieRepository và RoomRepository trước ShowtimeRepository; hủy theo thứ tự ngược lại. Không reload Movie/Room khi Showtime còn liên kết. Xem [tài liệu ShowtimeRepository](<../CauTrucThuMuc/data_acess(docs)/ShowtimeRepository.md>).
+
+## Kết quả kiểm tra trên nhánh hiện tại (2026-11-17)
+
+Codex biên dịch các `.cpp` trong `src/` trừ `src/main.cpp` với C++17, rồi liên kết và chạy từng file test trong thư mục tạm: `test_room_repository.cpp` 78/78, `test_room_service.cpp` 54/54, `test_seat_repository.cpp` 85/85, `test_seat_service.cpp` 59/59, `test_showtime_repository.cpp` 89/89 và `test_showtime_link.cpp` 31/31, đều thoát mã 0. Chưa có `test_showtime_service.cpp`; không đánh dấu hoàn thành Service hoặc toàn Bước 06. Kết quả kiểm tra không thay thế kiểm thử tích hợp với Ticket/Booking.
 
 ## Quyết định cần giữ khi triển khai
 

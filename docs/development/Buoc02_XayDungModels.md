@@ -153,3 +153,7 @@ Các model giữ dữ liệu trong bộ nhớ. Mã như `movieId`, `roomId`, `in
 `Invoice::linkMember()` hiện trả `true` cho hóa đơn khách vãng lai chỉ khi `memberId` rỗng, đối số `member == nullptr` và con trỏ hiện tại cũng null; nhánh này không gỡ liên kết đã tồn tại. Khi có `memberId`, hàm từ chối null, kiểm tra ID và object đã liên kết, rồi gọi `Member::linkInvoice()` trước khi đặt con trỏ ngược. Phần xử lý khách vãng lai đã được sửa trong mã.
 
 Quan hệ hai chiều đã có trong mã: `Movie`–`Showtime`, `Room`–`Seat`, `Room`–`Showtime`, `Invoice`–`Ticket`, `User`–`Invoice`, `Member`–`Invoice`. Các liên kết `Invoice`–`Showtime`, `Ticket`–`Showtime`, `Ticket`–`Seat` hiện là một chiều; không ghi nhận danh sách ngược ở `Showtime`/`Seat` là chức năng đã triển khai. Việc gỡ liên kết, quản lý vòng đời và khôi phục graph khi nạp dữ liệu là phần dự kiến ở DAL/Repository. Không chạy thêm test/build trong lần cập nhật tài liệu này. Bước 02 vẫn đang thực hiện. Trên GitHub, [PR #5](https://github.com/duyhoangbk2007/PBL2/pull/5) (`feature/b02-hoang-models-relation` → `main`) đã đóng, chưa merge; [PR #4](https://github.com/duyhoangbk2007/PBL2/pull/4) (`feature/b02-kiet-model-relations` → `develop`) đang mở.
+
+## Ghi chú phân công hiện hành (2026-11-17)
+
+Hoàng phụ trách toàn bộ Backend từ Bước 01 đến hết Bước 11; Kiệt phụ trách GUI Qt và tích hợp giao diện với Backend từ Bước 12. Các phân công, checkbox và kết quả kiểm thử ghi ở trên là lịch sử tại thời điểm thực hiện, không bị đổi trạng thái bởi quyết định phân công mới.
