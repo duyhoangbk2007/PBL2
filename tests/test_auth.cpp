@@ -82,7 +82,8 @@ struct Fixture {
     Workspace workspace;
     fs::path path = workspace.dir / "users.txt";
     UserRepository users{path.string()};
-    AuthService auth{users};
+    RolePermissionRepository permissions{(workspace.dir / "permissions.txt").string()};
+    AuthService auth{users, permissions};
 
     Fixture() {
         writeLines(path, accounts);
@@ -102,7 +103,8 @@ void testUnloadedAndMissingFile() {
     Workspace workspace;
     const auto path = workspace.dir / "missing.txt";
     UserRepository users(path.string());
-    AuthService auth(users);
+    RolePermissionRepository permissions((workspace.dir / "permissions.txt").string());
+    AuthService auth(users, permissions);
     requireAnonymous(auth);
     expectError([&] { auth.login("admin", "AdminPass"); });
     expectError([&] { users.save(); });
@@ -185,7 +187,7 @@ void testDisableDuringSession() {
         f.users.save();
         UserRepository reloaded(f.path.string());
         reloaded.load();
-        AuthService auth(reloaded);
+        AuthService auth(reloaded, f.permissions);
         require(!auth.login(username, password), "Disabled status lost after save/load");
         requireAnonymous(auth);
     }
@@ -234,7 +236,8 @@ void testDuplicateKeysAndRetry() {
         require(!users.isLoaded() && users.count() == 0, "Duplicate load partly accepted");
         writeLines(path, accounts);
         users.load();
-        AuthService auth(users);
+        RolePermissionRepository permissions((workspace.dir / "permissions.txt").string());
+        AuthService auth(users, permissions);
         require(auth.login("admin", "AdminPass"), "Retry after repair failed");
     }
 }
@@ -247,7 +250,8 @@ void testEmptyFile() {
     users.load();
     require(users.isLoaded() && users.count() == 0, "Empty file rejected");
     require(users.getAt(-1) == nullptr && users.getAt(0) == nullptr, "Invalid index accepted");
-    AuthService auth(users);
+    RolePermissionRepository permissions((workspace.dir / "permissions.txt").string());
+    AuthService auth(users, permissions);
     require(!auth.login("admin", "AdminPass"), "Empty repository authenticated user");
     requireAnonymous(auth);
     users.save();
@@ -278,7 +282,7 @@ void testAddUpdateAndRoundTrip() {
     UserRepository reloaded(f.path.string());
     reloaded.load();
     require(reloaded.count() == 5, "Accounts lost during save/load");
-    AuthService auth(reloaded);
+    AuthService auth(reloaded, f.permissions);
     require(auth.login("newKiet", "ChangedPass"), "Saved credentials rejected");
     require(auth.requireLogin().getFullName() == u8"Nguyễn Kiệt", "UTF-8 name corrupted");
     require(auth.login("admin", "AdminPass") && auth.isAdmin(), "Admin lost on save");

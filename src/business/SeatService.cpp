@@ -18,13 +18,13 @@ bool SeatService::save()
 
 bool SeatService::addSeat(Seat* seat)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SEAT_ADD");
     return seatRepo.add(seat);
 }
 
 bool SeatService::updateSeat(const Seat& newValues)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SEAT_UPDATE");
     if (!seatRepo.isLoaded())
     {
         return false;
@@ -39,25 +39,25 @@ bool SeatService::updateSeat(const Seat& newValues)
 
 bool SeatService::removeSeat(const string& roomId, const string& seatId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SEAT_DELETE");
     return seatRepo.removeById(roomId, seatId);
 }
 
 const Seat* SeatService::findSeatById(const string& roomId, const string& seatId)
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.findById(roomId, seatId);
 }
 
 const Seat* SeatService::getSeatAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.getAt(index);
 }
 
 int SeatService::getSeatCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.count();
 }
 

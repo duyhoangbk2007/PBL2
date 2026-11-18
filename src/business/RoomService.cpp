@@ -18,13 +18,13 @@ bool RoomService::save()
 
 bool RoomService::addRoom(Room* room)
 {
-    authService.requireAdmin();
+    authService.requirePermission("ROOM_ADD");
     return roomRepo.add(room);
 }
 
 bool RoomService::updateRoom(const Room& newValues)
 {
-    authService.requireAdmin();
+    authService.requirePermission("ROOM_UPDATE");
     if (!roomRepo.isLoaded())
     {
         return false;
@@ -50,25 +50,25 @@ bool RoomService::updateRoom(const Room& newValues)
 
 bool RoomService::removeRoom(const string& roomId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("ROOM_DELETE");
     return roomRepo.removeById(roomId);
 }
 
 const Room* RoomService::findRoomById(const string& roomId)
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.findById(roomId);
 }
 
 const Room* RoomService::getRoomAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.getAt(index);
 }
 
 int RoomService::getRoomCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.count();
 }
 

@@ -17,6 +17,7 @@ const string USER_FILE = "test_showtime_users_temp.txt";
 const string MOVIE_FILE = "test_showtime_movies_temp.txt";
 const string ROOM_FILE = "test_showtime_rooms_temp.txt";
 const string SHOWTIME_FILE = "test_showtime_data_temp.txt";
+const string PERMISSION_FILE = "test_showtime_permissions_temp.txt";
 
 void check(const string& name, bool actual, bool expected)
 {
@@ -64,6 +65,7 @@ void cleanFiles()
     remove(MOVIE_FILE.c_str());
     remove(ROOM_FILE.c_str());
     remove(SHOWTIME_FILE.c_str());
+    remove(PERMISSION_FILE.c_str());
 }
 
 void prepareFiles()
@@ -85,6 +87,9 @@ void prepareFiles()
         "ROM0003|Phong 3|8|12|0\n");
 
     writeFile(SHOWTIME_FILE, "");
+    writeFile(PERMISSION_FILE,
+        "ADMIN|SHOWTIME_VIEW\nADMIN|SHOWTIME_ADD\nADMIN|SHOWTIME_UPDATE\n"
+        "ADMIN|SHOWTIME_CANCEL\nADMIN|SHOWTIME_DELETE\nSTAFF|SHOWTIME_VIEW\n");
 }
 
 Showtime* createShowtime(
@@ -147,13 +152,14 @@ void testShowtimeService()
     {
         // ShowtimeRepository phai bi huy truoc Movie/Room Repository.
         UserRepository userRepo(USER_FILE);
+        RolePermissionRepository permissionRepo(PERMISSION_FILE);
         MovieRepository movieRepo(MOVIE_FILE);
         RoomRepository roomRepo(ROOM_FILE);
         ShowtimeRepository showtimeRepo(
             SHOWTIME_FILE, movieRepo, roomRepo
         );
 
-        AuthService auth(userRepo);
+        AuthService auth(userRepo, permissionRepo);
         ShowtimeService service(
             showtimeRepo, movieRepo, roomRepo, auth
         );
@@ -165,6 +171,7 @@ void testShowtimeService()
         cout << "\n--- 1. LOAD / SAVE ---\n";
 
         check("Load users", userRepo.load(), true);
+        check("Load permissions", permissionRepo.load(), true);
 
         check("Save truoc load",
               service.save(), false);

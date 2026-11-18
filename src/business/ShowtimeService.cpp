@@ -53,7 +53,7 @@ bool ShowtimeService::save()
 
 bool ShowtimeService::addShowtime(Showtime* showtime)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SHOWTIME_ADD");
     if (showtime == nullptr)
     {
         return false;
@@ -72,7 +72,7 @@ bool ShowtimeService::addShowtime(Showtime* showtime)
 
 bool ShowtimeService::updateShowtime(const Showtime& newValues)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SHOWTIME_UPDATE");
     Showtime* current = showtimeRepo.findById(newValues.getShowtimeId());
     if (current == nullptr)
     {
@@ -97,7 +97,7 @@ bool ShowtimeService::updateShowtime(const Showtime& newValues)
 
 bool ShowtimeService::cancelShowtime(const string& showtimeId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SHOWTIME_CANCEL");
 
     if (!showtimeRepo.isLoaded())
     {
@@ -126,7 +126,7 @@ bool ShowtimeService::cancelShowtime(const string& showtimeId)
 
 bool ShowtimeService::removeShowtime(const string& showtimeId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SHOWTIME_DELETE");
 
     if (!showtimeRepo.isLoaded())
     {
@@ -147,18 +147,18 @@ bool ShowtimeService::removeShowtime(const string& showtimeId)
 
 const Showtime* ShowtimeService::findShowtimeById(const string& showtimeId)
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.findById(showtimeId);
 }
 
 const Showtime* ShowtimeService::getShowtimeAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.getAt(index);
 }
 
 int ShowtimeService::getShowtimeCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.count();
 }

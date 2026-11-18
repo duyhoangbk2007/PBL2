@@ -18,7 +18,7 @@ bool StaffService::save()
 
 bool StaffService::addStaff(User* staff)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_ADD");
     if (staff == nullptr || staff->getRole() != UserRole::STAFF)
     {
         return false;
@@ -28,7 +28,7 @@ bool StaffService::addStaff(User* staff)
 
 bool StaffService::updateStaff(const User& newValues)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_UPDATE");
     if (!staffRepo.isLoaded())
     {
         return false;
@@ -49,7 +49,7 @@ bool StaffService::updateStaff(const User& newValues)
 
 bool StaffService::deactivateStaff(const string& staffId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_DEACTIVATE");
     if (!staffRepo.isLoaded())
     {
         return false;
@@ -74,7 +74,7 @@ bool StaffService::deactivateStaff(const string& staffId)
 
 const User* StaffService::findStaffById(const string& staffId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_VIEW");
     const User* staff = staffRepo.findById(staffId);
     if (staff == nullptr || staff->getRole() != UserRole::STAFF)
     {
@@ -85,7 +85,7 @@ const User* StaffService::findStaffById(const string& staffId)
 
 const User* StaffService::findStaffByUsername(const string& username)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_VIEW");
     const User* staff = staffRepo.findByUsername(username);
     if (staff == nullptr || staff->getRole() != UserRole::STAFF)
     {
@@ -96,7 +96,7 @@ const User* StaffService::findStaffByUsername(const string& username)
 
 const User* StaffService::getStaffAt(int index)
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_VIEW");
     if (index < 0)
     {
         return nullptr;
@@ -119,7 +119,7 @@ const User* StaffService::getStaffAt(int index)
 
 int StaffService::getStaffCount()
 {
-    authService.requireAdmin();
+    authService.requirePermission("STAFF_VIEW");
     int count = 0;
     for (int i = 0; i < staffRepo.count(); i++)
     {

@@ -14,6 +14,7 @@ int passed = 0;
 int failed = 0;
 const string USER_FILE = "test_room_service_users_temp.txt";
 const string ROOM_FILE = "test_room_service_rooms_temp.txt";
+const string PERMISSION_FILE = "test_room_service_permissions_temp.txt";
 
 void check(const string& name, bool actual, bool expected)
 {
@@ -40,6 +41,7 @@ void cleanFiles()
 {
     remove(USER_FILE.c_str());
     remove(ROOM_FILE.c_str());
+    remove(PERMISSION_FILE.c_str());
 }
 
 // Kiem tra mot thao tac co nem exception hay khong.
@@ -65,14 +67,19 @@ void testRoomService()
         "USR0001|admin|123456|Quan tri vien|ADMIN|1\n"
         "USR0002|staff|123456|Nhan vien|STAFF|1\n");
     writeFile(ROOM_FILE, "");
+    writeFile(PERMISSION_FILE,
+        "ADMIN|ROOM_VIEW\nADMIN|ROOM_ADD\nADMIN|ROOM_UPDATE\nADMIN|ROOM_DELETE\n"
+        "STAFF|ROOM_VIEW\n");
 
     {
         UserRepository userRepo(USER_FILE);
-        AuthService auth(userRepo);
+        RolePermissionRepository permissionRepo(PERMISSION_FILE);
+        AuthService auth(userRepo, permissionRepo);
         RoomRepository roomRepo(ROOM_FILE);
         RoomService service(roomRepo, auth);
 
         check("Load users", userRepo.load(), true);
+        check("Load permissions", permissionRepo.load(), true);
         check("Save room truoc load", service.save(), false);
         check("Load rooms", service.load(), true);
         check("Khong load rooms lan hai", service.load(), false);

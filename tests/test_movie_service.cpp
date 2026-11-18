@@ -13,6 +13,7 @@ int failed = 0;
 
 const string USER_FILE = "test_service_users.txt";
 const string MOVIE_FILE = "test_service_movies.txt";
+const string PERMISSION_FILE = "test_service_permissions.txt";
 
 void check(const string& name, bool actual, bool expected)
 {
@@ -38,6 +39,11 @@ void writeTestFiles()
     ofstream movies(MOVIE_FILE);
     movies << "MOV0001|Avatar|Action|120|13|2026-01-01|2026-12-31|1\n";
     movies.close();
+
+    ofstream permissions(PERMISSION_FILE);
+    permissions << "ADMIN|MOVIE_VIEW\nADMIN|MOVIE_ADD\n"
+                << "ADMIN|MOVIE_UPDATE\nADMIN|MOVIE_DELETE\n"
+                << "STAFF|MOVIE_VIEW\n";
 }
 
 void testNotLoggedIn()
@@ -50,7 +56,9 @@ void testNotLoggedIn()
     userRepo.load();
     movieRepo.load();
 
-    AuthService authService(userRepo);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService authService(userRepo, permissionRepo);
     MovieService movieService(movieRepo, authService);
 
     bool threw = false;
@@ -103,7 +111,9 @@ void testAdmin()
     userRepo.load();
     movieRepo.load();
 
-    AuthService authService(userRepo);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService authService(userRepo, permissionRepo);
     MovieService movieService(movieRepo, authService);
 
     // Dang nhap Admin
@@ -137,7 +147,9 @@ void testStaff()
     userRepo.load();
     movieRepo.load();
 
-    AuthService authService(userRepo);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService authService(userRepo, permissionRepo);
     MovieService movieService(movieRepo, authService);
 
     // Dang nhap Staff
@@ -225,7 +237,9 @@ void testAddMovie()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     check("Admin login", auth.login("admin", "AdminPass"), true);
@@ -272,7 +286,9 @@ void testUpdateMovie()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     auth.login("admin", "AdminPass");
@@ -331,7 +347,9 @@ void testShowtimeRules()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     auth.login("admin", "AdminPass");
@@ -389,7 +407,9 @@ void testRemoveMovie()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     auth.login("admin", "AdminPass");
@@ -417,7 +437,9 @@ void testStaffPermissions()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     auth.login("staff", "StaffPass");
@@ -457,7 +479,9 @@ void testAnonymousPermissions()
     users.load();
     movies.load();
 
-    AuthService auth(users);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
     MovieService service(movies, auth);
 
     Movie* movie = createTestMovie("MOV0002");
@@ -493,6 +517,48 @@ void testAnonymousPermissions()
           true);
 }
 
+void testConfiguredPermissions()
+{
+    ofstream permissions(PERMISSION_FILE, ios::trunc);
+    permissions << "STAFF|MOVIE_ADD\nADMIN|MOVIE_VIEW\n";
+    permissions.close();
+
+    UserRepository users(USER_FILE);
+    MovieRepository movies(MOVIE_FILE);
+    RolePermissionRepository permissionRepo(PERMISSION_FILE);
+    users.load();
+    movies.load();
+    permissionRepo.load();
+    AuthService auth(users, permissionRepo);
+    MovieService service(movies, auth);
+
+    Movie* anonymousMovie = createTestMovie("MOV0002");
+    check("Anonymous bi tu choi du Staff duoc cap MOVIE_ADD",
+          throwsRuntimeError([&]() { service.addMovie(anonymousMovie); }), true);
+    delete anonymousMovie;
+
+    check("Staff login voi bang quyen tuy chinh",
+          auth.login("staff", "StaffPass"), true);
+    Movie* staffMovie = createTestMovie("MOV0002");
+    bool added = service.addMovie(staffMovie);
+    check("Staff duoc them khi co MOVIE_ADD", added, true);
+    if (!added)
+    {
+        delete staffMovie;
+    }
+    check("Staff thieu MOVIE_VIEW bi tu choi",
+          throwsRuntimeError([&]() { service.getMovieCount(); }), true);
+
+    check("Admin login voi bang quyen tuy chinh",
+          auth.login("admin", "AdminPass"), true);
+    check("Admin co MOVIE_VIEW duoc xem",
+          service.getMovieCount() == 2, true);
+    Movie* adminMovie = createTestMovie("MOV0003");
+    check("Admin thieu MOVIE_ADD bi tu choi",
+          throwsRuntimeError([&]() { service.addMovie(adminMovie); }), true);
+    delete adminMovie;
+}
+
 
 int main()
 {
@@ -508,9 +574,11 @@ int main()
     testRemoveMovie();
     testStaffPermissions();
     testAnonymousPermissions();
+    testConfiguredPermissions();
 
     remove(USER_FILE.c_str());
     remove(MOVIE_FILE.c_str());
+    remove(PERMISSION_FILE.c_str());
 
     cout << "\nPassed: " << passed << endl;
     cout << "Failed: " << failed << endl;
