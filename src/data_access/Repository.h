@@ -15,6 +15,7 @@ private:
     string filePath;
     DoublyLinkedList<T*> items;
     bool loaded; // đánh dấu repo đã nạp dữ liệu chưa
+    
     string (*getId)(T*); //con trỏ hàm - getId là 1 con trỏ trỏ đến hàm nhận tham số T* và trả về string
     T* (*parse)(const string&); //chuyển txt sang đối tượng cụ thể
     string (*serialize)(T*); //chuyển đối tượng sang txt
