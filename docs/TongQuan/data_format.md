@@ -31,6 +31,19 @@ Trong bộ nhớ dựng hai chỉ mục tài khoản: một hash table theo `use
 
 role = ADMIN/STAFF. Mô hình dùng một kiểu `User` có trường role, không cần lớp con Admin/Staff. `AuthService` (Bước 05) và `StaffService` (Bước 07) cùng dùng `UserRepository` để truy cập file này; sửa nhân viên phải giữ các tài khoản Admin.
 
+### role_permissions.txt
+
+```text
+ROLE|PERMISSION_CODE
+```
+
+Dòng trên chỉ mô tả hai trường, **không phải dòng tiêu đề**. Mỗi dòng thực tế chứa đúng một cặp, ví dụ `STAFF|MOVIE_VIEW`. File UTF-8 này không có dòng `#schema=1` hoặc tiêu đề cột; đường dẫn dự kiến là `data/role_permissions.txt`, còn đường dẫn thực tế do cấu hình/constructor cung cấp.
+
+- `ROLE` chỉ nhận `ADMIN` hoặc `STAFF`. `PERMISSION_CODE` chỉ nhận một trong 29 mã đã chốt ở [thiết kế phân quyền](../CauTrucThuMuc/PermissionDesign.md#3-danh-sách-quyền-đã-chốt): `MOVIE_VIEW`, `MOVIE_ADD`, `MOVIE_UPDATE`, `MOVIE_DELETE`, `ROOM_VIEW`, `ROOM_ADD`, `ROOM_UPDATE`, `ROOM_DELETE`, `SEAT_VIEW`, `SEAT_ADD`, `SEAT_UPDATE`, `SEAT_DELETE`, `SHOWTIME_VIEW`, `SHOWTIME_ADD`, `SHOWTIME_UPDATE`, `SHOWTIME_CANCEL`, `SHOWTIME_DELETE`, `STAFF_VIEW`, `STAFF_ADD`, `STAFF_UPDATE`, `STAFF_DEACTIVATE`, `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE`, `TICKET_SELL`, `TICKET_CANCEL`, `INVOICE_VIEW_OWN`, `INVOICE_VIEW_ALL`, `REPORT_VIEW`. Mã phân biệt chữ hoa/chữ thường.
+- Khóa duy nhất là `(ROLE, PERMISSION_CODE)`. Dòng trùng, thiếu/thừa trường, role sai hoặc permission không thuộc danh sách đều là dữ liệu lỗi: báo file/dòng và từ chối nạp bảng quyền; không bỏ qua dòng lỗi hay dùng bảng đã nạp dở.
+- Cặp không có trong file nghĩa là không được cấp quyền, kể cả với Admin. File rỗng hợp lệ về cú pháp nhưng không cấp quyền nào. File thiếu hoặc nạp lỗi phải chặn nghiệp vụ được bảo vệ, không tạo quyền mặc định thay thế.
+- Bảng quyền chỉ được đọc trong phiên bản này; sửa file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại. Không có dòng quản lý cấp/thu hồi quyền trong định dạng này.
+
 ### movies.txt
 
 ```text
@@ -109,7 +122,7 @@ MEM|1
 
 ## 3. Tải và kiểm tra
 
-1. Đọc các file TXT bằng `FileIO`; báo lỗi nếu thiếu file trong bộ dữ liệu đã có.
+1. Đọc các file TXT bằng `FileIO`; báo lỗi nếu thiếu file trong bộ dữ liệu đã có. Nạp và kiểm tra `role_permissions.txt` trước khi phục vụ đăng nhập/nghiệp vụ được bảo vệ.
 2. Kiểm tra số lượng trường, số trường, kiểu, enum và mã trùng.
 3. Tải danh mục rồi kiểm tra tham chiếu suất/hóa đơn/vé; showtimeId của từng vé phải trùng showtimeId trên hóa đơn tương ứng.
 4. Kiểm tra hóa đơn không rỗng, ghế bán trùng, tổng tiền, điểm thành viên và bộ đếm mã.

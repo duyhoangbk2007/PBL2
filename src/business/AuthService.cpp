@@ -3,10 +3,10 @@
 
 using namespace std;
 
-AuthService::AuthService(UserRepository& userRepo)
-    : userRepo(userRepo)
+AuthService::AuthService(UserRepository& userRepo, RolePermissionRepository& permissionRepo)
+    : userRepo(userRepo),
+      permissionRepo(permissionRepo)
 {}
-
 bool AuthService::login(const string& username, const string& password)
 {
     // Xoa phien dang nhap cu
@@ -110,3 +110,38 @@ const User& AuthService::requireAdmin() const
     }
     return user;
 }
+
+bool AuthService::hasPermission(const string& permission) const
+{
+    const User* user = getCurrentUser();
+    if (user == nullptr || !permissionRepo.isLoaded())
+    {
+        return false;
+    }
+    string role;
+    if (user->getRole() == UserRole::ADMIN)
+    {
+        role = "ADMIN";
+    }
+    else if (user->getRole() == UserRole::STAFF)
+    {
+        role = "STAFF";
+    }
+    else
+    {
+        return false;
+    }
+    return permissionRepo.hasPermission(role, permission);
+}
+
+const User& AuthService::requirePermission(const string& permission) const
+{
+    const User& user = requireLogin();
+    if (!hasPermission(permission))
+    {
+        throw runtime_error("Khong co quyen: " + permission);
+    }
+    return user;
+}
+
+

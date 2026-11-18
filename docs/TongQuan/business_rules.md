@@ -7,8 +7,47 @@
 - Admin quản lý danh mục, nhân viên, toàn bộ lịch sử, báo cáo, bán và hủy vé.
 - Staff bán vé, quản lý thông tin liên hệ thành viên, xem hóa đơn của mình trong ngày và tra cứu hóa đơn cũ của mình theo mã.
 - Mọi tài khoản dùng chung mô hình User với role ADMIN/STAFF; không cần lớp con Admin/Staff. Service kiểm tra quyền mỗi nghiệp vụ. Tài khoản vô hiệu hóa không được đăng nhập. Chức năng sửa Staff không được đổi vai trò.
+- Theo thiết kế RBAC, quyền thao tác được tra từ `role_permissions.txt` bằng cặp `(role, permissionCode)`. Backend kiểm tra quyền qua `AuthService` mỗi lần thực hiện nghiệp vụ; GUI có thể dùng quyền để điều chỉnh hiển thị nhưng không thay thế kiểm tra ở Backend. Vai trò `ADMIN` không tự động có mọi quyền nếu file thiếu bản ghi. Các giới hạn nghiệp vụ và phạm vi dữ liệu ở các mục dưới vẫn bắt buộc, kể cả khi có mã quyền tương ứng.
 - Không quản lý ca, online, thanh toán điện tử, hạng thẻ hoặc đổi điểm.
 - Bản PBL2 chạy như ứng dụng tại quầy trên một bộ dữ liệu TXT. Nếu sau này cho phép nhiều tiến trình cùng ghi, cần thiết kế cơ chế đồng bộ riêng trước khi sử dụng.
+
+### Bảng quyền RBAC mặc định theo thiết kế
+
+| Permission | ADMIN | STAFF |
+| --- | --- | --- |
+| `MOVIE_VIEW` | Có | Có |
+| `MOVIE_ADD` | Có | Không |
+| `MOVIE_UPDATE` | Có | Không |
+| `MOVIE_DELETE` | Có | Không |
+| `ROOM_VIEW` | Có | Có |
+| `ROOM_ADD` | Có | Không |
+| `ROOM_UPDATE` | Có | Không |
+| `ROOM_DELETE` | Có | Không |
+| `SEAT_VIEW` | Có | Có |
+| `SEAT_ADD` | Có | Không |
+| `SEAT_UPDATE` | Có | Không |
+| `SEAT_DELETE` | Có | Không |
+| `SHOWTIME_VIEW` | Có | Có |
+| `SHOWTIME_ADD` | Có | Không |
+| `SHOWTIME_UPDATE` | Có | Không |
+| `SHOWTIME_CANCEL` | Có | Không |
+| `SHOWTIME_DELETE` | Có | Không |
+| `STAFF_VIEW` | Có | Không |
+| `STAFF_ADD` | Có | Không |
+| `STAFF_UPDATE` | Có | Không |
+| `STAFF_DEACTIVATE` | Có | Không |
+| `MEMBER_VIEW` | Có | Có |
+| `MEMBER_ADD` | Có | Có |
+| `MEMBER_UPDATE` | Có | Có |
+| `TICKET_SELL` | Có | Có |
+| `TICKET_CANCEL` | Có | Không |
+| `INVOICE_VIEW_OWN` | Có | Có |
+| `INVOICE_VIEW_ALL` | Có | Không |
+| `REPORT_VIEW` | Có | Không |
+
+Bảng gồm 29 mã quyền; dữ liệu mặc định có 29 cặp cho Admin và 9 cặp cho Staff. Bảng mô tả quyền được thống nhất, không xác nhận các nghiệp vụ tương ứng đã có code. Quyền thao tác được quyết định bởi các cặp hợp lệ đang nạp, không tự thêm cặp còn thiếu. `INVOICE_VIEW_OWN` vẫn phải giới hạn hóa đơn theo người lập và điều kiện ngày/mã ở mục lịch sử; `TICKET_CANCEL` vẫn phải tuân thủ quy tắc chỉ Admin ở mục hủy vé.
+
+Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ chối nghiệp vụ được bảo vệ; `AuthService` cần tra lại trạng thái tài khoản khi kiểm tra quyền. Nếu thiếu file quyền, file sai định dạng, chứa cặp trùng hoặc mã quyền không tồn tại, phải báo lỗi và từ chối truy cập, không dùng bảng quyền nạp dở hay cấp quyền dự phòng. File quyền rỗng không cấp quyền nào. Phiên bản này chỉ đọc bảng quyền; **chưa triển khai Admin cấp/thu hồi quyền qua GUI hoặc API**, và thay đổi file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại. Chữ ký API và loại ngoại lệ cụ thể được chốt khi triển khai code.
 
 ## 2. Phim, phòng và suất chiếu
 
