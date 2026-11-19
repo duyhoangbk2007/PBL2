@@ -44,8 +44,10 @@
 | `INVOICE_VIEW_OWN` | Có | Có |
 | `INVOICE_VIEW_ALL` | Có | Không |
 | `REPORT_VIEW` | Có | Không |
+| `PRICING_VIEW` | Có | Có |
+| `PRICING_UPDATE` | Có | Không |
 
-Bảng gồm 29 mã quyền; dữ liệu mặc định có 29 cặp cho Admin và 9 cặp cho Staff. Bảng mô tả quyền được thống nhất, không xác nhận các nghiệp vụ tương ứng đã có code. Quyền thao tác được quyết định bởi các cặp hợp lệ đang nạp, không tự thêm cặp còn thiếu. `INVOICE_VIEW_OWN` vẫn phải giới hạn hóa đơn theo người lập và điều kiện ngày/mã ở mục lịch sử; `TICKET_CANCEL` vẫn phải tuân thủ quy tắc chỉ Admin ở mục hủy vé.
+Bảng hiện gồm 31 mã quyền; `role_permissions.txt` mặc định có 31 cặp cho Admin và 10 cặp cho Staff. `PRICING_VIEW` cho xem bảng giá/giá gốc, `PRICING_UPDATE` cho sửa giá ghế và tỷ lệ ưu đãi. Bảng mô tả quyền được thống nhất, không xác nhận mọi nghiệp vụ tương ứng đã có code. Quyền thao tác được quyết định bởi các cặp hợp lệ đang nạp, không tự thêm cặp còn thiếu. `INVOICE_VIEW_OWN` vẫn phải giới hạn hóa đơn theo người lập và điều kiện ngày/mã ở mục lịch sử; `TICKET_CANCEL` vẫn phải tuân thủ quy tắc chỉ Admin ở mục hủy vé.
 
 Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ chối nghiệp vụ được bảo vệ; `AuthService` cần tra lại trạng thái tài khoản khi kiểm tra quyền. Nếu thiếu file quyền, file sai định dạng, chứa cặp trùng hoặc mã quyền không tồn tại, phải báo lỗi và từ chối truy cập, không dùng bảng quyền nạp dở hay cấp quyền dự phòng. File quyền rỗng không cấp quyền nào. Phiên bản này chỉ đọc bảng quyền; **chưa triển khai Admin cấp/thu hồi quyền qua GUI hoặc API**, và thay đổi file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại. Chữ ký API và loại ngoại lệ cụ thể được chốt khi triển khai code.
 
@@ -67,7 +69,7 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 
 ## 3. Giá, ưu đãi và thành viên
 
-| Giá trị mặc định trong PricingConfig.h | Mức áp dụng |
+| Giá trị mặc định của `Pricing()` | Mức áp dụng |
 | --- | --- |
 | Ghế thường | 70.000 VND/vé |
 | Ghế VIP | 100.000 VND/vé |
@@ -76,11 +78,14 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 | Giảm thành viên | 5% |
 | Tích điểm | 1 điểm/10.000 VND thực trả trên từng vé |
 
+`Pricing` hiện giữ ba giá và hai tỷ lệ trên; cấu hình vận hành được `PricingRepository` nạp từ `pricing.txt` gồm năm dòng `KEY|VALUE`. `PricingService` cho phép xem bằng `PRICING_VIEW`, sửa từng giá/tỷ lệ bằng `PRICING_UPDATE`; cập nhật thành công được ghi xuống file trước khi thay cấu hình trong RAM. Quy tắc 1 điểm/10.000 VND là hằng số trong hàm tính điểm, không phải trường thứ sáu của `pricing.txt`. Việc cấp quyền thực tế phụ thuộc bảng RBAC đang nạp; không suy ra chỉ từ vai trò mặc định.
+
 - Tiền dùng `double` theo đơn vị VND, có thể có phần thập phân theo quyết định hiện tại của dự án. Cần xử lý sai số số thực khi đối chiếu tổng tiền và khi đọc/ghi dữ liệu.
 - Loại vé REGULAR/STUDENT độc lập với loại ghế và thành viên.
 - Nhân viên kiểm tra giấy tờ học sinh; ghế đôi loại học sinh yêu cầu cả hai người đủ điều kiện.
 - Lấy tỷ lệ giảm cao nhất đủ điều kiện, không cộng dồn. Tiền giảm = `(giá gốc × tỷ lệ) / 100` và giữ phần thập phân; thực trả = giá gốc − tiền giảm.
 - Điểm mỗi vé = phần nguyên `thực trả / 10000` nếu có thành viên, ngược lại bằng 0. Điểm hóa đơn là tổng điểm từng vé.
+- `PricingService` hiện tính tiền giảm, tiền trả và điểm nhưng chưa cộng/thu hồi điểm trên `Member`, chưa tạo vé hoặc ghi snapshot giá vào `Ticket`; các thao tác này thuộc luồng bán/hủy vé chưa hoàn thiện.
 - Thành viên có mã, họ tên, số điện thoại duy nhất và điểm không âm; khởi tạo 0 điểm. Không chỉnh điểm trực tiếp.
 - Chỉ báo cộng điểm thành công khi các lần ghi liên quan đã thành công. Không xóa thành viên đã có hóa đơn.
 - Lưu giá gốc, tiền giảm, thực trả và điểm trên vé tại thời điểm bán; đổi cấu hình không làm thay đổi lịch sử.

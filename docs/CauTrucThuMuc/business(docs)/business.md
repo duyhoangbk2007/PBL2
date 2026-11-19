@@ -84,6 +84,7 @@ Khi không đáp ứng điều kiện, AuthService ném ngoại lệ.
 | ShowtimeService | Tạo/sửa/tra cứu suất chiếu; hủy/xóa chưa hoàn thiện |
 | StaffService | Quản lý và tra cứu tài khoản Staff |
 | MemberService | Thêm/sửa/tra cứu thành viên với RBAC; test riêng 69/69 |
+| [PricingService](PricingService.md) | Xem/cập nhật cấu hình giá theo RBAC, tính giảm giá không cộng dồn, tiền phải trả và điểm dự kiến; bộ test Pricing chung 63/63 |
 
 ## 5. MovieService
 

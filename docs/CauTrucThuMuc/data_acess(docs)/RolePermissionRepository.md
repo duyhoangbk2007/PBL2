@@ -30,7 +30,7 @@ STAFF|MOVIE_VIEW
 - `ROLE`: hiện hỗ trợ `ADMIN` hoặc `STAFF`.
 - `PERMISSION`: mã quyền mà các Service sử dụng để kiểm tra.
 - Không có dòng schema hoặc tiêu đề.
-- Phiên bản đơn giản hiện tại **không đối chiếu** `PERMISSION` với danh sách 29 mã quyền đã thiết kế; vì vậy mã sai chính tả nhưng đúng định dạng vẫn có thể được nạp.
+- Phiên bản đơn giản hiện tại **không đối chiếu** `PERMISSION` với danh sách 31 mã quyền đã thiết kế (gồm `PRICING_VIEW` và `PRICING_UPDATE`); vì vậy mã sai chính tả nhưng đúng định dạng vẫn có thể được nạp.
 
 ## 3. Thuộc tính
 

@@ -1,10 +1,10 @@
-﻿# PBL2 – Hệ thống quản lý bán vé rạp chiếu phim
+# PBL2 – Hệ thống quản lý bán vé rạp chiếu phim
 
 ## 1. Giới thiệu
 
 Ứng dụng desktop C++/Qt mô phỏng bán vé offline tại quầy. Nhân viên thao tác thay khách; không có tài khoản khách hàng hoặc đặt vé online. Hai vai trò sử dụng là Admin và Staff. Dữ liệu lưu bằng file văn bản UTF-8.
 
-Tài liệu mô tả thiết kế mục tiêu, không khẳng định các chức năng bên dưới đã triển khai. Hiện dự án có tám Model, `DoublyLinkedList<T>` và các tiện ích lưu trữ/ngày giờ/cấp mã; chưa có ứng dụng bán vé hoàn chỉnh. `main.cpp` chỉ là chương trình thử, chưa phải điểm khởi chạy giao diện. Bản PBL2 dự kiến chỉ cho phép một phiên ứng dụng thao tác trên một bộ dữ liệu tại một thời điểm.
+Tài liệu mô tả thiết kế mục tiêu, không khẳng định các chức năng bên dưới đã triển khai. Hiện dự án có chín Model, `DoublyLinkedList<T>` và các tiện ích lưu trữ/ngày giờ/cấp mã; chưa có ứng dụng bán vé hoàn chỉnh. `main.cpp` chỉ là chương trình thử, chưa phải điểm khởi chạy giao diện. Bản PBL2 dự kiến chỉ cho phép một phiên ứng dụng thao tác trên một bộ dữ liệu tại một thời điểm.
 
 ## 2. Chức năng
 
@@ -55,14 +55,14 @@ Luồng mục tiêu: **GUI → Business Logic → Data Access → DB**; kết qu
 - `src/gui/`: Qt Widgets, nhận thao tác và hiển thị kết quả.
 - `src/business/`: các class `*Service` kiểm tra quyền và quy tắc nghiệp vụ.
 - `src/data_access/`: các class `*Repository` quản lý Model trong RAM, chuyển đổi và đọc/ghi TXT.
-- `src/models/`: tám Model, không tự đọc/ghi file.
+- `src/models/`: chín Model, không tự đọc/ghi file.
 - `src/data_structures/`: cấu trúc tự cài đặt như `DoublyLinkedList<T>`.
 - `src/utils/`: `FileIO`, `DateTime`, `IdGenerator`. `FileIO` chỉ đọc/ghi dòng TXT.
 - `data/`: các file TXT; `tests/`: kiểm thử; `docs/`: tài liệu.
 
-**Cây `src/` đã được tạo một phần.** Tám cặp Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `IdGenerator`, `DateTime` ở `src/utils/`. Nhánh hiện tại có Repository cho người dùng, phim, phòng, ghế, suất chiếu, thành viên và Service xác thực, phim, phòng, ghế, suất chiếu, nhân viên, thành viên. `MemberRepository` và `MemberService` có test riêng đạt 63/63 và 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `MovieRepository` và `MovieService` có test riêng đạt 40/40 và 45/45 trong lần kiểm tra đã ghi ngày 2026-11-17; nghiệp vụ bật/tắt phim chưa hoàn thiện. `ShowtimeService` có test riêng **89/89 PASS, 0 FAIL** ngày 2026-11-17 cho phạm vi hiện có; hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`. `test_auth.cpp` đạt 9/14 ở lần kiểm tra đã ghi ngày 2026-11-17. `src/main.cpp` vẫn là chương trình thử; chưa có GUI Qt hoặc CMake. Mã `TransactionManager` cũ được lưu ở `tests/legacy/` cho bài thử lịch sử; ứng dụng mục tiêu không dùng. Xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
+**Cây `src/` đã được tạo một phần.** Tám cặp Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `IdGenerator`, `DateTime` ở `src/utils/`. Nhánh hiện tại có Repository cho người dùng, phim, phòng, ghế, suất chiếu, thành viên và Service xác thực, phim, phòng, ghế, suất chiếu, nhân viên, thành viên. `MemberRepository` và `MemberService` có test riêng đạt 63/63 và 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `Pricing`, `PricingRepository`, `PricingService` đã có; `test_pricing.cpp` đạt 63 PASS, 0 FAIL cho phạm vi hiện có, chưa tích hợp vào giao dịch bán vé. `MovieRepository` và `MovieService` có test riêng đạt 40/40 và 45/45 trong lần kiểm tra đã ghi ngày 2026-11-17; nghiệp vụ bật/tắt phim chưa hoàn thiện. `ShowtimeService` có test riêng **89/89 PASS, 0 FAIL** ngày 2026-11-17 cho phạm vi hiện có; hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`. `test_auth.cpp` đạt 9/14 ở lần kiểm tra đã ghi ngày 2026-11-17. `src/main.cpp` vẫn là chương trình thử; chưa có GUI Qt hoặc CMake. Mã `TransactionManager` cũ được lưu ở `tests/legacy/` cho bài thử lịch sử; ứng dụng mục tiêu không dùng. Xem [tổng quan tiến độ](docs/development/TongQuanTienDo.md).
 
-**Lộ trình 14 bước:** nhóm xác nhận Bước 01–03 đã hoàn thành. Hoàng phụ trách toàn bộ Backend Bước 01–11; Bước 04–11 triển khai theo từng chức năng: Repository → Service → kiểm thử C++ → tài liệu. Bước 04–06 còn đang thực hiện; Bước 07–11 chưa bắt đầu. Kiệt phụ trách GUI Bước 12–14: xây dựng Qt, kiểm thử tích hợp, đóng gói và bàn giao; Hoàng hỗ trợ lỗi Backend khi tích hợp. Xem [phân công 14 bước](docs/development/PhanCongCongViec.md).
+**Lộ trình 14 bước:** nhóm xác nhận Bước 01–03 đã hoàn thành. Hoàng phụ trách toàn bộ Backend Bước 01–11; Bước 04–11 triển khai theo từng chức năng: Repository → Service → kiểm thử C++ → tài liệu. Bước 04–06 còn đang thực hiện; Bước 07–09 đang thực hiện; Bước 10–11 chưa bắt đầu. Kiệt phụ trách GUI Bước 12–14: xây dựng Qt, kiểm thử tích hợp, đóng gói và bàn giao; Hoàng hỗ trợ lỗi Backend khi tích hợp. Xem [phân công 14 bước](docs/development/PhanCongCongViec.md).
 
 ## 4. Cấu trúc dữ liệu
 

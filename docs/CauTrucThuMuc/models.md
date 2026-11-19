@@ -1,6 +1,6 @@
 # `src/models/` — các đối tượng dữ liệu
 
-**Phạm vi tài liệu:** hiện trạng sau Bước 02 và Bước 03. Tám cặp `.h/.cpp` đã có trong `src/models/`; `.h` khai báo dữ liệu và API, `.cpp` cài đặt. Model biểu diễn **một thực thể**, không tự mở TXT, quản lý toàn bộ danh sách hay quyết định quyền, giá và điều kiện bán vé. [Định dạng TXT](../TongQuan/data_format.md) vẫn là hợp đồng lưu trữ, còn các con trỏ quan hệ chỉ tồn tại trong RAM.
+**Phạm vi tài liệu:** các Model hiện có trong `src/models/`, gồm tám thực thể ban đầu và `Pricing` của Bước 09. `.h` khai báo dữ liệu và API, `.cpp` cài đặt. Model không tự mở TXT hoặc quyết định quyền và điều kiện bán vé. [Định dạng TXT](../TongQuan/data_format.md) vẫn là hợp đồng lưu trữ, còn các con trỏ quan hệ chỉ tồn tại trong RAM.
 
 ## Từng cặp file
 
@@ -14,6 +14,21 @@
 | `Member.h/.cpp` | Thành viên, thông tin liên hệ, điểm và danh sách `Invoice*` liên quan. |
 | `Ticket.h/.cpp` | Vé: hóa đơn/suất/ghế, loại vé, giá, điểm, trạng thái hủy và các con trỏ tham chiếu. |
 | `Invoice.h/.cpp` | Hóa đơn: một suất, người bán, thành viên tùy chọn, tổng tiền và danh sách nhiều `Ticket*`. |
+| `Pricing.h/.cpp` | Một cấu hình gồm ba giá ghế và hai tỷ lệ giảm; không có ID hoặc quan hệ con trỏ. |
+
+## Pricing — cấu hình giá và ưu đãi
+
+`Pricing` có năm thuộc tính private kiểu `double`: `standardPrice`, `vipPrice`, `couplePrice` (VND), `studentDiscount`, `memberDiscount` (phần trăm). Constructor mặc định đặt lần lượt **70000, 100000, 160000, 10, 5**; constructor thứ hai nhận đủ năm giá trị theo đúng thứ tự này. Model không có setter.
+
+| Getter public | Giá trị trả về |
+| --- | --- |
+| `getStandardPrice() const` | Giá ghế STANDARD |
+| `getVipPrice() const` | Giá ghế VIP |
+| `getCouplePrice() const` | Giá ghế COUPLE |
+| `getStudentDiscount() const` | Tỷ lệ giảm học sinh |
+| `getMemberDiscount() const` | Tỷ lệ giảm thành viên |
+
+`isValid() const` trả `false` nếu một giá ghế `<= 0` hoặc một tỷ lệ giảm nằm ngoài `[0, 100]`; các trường hợp còn lại trả `true`. **Giới hạn code hiện tại:** hàm không tự kiểm tra `NaN`/vô cực. `PricingRepository::load()` kiểm tra số hữu hạn khi đọc TXT và `PricingService` kiểm tra số hữu hạn ở hai API cập nhật, nhưng không nên mô tả `Pricing::isValid()` là đủ để loại mọi giá trị không hữu hạn.
 
 ## Quan hệ đã khai báo trong mã
 
