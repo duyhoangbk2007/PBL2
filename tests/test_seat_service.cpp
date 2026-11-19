@@ -15,6 +15,7 @@ int failed = 0;
 const string USER_FILE = "test_seat_service_users_temp.txt";
 const string ROOM_FILE = "test_seat_service_rooms_temp.txt";
 const string SEAT_FILE = "test_seat_service_seats_temp.txt";
+const string PERMISSION_FILE = "test_seat_service_permissions_temp.txt";
 
 void check(const string& name, bool actual, bool expected)
 {
@@ -43,6 +44,7 @@ void cleanFiles()
     remove(USER_FILE.c_str());
     remove(ROOM_FILE.c_str());
     remove(SEAT_FILE.c_str());
+    remove(PERMISSION_FILE.c_str());
 }
 
 void prepareFiles()
@@ -58,6 +60,9 @@ void prepareFiles()
         "ROM0002|Phong 2|5|10|1\n");
 
     writeFile(SEAT_FILE, "");
+    writeFile(PERMISSION_FILE,
+        "ADMIN|SEAT_VIEW\nADMIN|SEAT_ADD\nADMIN|SEAT_UPDATE\nADMIN|SEAT_DELETE\n"
+        "STAFF|SEAT_VIEW\n");
 }
 
 template <typename F>
@@ -92,12 +97,14 @@ void testSeatService()
 
     {
         UserRepository userRepo(USER_FILE);
-        AuthService auth(userRepo);
+        RolePermissionRepository permissionRepo(PERMISSION_FILE);
+        AuthService auth(userRepo, permissionRepo);
         RoomRepository roomRepo(ROOM_FILE);
         SeatRepository seatRepo(SEAT_FILE, roomRepo);
         SeatService service(seatRepo, auth);
 
         check("Load users", userRepo.load(), true);
+        check("Load permissions", permissionRepo.load(), true);
         check("Save truoc load", service.save(), false);
         check("Khong load Seat truoc Room", service.load(), false);
         check("Load rooms", roomRepo.load(), true);

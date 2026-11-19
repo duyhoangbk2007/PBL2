@@ -70,6 +70,7 @@ Kiểm tra quyền và các quy tắc nghiệp vụ trước khi gọi Repositor
 | RoomRepository | Room | Quản lý phòng chiếu |
 | SeatRepository | Seat | Quản lý ghế và liên kết phòng |
 | ShowtimeRepository | Showtime | Quản lý suất chiếu, liên kết phim/phòng và lịch cùng phòng |
+| MemberRepository | Member | Quản lý thành viên, tra ID/phone và kiểm tra số điện thoại duy nhất; test riêng 63/63 |
 
 ## 4. RoomRepository
 

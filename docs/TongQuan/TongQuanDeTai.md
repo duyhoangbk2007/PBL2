@@ -1,6 +1,6 @@
 # Tổng quan đề tài và luồng chức năng
 
-Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model và tiện ích; nhánh hiện tại đã có Repository cho tài khoản, phim, phòng, ghế, suất chiếu và Service xác thực, phim, phòng, ghế, suất chiếu. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có, nhưng hủy/xóa suất còn thiếu nghiệp vụ kiểm tra vé. Đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 12.
+Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model và tiện ích; nhánh hiện tại đã có Repository cho tài khoản, phim, phòng, ghế, suất chiếu, thành viên và Service xác thực, phim, phòng, ghế, suất chiếu, nhân viên, thành viên. `MemberService` có test riêng 69/69 cho thêm/sửa/tra cứu với RBAC; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có, nhưng hủy/xóa suất còn thiếu nghiệp vụ kiểm tra vé. Đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 12.
 
 ## 1. Hệ thống giải quyết việc gì?
 

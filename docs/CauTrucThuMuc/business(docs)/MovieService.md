@@ -346,3 +346,78 @@ Ngoại lệ sẽ được truyền về tầng gọi để xử lý bằng `try
 - `getMovieCount()` trả về tổng số phim, không phải số phim đang chiếu.
 - Các thao tác quản lý phim cần đi qua MovieService để áp dụng kiểm tra quyền.
 - Các nghiệp vụ như lọc phim đang chiếu, phim sắp chiếu và thay đổi trạng thái phim có thể được bổ sung sau.
+
+## Phân quyền RBAC trong MovieService
+
+### 1. Tổng quan
+
+`MovieService` sử dụng `AuthService` để kiểm tra quyền trước khi thực hiện các nghiệp vụ quản lý phim.
+
+Trước đây, các thao tác thêm, sửa, xóa phim sử dụng `requireAdmin()`, còn các thao tác tra cứu sử dụng `requireLogin()`.
+
+Sau khi tích hợp RBAC, các thao tác sẽ sử dụng `requirePermission()` với mã quyền tương ứng.
+
+Việc phân quyền dựa trên dữ liệu trong `data/role_permissions.txt`, không phụ thuộc trực tiếp vào vai trò `ADMIN` hoặc `STAFF`.
+
+### 2. Bảng phân quyền
+
+| Hàm | Permission yêu cầu |
+|---|---|
+| `addMovie()` | `MOVIE_ADD` |
+| `updateMovie()` | `MOVIE_UPDATE` |
+| `removeMovie()` | `MOVIE_DELETE` |
+| `findMovieById()` | `MOVIE_VIEW` |
+| `getMovieAt()` | `MOVIE_VIEW` |
+| `getMovieCount()` | `MOVIE_VIEW` |
+
+Hai hàm `load()` và `save()` giữ nguyên cơ chế hiện tại, không yêu cầu permission.
+
+### 3. Nguyên tắc xử lý
+
+1. `MovieService` gọi `authService.requirePermission()` trước khi thực hiện nghiệp vụ.
+2. `AuthService` kiểm tra tài khoản đang đăng nhập.
+3. `AuthService` xác định vai trò và kiểm tra permission thông qua `RolePermissionRepository`.
+4. Nếu có quyền, nghiệp vụ tiếp tục.
+5. Nếu không có quyền, `runtime_error` được ném ra và thao tác không được thực hiện.
+
+### 4. Quy tắc nghiệp vụ giữ nguyên
+
+Tích hợp RBAC không thay đổi các quy tắc quản lý phim hiện có.
+
+Đặc biệt, `updateMovie()` vẫn phải:
+
+- Kiểm tra Repository đã load.
+- Kiểm tra phim tồn tại.
+- Không cho phép thay đổi trạng thái hoạt động qua hàm update.
+- Không cho phép thay đổi khoảng ngày chiếu khi phim đã có suất chiếu.
+- Sử dụng `MovieRepository` để kiểm tra dữ liệu và cập nhật.
+
+### 5. Ví dụ
+
+```cpp
+bool MovieService::addMovie(Movie* movie)
+{
+    authService.requirePermission("MOVIE_ADD");
+    return movieRepo.add(movie);
+}
+```
+
+Nếu file TXT có:
+
+```text
+STAFF|MOVIE_ADD
+```
+
+thì tài khoản Staff hợp lệ được phép thêm phim sau khi bảng quyền được nạp lại.
+
+Nếu không có permission tương ứng, thao tác bị từ chối.
+
+### 6. Kiểm thử cần thực hiện
+
+- Người dùng có permission thực hiện nghiệp vụ thành công.
+- Người dùng thiếu permission bị từ chối.
+- Admin không tự động được phép nếu thiếu permission.
+- Chưa đăng nhập không thể thực hiện nghiệp vụ.
+- Repository phân quyền chưa load thì từ chối.
+- Các quy tắc nghiệp vụ cũ vẫn hoạt động bình thường.
+- Các thao tác tra cứu cũng phải kiểm tra `MOVIE_VIEW`.

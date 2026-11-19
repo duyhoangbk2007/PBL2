@@ -16,13 +16,12 @@ bool MovieService::save()
 
 bool MovieService::addMovie(Movie* movie)
 {
-    authService.requireAdmin();
+    authService.requirePermission("MOVIE_ADD");
     return movieRepo.add(movie);
 }
 bool MovieService::updateMovie(const Movie& newValues)
 {
-    authService.requireAdmin();
-
+    authService.requirePermission("MOVIE_UPDATE");
     if (!movieRepo.isLoaded())
     {
         return false;
@@ -51,23 +50,22 @@ bool MovieService::updateMovie(const Movie& newValues)
 }
 bool MovieService::removeMovie(const string& movieId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("MOVIE_DELETE");
     return movieRepo.removeById(movieId);
 }
 
 const Movie* MovieService::findMovieById(const string& movieId)
 {
-    authService.requireLogin();
-
+    authService.requirePermission("MOVIE_VIEW");
     return movieRepo.findById(movieId);
 }
 const Movie* MovieService::getMovieAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("MOVIE_VIEW");
     return movieRepo.getAt(index);
 }
 int MovieService::getMovieCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("MOVIE_VIEW");
     return movieRepo.count();
 }

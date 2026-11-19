@@ -51,8 +51,8 @@ PBL2/
 │   │   ├── SeatService.cpp
 │   │   ├── ShowtimeService.h             [Dự kiến]
 │   │   ├── ShowtimeService.cpp           [Dự kiến]
-│   │   ├── MemberService.h               [Dự kiến]
-│   │   ├── MemberService.cpp             [Dự kiến]
+│   │   ├── MemberService.h
+│   │   ├── MemberService.cpp
 │   │   ├── StaffService.h                [Dự kiến]
 │   │   ├── StaffService.cpp              [Dự kiến]
 │   │   ├── BookingService.h              [Dự kiến]
@@ -70,8 +70,8 @@ PBL2/
 │   │   ├── ShowtimeRepository.cpp
 │   │   ├── UserRepository.h
 │   │   ├── UserRepository.cpp
-│   │   ├── MemberRepository.h            [Dự kiến]
-│   │   ├── MemberRepository.cpp          [Dự kiến]
+│   │   ├── MemberRepository.h
+│   │   ├── MemberRepository.cpp
 │   │   ├── TicketRepository.h            [Dự kiến]
 │   │   ├── TicketRepository.cpp          [Dự kiến]
 │   │   ├── InvoiceRepository.h           [Dự kiến]
@@ -184,7 +184,7 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 | `MovieService.h/.cpp` | Quyền và điều kiện thêm/sửa/ngừng/xóa phim. |
 | `RoomService.h/.cpp` | Điều kiện quản lý phòng, vị trí và loại ghế; có thể tách `SeatService` nếu chức năng thực tế cần. |
 | `ShowtimeService.h/.cpp` | Kiểm tra lịch, phòng, phim và điều kiện tạo/sửa/hủy suất. |
-| `MemberService.h/.cpp` | Thông tin thành viên và quy tắc điểm. |
+| [`MemberService.h/.cpp`](<business(docs)/MemberService.md>) | Thêm/sửa/tra cứu thành viên với RBAC; chưa xử lý điểm trong giao dịch vé. |
 | `StaffService.h/.cpp` | Quản lý nhân viên, dùng lại `UserRepository` và kiểm tra quyền Admin. |
 | `BookingService.h/.cpp` | Chọn ghế, Undo trước thanh toán, tính giá/ưu đãi, bán/hủy vé và điều phối lưu. |
 | `ReportService.h/.cpp` | Thống kê tiền bán, tiền hoàn, doanh thu và vé. |
@@ -200,7 +200,7 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 | `SeatRepository.h/.cpp` | Quản lý `Seat`, đọc/ghi `seats.txt`, kiểm tra phòng và vị trí ghế. |
 | [`ShowtimeRepository.h/.cpp`](<data_acess(docs)/ShowtimeRepository.md>) | Quản lý `Showtime`, đọc/ghi `showtimes.txt`, kiểm tra tham chiếu phim/phòng và lịch cùng phòng. |
 | `UserRepository.h/.cpp` | Quản lý `User`, đọc/ghi `users.txt`, tra ID và tên đăng nhập. |
-| `MemberRepository.h/.cpp` | Quản lý `Member`, đọc/ghi `members.txt`, lưu điểm đã được Service tính. |
+| [`MemberRepository.h/.cpp`](<data_acess(docs)/MemberRepository.md>) | Quản lý `Member`, đọc/ghi TXT theo đường dẫn nhận vào, tra ID/phone và bảo vệ điểm khỏi thay đổi qua `update()`; test riêng 63/63. |
 | `TicketRepository.h/.cpp` | Quản lý `Ticket`, đọc/ghi `tickets.txt`, giữ vé đã hủy để tra lịch sử. |
 | `InvoiceRepository.h/.cpp` | Quản lý `Invoice`, đọc/ghi `invoices.txt`, giữ liên kết hóa đơn–vé. |
 
@@ -283,4 +283,4 @@ Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` g
 | `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
-Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản, Service phim/phòng/ghế/suất/xác thực và `main.cpp` thử nghiệm. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.
+Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản/thành viên, Service phim/phòng/ghế/suất/xác thực/nhân viên/thành viên và `main.cpp` thử nghiệm. `MemberRepository` có test riêng 63/63, `MemberService` có test riêng 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.

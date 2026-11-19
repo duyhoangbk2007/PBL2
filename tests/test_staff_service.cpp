@@ -81,14 +81,22 @@ bool addStaffSafe(StaffService& service, User* user)
 int main()
 {
     const string path = "test_staff_service_data.txt";
+    const string permissionPath = "test_staff_service_permissions.txt";
 
     try
     {
         createTestFile(path);
+        {
+            ofstream permissions(permissionPath, ios::trunc);
+            permissions << "ADMIN|STAFF_VIEW\nADMIN|STAFF_ADD\n"
+                        << "ADMIN|STAFF_UPDATE\nADMIN|STAFF_DEACTIVATE\n";
+        }
 
         {
             UserRepository staffRepo(path);
-            AuthService authService(staffRepo);
+            RolePermissionRepository permissionRepo(permissionPath);
+            check(permissionRepo.load(), "Load staff permissions");
+            AuthService authService(staffRepo, permissionRepo);
             StaffService staffService(staffRepo, authService);
 
             // ======================================
@@ -369,7 +377,9 @@ int main()
         // Tao Repository moi de kiem tra du lieu tren file.
         {
             UserRepository staffRepo(path);
-            AuthService authService(staffRepo);
+            RolePermissionRepository permissionRepo(permissionPath);
+            check(permissionRepo.load(), "Reload staff permissions");
+            AuthService authService(staffRepo, permissionRepo);
             StaffService staffService(staffRepo, authService);
 
             check(staffService.load(),
@@ -418,6 +428,7 @@ int main()
 
     // Xoa file du lieu test
     remove(path.c_str());
+    remove(permissionPath.c_str());
 
     cout << "\n===== SUMMARY =====" << endl;
     cout << "Passed: " << passed << endl;

@@ -41,7 +41,7 @@ Các Service được xây dựng theo những nguyên tắc:
 
 ## 3. Phân quyền
 
-Các Service quản lý Movie, Room, Seat và Showtime sử dụng AuthService.
+Các Service quản lý Movie, Room, Seat, Showtime, Staff và Member sử dụng AuthService.
 
 Quy tắc chung:
 
@@ -53,21 +53,23 @@ Quy tắc chung:
 | Tìm kiếm | Có | Có | Không |
 | Xem danh sách | Có | Có | Không |
 
+Bảng trên là mô tả tổng quát cũ cho danh mục; quyền thực tế được kiểm tra theo từng mã trong `role_permissions.txt`. Riêng `MemberService`, bảng quyền mặc định cấp `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE` cho cả Admin và Staff. Bản ghi quyền thiếu thì thao tác bị từ chối, kể cả với Admin.
+
 Các hàm `load()` và `save()` hiện được sử dụng như thao tác quản lý dữ liệu hệ thống và không kiểm tra quyền Admin.
 
 ### Kiểm tra quyền
 
 ```cpp
-authService.requireAdmin();
+authService.requirePermission("MEMBER_ADD");
 ```
 
-Yêu cầu quyền Admin.
+Yêu cầu mã quyền cho thao tác thêm thành viên.
 
 ```cpp
-authService.requireLogin();
+authService.requirePermission("MEMBER_VIEW");
 ```
 
-Yêu cầu người dùng đã đăng nhập.
+Yêu cầu đã đăng nhập và có quyền xem thành viên.
 
 Khi không đáp ứng điều kiện, AuthService ném ngoại lệ.
 
@@ -80,6 +82,8 @@ Khi không đáp ứng điều kiện, AuthService ném ngoại lệ.
 | RoomService | Quản lý phòng chiếu |
 | SeatService | Quản lý ghế ngồi |
 | ShowtimeService | Tạo/sửa/tra cứu suất chiếu; hủy/xóa chưa hoàn thiện |
+| StaffService | Quản lý và tra cứu tài khoản Staff |
+| MemberService | Thêm/sửa/tra cứu thành viên với RBAC; test riêng 69/69 |
 
 ## 5. MovieService
 
@@ -135,6 +139,10 @@ Tài liệu chi tiết: `SeatService.md`.
 
 Service kiểm tra quyền, thời điểm bắt đầu trong tương lai, ngày chiếu nằm trong khoảng phát hành phim và thời lượng suất khớp phim. Repository kiểm tra tham chiếu, trùng lịch cùng phòng và khoảng nghỉ 15 phút. `test_showtime_service.cpp` đạt **89/89 PASS, 0 FAIL** ngày 2026-11-17 cho phạm vi hiện có. `cancelShowtime()` và `removeShowtime()` đang trả `false` để chờ `TicketRepository`; xem [tài liệu ShowtimeService](ShowtimeService.md).
 
+### MemberService
+
+`MemberService` đã có đủ 8 phương thức public ngoài constructor: `load()`, `save()`, thêm/sửa, tìm theo ID/phone, lấy theo vị trí và đếm. Các thao tác nghiệp vụ dùng `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE` qua `AuthService::requirePermission()`. `test_member_service.cpp` đạt **69 PASS, 0 FAIL** ngày 2026-11-19; việc cộng/thu hồi điểm và liên kết hóa đơn/vé chưa triển khai. Xem [tài liệu MemberService](MemberService.md).
+
 ## 9. Phân chia trách nhiệm Service và Repository
 
 Ví dụ với Room:
@@ -142,7 +150,7 @@ Ví dụ với Room:
 ```text
 RoomService
     |
-    | Kiểm tra Admin
+    | Kiểm tra ROOM_ADD/ROOM_UPDATE/ROOM_DELETE theo thao tác
     | Kiểm tra active
     | Kiểm tra Showtime
     v
@@ -161,7 +169,7 @@ Ví dụ với Seat:
 ```text
 SeatService
     |
-    | Kiểm tra Admin
+    | Kiểm tra SEAT_ADD/SEAT_UPDATE/SEAT_DELETE theo thao tác
     v
 SeatRepository
     |
@@ -203,7 +211,7 @@ Những chức năng này chưa được coi là đã triển khai.
 
 ## 12. Kết luận
 
-Tầng Business hiện có các Service quản lý xác thực, phim, phòng chiếu, ghế ngồi và suất chiếu.
+Tầng Business hiện có các Service quản lý xác thực, phim, phòng chiếu, ghế ngồi, suất chiếu, nhân viên và thành viên.
 
 Các Service sử dụng cùng một phong cách thiết kế: nhận Repository và AuthService thông qua tham chiếu, kiểm tra quyền, thực hiện nghiệp vụ rồi gọi Repository.
 
