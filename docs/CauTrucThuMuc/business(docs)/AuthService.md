@@ -455,9 +455,11 @@ Ví dụ về ánh xạ permission:
 | `ShowtimeService` | Tạo suất chiếu | `SHOWTIME_ADD` |
 | `ShowtimeService` | Hủy suất chiếu | `SHOWTIME_CANCEL` |
 | `MemberService` | Thêm thành viên | `MEMBER_ADD` |
+| `MemberService` | Xem thành viên | `MEMBER_VIEW` |
+| `MemberService` | Sửa thành viên | `MEMBER_UPDATE` |
 | Nghiệp vụ bán vé | Bán vé | `TICKET_SELL` |
 
-Bảng trên thể hiện cách tích hợp dự kiến, không có nghĩa tất cả Service đã được cập nhật.
+Bảng trên gồm các quyền đã dùng trong Service hiện có và quyền dành cho nghiệp vụ bán vé dự kiến; quyền có mã không xác nhận chức năng bán vé đã triển khai.
 
 **Quan trọng:** Phân quyền RBAC không thay thế các quy tắc nghiệp vụ.
 

@@ -61,7 +61,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 ## Công việc hiện hành: GUI Bước 12–14
 
-Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI. Bước 06 hiện có `ShowtimeService` và `test_showtime_service.cpp` đạt 89/89, nhưng hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`. Ở Bước 08, `MemberRepository` đạt **63 PASS, 0 FAIL**; `MemberService` chưa triển khai. Các kết quả Backend này không đánh dấu hoàn thành task GUI của Kiệt.
+Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI. Bước 06 hiện có `ShowtimeService` và `test_showtime_service.cpp` đạt 89/89, nhưng hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`. Ở Bước 08, `MemberRepository` đạt **63 PASS, 0 FAIL** và `MemberService` đạt **69 PASS, 0 FAIL** cho phạm vi hiện có; Kiệt dùng [Business–UI Contract](../../Business_UI_Contract.md#8-memberservice--quản-lý-thành-viên) khi tích hợp giao diện. Các kết quả Backend này không đánh dấu hoàn thành task GUI của Kiệt.
 
 ### Bước 12 – Xây dựng giao diện Qt
 

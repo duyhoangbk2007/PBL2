@@ -151,22 +151,31 @@ Thông tin nhân viên: `userId`, `username`, `fullName`, `role`, `active`.
 
 Model `User` còn có trường `password`; UI cần hạn chế hiển thị thông tin này.
 
-## 8. Member – Quản lý thành viên
+## 8. MemberService – Quản lý thành viên
 
-Hiện đã có `MemberRepository` với các API:
+Constructor:
 
-- `add(Member*)`
-- `update(const Member&)`
-- `findById(memberId)`
-- `findByPhone(phone)`
-- `getAt(index)`
-- `count()`
+```cpp
+MemberService(MemberRepository& memberRepo,
+              AuthService& authService);
+```
 
-Model `Member` có các trường: `memberId`, `fullName`, `phone`, `points`.
+| API | Kiểu trả về | Permission |
+| --- | --- | --- |
+| `load()` | `bool` | Nội bộ; không kiểm tra quyền |
+| `save()` | `bool` | Nội bộ; không kiểm tra quyền |
+| `addMember(Member* member)` | `bool` | `MEMBER_ADD` |
+| `updateMember(const Member& newValues)` | `bool` | `MEMBER_UPDATE` |
+| `findMemberById(const string& memberId)` | `const Member*` | `MEMBER_VIEW` |
+| `findMemberByPhone(const string& phone)` | `const Member*` | `MEMBER_VIEW` |
+| `getMemberAt(int index)` | `const Member*` | `MEMBER_VIEW` |
+| `getMemberCount()` | `int` | `MEMBER_VIEW` |
 
-**Chưa có MemberService trong phạm vi code đã kiểm tra.** UI có thể chuẩn bị màn hình danh sách, tìm kiếm, thêm và sửa thành viên, nhưng chưa được gọi trực tiếp Repository thay cho Service.
+Model `Member` có `memberId`, `fullName`, `phone`, `points`. UI dùng `getMemberCount()`/`getMemberAt()` để duyệt, hai hàm `find` để tra cứu, `addMember()` để thêm và `updateMember()` để sửa họ tên/số điện thoại. Khi tạo `newValues` để sửa, phải giữ nguyên `memberId` và `points` hiện có: Repository từ chối thay đổi điểm qua API này. Thành viên mới phải có `points = 0`; số điện thoại phải duy nhất, gồm 10 chữ số và bắt đầu bằng `0`.
 
-Contract của `MemberService` sẽ được bổ sung sau khi triển khai bước 8.
+`requirePermission()` có thể ném `runtime_error` khi chưa đăng nhập hoặc thiếu quyền; bảng quyền đang nạp quyết định quyền thực tế, kể cả với Admin. `addMember()` chuyển quyền sở hữu `Member*` cho Repository **chỉ khi trả `true`**; nếu trả `false` hoặc ném ngoại lệ trước khi thêm, bên gọi vẫn phải giải phóng con trỏ. Các con trỏ `const Member*` trả về chỉ để đọc và không thuộc sở hữu UI. `load()`/`save()` chỉ dành cho luồng quản lý dữ liệu, không tự được gọi sau từng thao tác UI; thêm/sửa chỉ thay đổi dữ liệu trong bộ nhớ đến khi lưu.
+
+**Chưa có:** API xóa thành viên, chỉnh điểm trực tiếp hoặc xem lịch sử hóa đơn qua `MemberService`. Các nghiệp vụ điểm và liên kết hóa đơn/vé chưa được kiểm chứng. [Tài liệu MemberService](<CauTrucThuMuc/business(docs)/MemberService.md>) ghi chi tiết; test riêng đạt **69 PASS, 0 FAIL** trong phạm vi hiện có.
 
 ## 9. Quy ước xử lý kết quả
 

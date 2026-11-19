@@ -112,11 +112,12 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 08 – Quản lý thành viên
 
-**Phụ trách: Hoàng. Trạng thái: `MemberRepository` đã có test riêng đạt; `MemberService` chưa triển khai.** Xem [Bước 08](../Buoc08_QuanLyThanhVien.md).
+**Phụ trách: Hoàng. Trạng thái: Repository và Service đã có test riêng đạt; tích hợp hóa đơn/điểm chưa hoàn thiện.** Xem [Bước 08](../Buoc08_QuanLyThanhVien.md).
 
 - [x] Triển khai `MemberRepository`: nạp/lưu, thêm, cập nhật họ tên/số điện thoại, tra ID/phone; kiểm tra số điện thoại duy nhất, điểm không âm và không cho thêm mới với điểm khác 0 hoặc đổi điểm qua `update()`.
 - [x] Chạy `test_member_repository.cpp` với C++17 trên nhánh hiện tại: **63 PASS, 0 FAIL**, gồm dữ liệu hợp lệ/sai/trùng và lưu/nạp lại.
-- [ ] Triển khai `MemberService` cho phân quyền và nghiệp vụ quản lý thành viên; viết và chạy test Service.
+- [x] Triển khai `MemberService` đủ 8 phương thức public ngoài constructor; kiểm tra `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE` qua `AuthService`.
+- [x] Biên dịch và chạy `test_member_service.cpp` trên nhánh hiện tại: **69 PASS, 0 FAIL**, gồm phân quyền, thêm/sửa/tra cứu, lưu/nạp lại và dữ liệu lỗi.
 - [ ] Kiểm tra liên kết hóa đơn, cập nhật điểm trong luồng bán/hủy vé khi các Repository và Service giao dịch có sẵn.
 
 ### Bước 09 – Giá vé, ưu đãi và tích điểm

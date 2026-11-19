@@ -518,7 +518,7 @@ if ($LASTEXITCODE -eq 0) {
 - Xây dựng giao diện quản lý thành viên.
 - Tự động liên kết danh sách hóa đơn của thành viên.
 
-Các nghiệp vụ này sẽ được xử lý tại `MemberService`, `BookingService` và các thành phần liên quan.
+`MemberService` hiện xử lý phân quyền và thêm/sửa/tra cứu thành viên. Nghiệp vụ điểm, hóa đơn và liên kết khi bán/hủy vé còn chờ `BookingService` cùng các thành phần giao dịch liên quan.
 
 ## 10. Kết luận
 
@@ -531,6 +531,6 @@ Các nghiệp vụ này sẽ được xử lý tại `MemberService`, `BookingSe
 - Kiểm tra dữ liệu hợp lệ và trùng lặp.
 - Đồng bộ các chỉ mục tìm kiếm.
 
-**Trạng thái:** Đã triển khai và kiểm thử riêng đạt **63 PASS, 0 FAIL**. Kết quả này chỉ xác nhận phạm vi Repository, không xác nhận `MemberService` hoặc toàn B08 đã hoàn thành.
+**Trạng thái:** Đã triển khai và kiểm thử riêng đạt **63 PASS, 0 FAIL**. `MemberService` đã có test riêng đạt **69 PASS, 0 FAIL**; cả hai kết quả chưa xác nhận toàn B08 đã hoàn thành.
 
-**Bước tiếp theo:** Thiết kế `MemberService` để xử lý phân quyền và nghiệp vụ quản lý thành viên, sau đó triển khai và kiểm thử theo cùng quy trình.
+**Bước tiếp theo:** Xem [MemberService](<../business(docs)/MemberService.md>) để tích hợp API đã triển khai; kiểm chứng thêm nghiệp vụ điểm và quan hệ hóa đơn/vé khi các thành phần giao dịch sẵn sàng.
