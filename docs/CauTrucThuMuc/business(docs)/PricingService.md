@@ -22,7 +22,7 @@
 
 ## 3. Quy tắc cập nhật cấu hình
 
-`updateSeatPrice()` từ chối khi chưa load, giá mới không hữu hạn hoặc `<= 0`, hoặc `SeatType` không phải STANDARD/VIP/COUPLE. `updateDiscountRate()` từ chối khi chưa load, tỷ lệ không hữu hạn/ngoài `[0,100]`, hoặc `DiscountType` khác STUDENT/MEMBER. Cả hai kiểm tra quyền **trước** dữ liệu, tạo `Pricing` mới từ cấu hình hiện hành và gọi `PricingRepository::update()`. Repository ghi file thành công rồi mới thay cấu hình trong RAM; hai API không cần gọi `save()` riêng.
+`updateSeatPrice()` từ chối khi chưa load, giá mới không hữu hạn hoặc `<= 0`, hoặc `SeatType` không phải STANDARD/VIP/COUPLE. `updateDiscountRate()` từ chối khi chưa load, tỷ lệ không hữu hạn/ngoài `[0,100]`, hoặc `DiscountType` khác STUDENT/MEMBER. Cả hai kiểm tra quyền **trước** dữ liệu, tạo `Pricing` mới từ cấu hình hiện hành và gọi `PricingRepository::update()`. `Pricing::isValid()` cũng kiểm tra số hữu hạn ở cả năm thuộc tính. Repository ghi file thành công rồi mới thay cấu hình trong RAM; hai API không cần gọi `save()` riêng. Nếu `load()` được gọi lại và đọc lỗi, cấu hình hợp lệ đang dùng vẫn được giữ nguyên.
 
 ## 4. Tính giá và điểm
 
@@ -35,6 +35,6 @@ Ba hàm tính tiền/điểm và `getBasePrice()` có thể ném `invalid_argume
 
 ## 5. Kiểm thử và phần chưa hoàn thiện
 
-`tests/test_pricing.cpp` kiểm tra Model, Repository, Service trong một file test: giá/tỷ lệ mặc định, dữ liệu file sai, cập nhật/nạp lại, phân quyền khách/Staff/Admin, giá, ưu đãi không cộng dồn và mốc điểm. Lần biên dịch/chạy C++17 ngày 2026-11-19 đạt **63 PASS, 0 FAIL**, thoát mã 0 cho **toàn bài test**.
+`tests/test_pricing.cpp` kiểm tra Model, Repository, Service trong một file test: giá/tỷ lệ mặc định, dữ liệu file sai, cập nhật/nạp lại (gồm giữ cấu hình cũ khi reload lỗi), phân quyền khách/Staff/Admin, giá, ưu đãi không cộng dồn và mốc điểm. Lần biên dịch/chạy C++17 ngày 2026-11-20 đạt **69 PASS, 0 FAIL**, thoát mã 0 cho **toàn bài test**. Bộ test chưa có ca riêng cho đầu vào `NaN`/vô cực.
 
 Service mới **tính** điểm, chưa cập nhật điểm thành viên, bán/hủy vé hoặc lưu snapshot giá vào `Ticket`. Chưa có kiểm thử tích hợp với `BookingService` và chưa nghiệm thu toàn Bước 09. Xem [tài liệu Bước 09](../../development/Buoc09_QuanLyGiaVeUuDaiVaTichDiem.md).

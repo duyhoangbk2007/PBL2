@@ -185,7 +185,57 @@ void testRepository(const string& path)
         "STUDENT_DISCOUNT|10\n"
         "STUDENT_DISCOUNT|5\n"
     );
+    // ========================================
+// TEST RELOAD THAT BAI
+// ========================================
 
+// Tao lai file hop le
+writeFile(path,
+    "STANDARD|70000\n"
+    "VIP|120000\n"
+    "COUPLE|160000\n"
+    "STUDENT_DISCOUNT|15\n"
+    "MEMBER_DISCOUNT|5\n"
+);
+
+// Load thanh cong
+check(reloaded.load(), "Reload valid pricing before failure");
+
+// Luu gia cu de so sanh
+const Pricing* oldPricing = reloaded.getPricing();
+
+check(oldPricing != nullptr, "Old pricing exists");
+
+double oldVipPrice = oldPricing != nullptr
+    ? oldPricing->getVipPrice()
+    : 0;
+
+// Ghi du lieu sai vao file
+writeFile(path,
+    "STANDARD|abc\n"
+    "VIP|100000\n"
+    "COUPLE|160000\n"
+    "STUDENT_DISCOUNT|10\n"
+    "MEMBER_DISCOUNT|5\n"
+);
+
+// Reload that bai
+check(!reloaded.load(), "Reload invalid pricing fails");
+
+// Trang thai cu van duoc giu
+check(reloaded.isLoaded(), "Keep loaded state after failed reload");
+
+// Bang gia cu van ton tai
+const Pricing* currentPricing = reloaded.getPricing();
+
+check(currentPricing != nullptr, "Keep old pricing after failed reload");
+
+// Gia VIP khong thay doi
+check(
+    currentPricing != nullptr &&
+    equalDouble(currentPricing->getVipPrice(), oldVipPrice),
+    "Keep old VIP price after failed reload"
+);
     check(!reloaded.load(), "Reject duplicate key");
 }
 

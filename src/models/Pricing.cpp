@@ -49,8 +49,19 @@ double Pricing::getMemberDiscount() const
     return memberDiscount;
 }
 
+#include "Pricing.h"
+#include <cmath>
+
 bool Pricing::isValid() const
 {
+    if (!std::isfinite(standardPrice) ||
+        !std::isfinite(vipPrice) ||
+        !std::isfinite(couplePrice) ||
+        !std::isfinite(studentDiscount) ||
+        !std::isfinite(memberDiscount))
+    {
+        return false;
+    }
     if (standardPrice <= 0 || vipPrice <= 0 || couplePrice <= 0)
     {
         return false;

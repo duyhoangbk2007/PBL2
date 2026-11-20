@@ -23,7 +23,7 @@ Ba giá dùng VND; hai tỷ lệ là phần trăm (`10` nghĩa là 10%). `load()
 | Hàm | Hành vi |
 | --- | --- |
 | `PricingRepository(const string& filePath)` | Lưu đường dẫn, khởi tạo `loaded = false`; chưa đọc hoặc tạo file. |
-| `load()` | Đọc đủ năm dòng, kiểm tra khóa/dữ liệu rồi gán `pricing` và đặt `loaded = true`; trả `false` nếu không đọc được hoặc dữ liệu sai. |
+| `load()` | Đọc đủ năm dòng, kiểm tra khóa/dữ liệu rồi mới gán `pricing` và đặt `loaded = true`; trả `false` nếu không đọc được hoặc dữ liệu sai, giữ nguyên cấu hình và trạng thái nạp trước đó. |
 | `save()` | Trả `false` nếu chưa load hoặc `pricing.isValid()` sai; nếu hợp lệ, ghi toàn bộ năm dòng và trả kết quả từ `FileIO::writeLines()`. |
 | `update(const Pricing& newPricing)` | Trả `false` nếu chưa load hoặc giá trị không hợp lệ; ghi toàn bộ cấu hình mới xuống file trước, chỉ gán vào RAM nếu ghi trả `true`. |
 | `getPricing() const` | Trả `const Pricing*` trỏ vào đối tượng nội bộ khi đã load; chưa load trả `nullptr`. |
@@ -34,10 +34,10 @@ Ba giá dùng VND; hai tỷ lệ là phần trăm (`10` nghĩa là 10%). `load()
 ## 4. Lỗi và giới hạn cần biết
 
 - Khóa lạ/trùng/thiếu, số dòng khác 5, dòng sai trường, số sai định dạng, không hữu hạn hoặc ngoài giới hạn đều làm `load()` trả `false`. Code hiện tại **không ném lỗi kèm file/dòng** cho các trường hợp này.
-- `load()` đặt `loaded = false` ngay khi bắt đầu. Nếu gọi lại sau khi đã nạp mà lần đọc mới thất bại, `getPricing()` trả `nullptr`; đây là hành vi hiện tại, không phải cơ chế chặn reload.
+- `load()` chỉ thay `pricing` và `loaded` sau khi đọc và kiểm tra toàn bộ file thành công. Nếu reload lỗi sau lần nạp hợp lệ, `isLoaded()` vẫn là `true` và `getPricing()` vẫn trả cấu hình cũ; nếu chưa từng nạp thành công, trạng thái vẫn chưa load.
 - `save()` và `update()` trả `false` khi ghi thất bại. `update()` giữ nguyên cấu hình trong RAM nếu `FileIO::writeLines()` trả `false`, nhưng code không dùng file tạm/thay thế nguyên tử và không bảo đảm file đích còn nguyên nếu ghi dở.
-- `Pricing::isValid()` chỉ so sánh khoảng giá trị, không tự loại `NaN`/vô cực. Kiểm tra số hữu hạn có ở `load()` và hai API cập nhật của `PricingService`; lời gọi trực tiếp `PricingRepository::update()` không có kiểm tra hữu hạn riêng.
+- `Pricing::isValid()` kiểm tra `std::isfinite()` cho cả năm thuộc tính. Vì `save()` và `update()` đều gọi hàm này, đường cập nhật trực tiếp qua Repository cũng từ chối `NaN`/vô cực; `load()` còn kiểm tra số hữu hạn sau khi parse.
 
 ## 5. Kiểm thử
 
-`tests/test_pricing.cpp` kiểm tra Model, Repository và Service trong cùng một chương trình. Lần biên dịch/chạy C++17 trên nhánh hiện tại ngày 2026-11-19 đạt **63 PASS, 0 FAIL**, thoát mã 0. Phần Repository đã thử nạp file chuẩn, cập nhật/lưu/nạp lại, thiếu khóa, số sai và khóa trùng; kết quả 63 là **toàn bài test**, không phải số ca riêng của Repository. Test chưa chứng minh xử lý file ghi dở, báo file/dòng hoặc reload an toàn sau lỗi.
+`tests/test_pricing.cpp` kiểm tra Model, Repository và Service trong cùng một chương trình. Lần biên dịch/chạy C++17 ngày 2026-11-20 đạt **69 PASS, 0 FAIL**, thoát mã 0. Phần Repository đã thử nạp file chuẩn, cập nhật/lưu/nạp lại, thiếu khóa, số sai, khóa trùng và giữ cấu hình cũ khi reload lỗi; kết quả 69 là **toàn bài test**, không phải số ca riêng của Repository. Test chưa có ca trực tiếp cho `NaN`/vô cực hoặc lỗi ghi file dở và chưa chứng minh cơ chế báo file/dòng.

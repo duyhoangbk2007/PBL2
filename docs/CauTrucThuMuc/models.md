@@ -28,7 +28,7 @@
 | `getStudentDiscount() const` | Tỷ lệ giảm học sinh |
 | `getMemberDiscount() const` | Tỷ lệ giảm thành viên |
 
-`isValid() const` trả `false` nếu một giá ghế `<= 0` hoặc một tỷ lệ giảm nằm ngoài `[0, 100]`; các trường hợp còn lại trả `true`. **Giới hạn code hiện tại:** hàm không tự kiểm tra `NaN`/vô cực. `PricingRepository::load()` kiểm tra số hữu hạn khi đọc TXT và `PricingService` kiểm tra số hữu hạn ở hai API cập nhật, nhưng không nên mô tả `Pricing::isValid()` là đủ để loại mọi giá trị không hữu hạn.
+`isValid() const` trả `false` nếu bất kỳ thuộc tính nào trong năm giá trị không hữu hạn (`std::isfinite()`), một giá ghế `<= 0` hoặc một tỷ lệ giảm nằm ngoài `[0, 100]`; các trường hợp còn lại trả `true`. Vì vậy kiểm tra này cũng áp dụng khi gọi `PricingRepository::update()` trực tiếp. Bộ `test_pricing.cpp` hiện chưa có ca riêng đưa `NaN`/vô cực vào Model.
 
 ## Quan hệ đã khai báo trong mã
 

@@ -15,7 +15,6 @@ PricingRepository::PricingRepository(const string& filePath)
 
 bool PricingRepository::load()
 {
-    loaded = false;
     vector<string> lines;
     if (!FileIO::readLines(filePath, lines))
     {
@@ -56,12 +55,11 @@ bool PricingRepository::load()
                 break;
             }
         }
-        // khóa không tồn tại hoặc bị trùng
+        // Kiem tra khoa khong ton tai hoac bi trung
         if (index == -1 || found[index])
         {
             return false;
         }
-        // Kiem tra dinh dang so
         if (!Validator::isValidNumber(value))
         {
             return false;
@@ -75,12 +73,14 @@ bool PricingRepository::load()
             return false;
         }
 
-        if (!std::isfinite(values[index])) //kiểm tra value có phải là số hữu hạn hay k
+        if (!std::isfinite(values[index])) //kiểm tra có hữu hạn hay k
         {
             return false;
         }
+
         found[index] = true;
     }
+
     // Kiem tra du 5 khoa
     for (int i = 0; i < 5; i++)
     {
@@ -89,6 +89,7 @@ bool PricingRepository::load()
             return false;
         }
     }
+
     Pricing temp(
         values[0],
         values[1],
@@ -96,10 +97,12 @@ bool PricingRepository::load()
         values[3],
         values[4]
     );
+
     if (!temp.isValid())
     {
         return false;
     }
+    // Chi cap nhat khi toan bo du lieu hop le
     pricing = temp;
     loaded = true;
     return true;
