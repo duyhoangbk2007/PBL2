@@ -44,7 +44,8 @@ public:
     bool linkSeller(User* seller);
     bool linkMember(Member* member);
     bool linkTicket(Ticket* ticket);
-    
+    bool unlinkTicket(Ticket* ticket);
+    void unlinkReferences(); //unlink member và user
     int getTicketCount() const;
     Ticket* getTicketAt(int index);
 };

@@ -22,8 +22,7 @@ private:
     DoublyLinkedList<Invoice*> invoices;
 
     bool linkInvoice(Invoice* invoice);
-
-    friend class Invoice;
+    bool unlinkInvoice(Invoice* invoice);
 
 public:
     User(const std::string& userId,
@@ -46,6 +45,7 @@ public:
     void setPassword(const std::string& password);
     void setFullName(const std::string& fullName);
     void setActive(bool active);
+    friend class Invoice;
 };
 
 #endif

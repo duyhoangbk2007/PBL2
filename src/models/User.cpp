@@ -83,3 +83,20 @@ void User::setFullName(const string& fullName) {
 void User::setActive(bool active) {
     this->active = active;
 }
+bool User::unlinkInvoice(Invoice* invoice)
+{
+    if (invoice == nullptr)
+    {
+        return false;
+    }
+    for (int i = 0; i < invoices.nodeCount(); i++)
+    {
+        ListNode<Invoice*>* node = invoices.getAt(i);
+        if (node != nullptr && node->data == invoice)
+        {
+            invoices.erase(i);
+            return true;
+        }
+    }
+    return false;
+}

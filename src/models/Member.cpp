@@ -61,3 +61,21 @@ void Member::setPhone(const string& phone) {
 void Member::setPoints(const int& points) {
 	this->points = points;
 }
+bool Member::unlinkInvoice(Invoice* invoice)
+{
+    if (invoice == nullptr)
+    {
+        return false;
+    }
+    for (int i = 0; i < invoices.nodeCount(); i++)
+    {
+        ListNode<Invoice*>* node = invoices.getAt(i);
+
+        if (node != nullptr && node->data == invoice)
+        {
+            invoices.erase(i);
+            return true;
+        }
+    }
+    return false;
+}
