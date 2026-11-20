@@ -4,6 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <cstdio>
+#include <limits>
 
 #include "../src/models/Pricing.h"
 #include "../src/data_access/PricingRepository.h"
@@ -100,6 +101,13 @@ void testModel()
     check(!Pricing(70000, 100000, 160000, -1, 5).isValid(), "Reject negative discount");
     check(!Pricing(70000, 100000, 160000, 10, 101).isValid(), "Reject discount over 100");
     check(Pricing(70000, 100000, 160000, 0, 100).isValid(), "Accept discount boundaries");
+    const double nanValue = numeric_limits<double>::quiet_NaN();
+    const double infinity = numeric_limits<double>::infinity();
+    check(!Pricing(nanValue, 100000, 160000, 10, 5).isValid(), "Reject NaN standard price");
+    check(!Pricing(70000, infinity, 160000, 10, 5).isValid(), "Reject Infinity VIP price");
+    check(!Pricing(70000, 100000, -infinity, 10, 5).isValid(), "Reject negative Infinity COUPLE price");
+    check(!Pricing(70000, 100000, 160000, nanValue, 5).isValid(), "Reject NaN student discount");
+    check(!Pricing(70000, 100000, 160000, 10, infinity).isValid(), "Reject Infinity member discount");
 }
 
 // ========================================
@@ -157,6 +165,10 @@ void testRepository(const string& path)
 
     // Khong cho cap nhat du lieu sai
     check(!reloaded.update(Pricing(-1, 120000, 160000, 15, 5)), "Reject invalid update");
+    const double nanValue = numeric_limits<double>::quiet_NaN();
+    const double infinity = numeric_limits<double>::infinity();
+    check(!reloaded.update(Pricing(nanValue, 120000, 160000, 15, 5)), "Reject NaN update");
+    check(!reloaded.update(Pricing(70000, 120000, 160000, infinity, 5)), "Reject Infinity update");
 
     // Thieu truong du lieu
     writeFile(path,
@@ -177,6 +189,24 @@ void testRepository(const string& path)
 
     check(!reloaded.load(), "Reject invalid number");
 
+    writeFile(path,
+        "STANDARD|NaN\n"
+        "VIP|100000\n"
+        "COUPLE|160000\n"
+        "STUDENT_DISCOUNT|10\n"
+        "MEMBER_DISCOUNT|5\n"
+    );
+    check(!reloaded.load(), "Reject NaN in file");
+
+    writeFile(path,
+        "STANDARD|70000\n"
+        "VIP|Infinity\n"
+        "COUPLE|160000\n"
+        "STUDENT_DISCOUNT|10\n"
+        "MEMBER_DISCOUNT|5\n"
+    );
+    check(!reloaded.load(), "Reject Infinity in file");
+
     // Trung key
     writeFile(path,
         "STANDARD|70000\n"
@@ -185,6 +215,8 @@ void testRepository(const string& path)
         "STUDENT_DISCOUNT|10\n"
         "STUDENT_DISCOUNT|5\n"
     );
+    check(!reloaded.load(), "Reject duplicate key");
+
     // ========================================
 // TEST RELOAD THAT BAI
 // ========================================
@@ -236,7 +268,7 @@ check(
     equalDouble(currentPricing->getVipPrice(), oldVipPrice),
     "Keep old VIP price after failed reload"
 );
-    check(!reloaded.load(), "Reject duplicate key");
+
 }
 
 // ========================================

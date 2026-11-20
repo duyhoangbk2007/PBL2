@@ -1,6 +1,6 @@
 # Bước 09 — Quản lý giá vé, ưu đãi và tích điểm
 
-**Phụ trách Backend:** Hoàng. **Trạng thái:** đang thực hiện. Model `Pricing`, `PricingRepository` và `PricingService` đã có mã; test chung `test_pricing.cpp` đạt **69 PASS, 0 FAIL** ngày 2026-11-20. Chưa có luồng bán/hủy vé để cập nhật điểm thành viên hoặc lưu snapshot giá vào vé. GUI thuộc Kiệt từ Bước 12.
+**Phụ trách Backend:** Hoàng. **Trạng thái:** đang thực hiện. Model `Pricing`, `PricingRepository` và `PricingService` đã có mã; test chung `test_pricing.cpp` đạt **78 PASS, 0 FAIL** ngày 2026-11-20. Chưa có luồng bán/hủy vé để cập nhật điểm thành viên hoặc lưu snapshot giá vào vé. GUI thuộc Kiệt từ Bước 12.
 
 ## 1. Thiết kế hiện hành
 
@@ -19,8 +19,8 @@ Xem [Pricing trong models.md](../CauTrucThuMuc/models.md#pricing--cấu-hình-gi
 - [x] Triển khai `Pricing` với hai constructor, năm getter và `isValid()` kiểm tra số hữu hạn cho cả năm thuộc tính.
 - [x] Triển khai `PricingRepository` cho nạp/lưu/cập nhật một cấu hình và kiểm tra file `KEY|VALUE`; giữ cấu hình hợp lệ trước đó nếu reload thất bại.
 - [x] Triển khai `PricingService` cho xem/sửa bảng giá, tính giá gốc, giảm không cộng dồn, tiền thực trả và điểm; dùng RBAC `PRICING_VIEW`/`PRICING_UPDATE` ở các hàm xem/sửa.
-- [x] Biên dịch và chạy riêng `tests/test_pricing.cpp` trên nhánh hiện tại ngày 2026-11-20: **69 PASS, 0 FAIL**, thoát mã 0. Kết quả là tổng ca cho Model, Repository và Service; có ca xác nhận reload lỗi giữ cấu hình cũ.
-- [ ] Bổ sung ca test trực tiếp cho `NaN`/vô cực và hoàn thiện cơ chế báo file/dòng, ghi file an toàn khi lỗi; bộ test hiện chưa kiểm chứng các trường hợp này.
+- [x] Biên dịch và chạy riêng `tests/test_pricing.cpp` trên nhánh hiện tại ngày 2026-11-20: **78 PASS, 0 FAIL**, thoát mã 0. Kết quả là tổng ca cho Model, Repository và Service; có ca xác nhận reload lỗi giữ cấu hình cũ và từ chối `NaN`/vô cực ở Model, Repository.
+- [ ] Hoàn thiện cơ chế báo file/dòng và ghi file an toàn khi lỗi; bộ test hiện chưa kiểm chứng các trường hợp này.
 - [ ] Tích hợp `PricingService` vào luồng bán/hủy vé để ghi giá, tiền giảm, tiền trả và điểm lên vé, cập nhật/thu hồi điểm thành viên; chưa có `BookingService`/Repository vé để kiểm chứng.
 
-Không đánh dấu toàn Bước 09 hoàn thành chỉ từ 69 ca test hiện có. Code không có `PricingConfig`, `PriceResult` hoặc `calculateTicketPrice()` như bản thiết kế trước; tài liệu hiện hành dùng đúng lớp `Pricing` và các API đã triển khai.
+Không đánh dấu toàn Bước 09 hoàn thành chỉ từ 78 ca test hiện có. Code không có `PricingConfig`, `PriceResult` hoặc `calculateTicketPrice()` như bản thiết kế trước; tài liệu hiện hành dùng đúng lớp `Pricing` và các API đã triển khai.
