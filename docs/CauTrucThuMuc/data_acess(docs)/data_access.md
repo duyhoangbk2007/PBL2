@@ -71,6 +71,7 @@ Kiểm tra quyền và các quy tắc nghiệp vụ trước khi gọi Repositor
 | SeatRepository | Seat | Quản lý ghế và liên kết phòng |
 | ShowtimeRepository | Showtime | Quản lý suất chiếu, liên kết phim/phòng và lịch cùng phòng |
 | MemberRepository | Member | Quản lý thành viên, tra ID/phone và kiểm tra số điện thoại duy nhất; test riêng 63/63 |
+| [PricingRepository](PricingRepository.md) | Pricing | Giữ một cấu hình trong RAM, đọc/ghi/cập nhật năm khóa của `pricing.txt` qua `FileIO`; bộ test Pricing chung 63/63, không dùng `Repository<T>` |
 
 ## 4. RoomRepository
 

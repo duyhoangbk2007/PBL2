@@ -39,7 +39,7 @@ ROLE|PERMISSION_CODE
 
 Dòng trên chỉ mô tả hai trường, **không phải dòng tiêu đề**. Mỗi dòng thực tế chứa đúng một cặp, ví dụ `STAFF|MOVIE_VIEW`. File UTF-8 này không có dòng `#schema=1` hoặc tiêu đề cột; đường dẫn dự kiến là `data/role_permissions.txt`, còn đường dẫn thực tế do cấu hình/constructor cung cấp.
 
-- `ROLE` chỉ nhận `ADMIN` hoặc `STAFF`. `PERMISSION_CODE` chỉ nhận một trong 29 mã đã chốt ở [thiết kế phân quyền](../CauTrucThuMuc/PermissionDesign.md#3-danh-sách-quyền-đã-chốt): `MOVIE_VIEW`, `MOVIE_ADD`, `MOVIE_UPDATE`, `MOVIE_DELETE`, `ROOM_VIEW`, `ROOM_ADD`, `ROOM_UPDATE`, `ROOM_DELETE`, `SEAT_VIEW`, `SEAT_ADD`, `SEAT_UPDATE`, `SEAT_DELETE`, `SHOWTIME_VIEW`, `SHOWTIME_ADD`, `SHOWTIME_UPDATE`, `SHOWTIME_CANCEL`, `SHOWTIME_DELETE`, `STAFF_VIEW`, `STAFF_ADD`, `STAFF_UPDATE`, `STAFF_DEACTIVATE`, `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE`, `TICKET_SELL`, `TICKET_CANCEL`, `INVOICE_VIEW_OWN`, `INVOICE_VIEW_ALL`, `REPORT_VIEW`. Mã phân biệt chữ hoa/chữ thường.
+- `ROLE` chỉ nhận `ADMIN` hoặc `STAFF`. `PERMISSION_CODE` chỉ nhận một trong 31 mã hiện có: `MOVIE_VIEW`, `MOVIE_ADD`, `MOVIE_UPDATE`, `MOVIE_DELETE`, `ROOM_VIEW`, `ROOM_ADD`, `ROOM_UPDATE`, `ROOM_DELETE`, `SEAT_VIEW`, `SEAT_ADD`, `SEAT_UPDATE`, `SEAT_DELETE`, `SHOWTIME_VIEW`, `SHOWTIME_ADD`, `SHOWTIME_UPDATE`, `SHOWTIME_CANCEL`, `SHOWTIME_DELETE`, `STAFF_VIEW`, `STAFF_ADD`, `STAFF_UPDATE`, `STAFF_DEACTIVATE`, `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE`, `TICKET_SELL`, `TICKET_CANCEL`, `INVOICE_VIEW_OWN`, `INVOICE_VIEW_ALL`, `REPORT_VIEW`, `PRICING_VIEW`, `PRICING_UPDATE`. Mã phân biệt chữ hoa/chữ thường; xem [thiết kế phân quyền](../CauTrucThuMuc/PermissionDesign.md).
 - Khóa duy nhất là `(ROLE, PERMISSION_CODE)`. Dòng trùng, thiếu/thừa trường, role sai hoặc permission không thuộc danh sách đều là dữ liệu lỗi: báo file/dòng và từ chối nạp bảng quyền; không bỏ qua dòng lỗi hay dùng bảng đã nạp dở.
 - Cặp không có trong file nghĩa là không được cấp quyền, kể cả với Admin. File rỗng hợp lệ về cú pháp nhưng không cấp quyền nào. File thiếu hoặc nạp lỗi phải chặn nghiệp vụ được bảo vệ, không tạo quyền mặc định thay thế.
 - Bảng quyền chỉ được đọc trong phiên bản này; sửa file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại. Không có dòng quản lý cấp/thu hồi quyền trong định dạng này.
@@ -105,6 +105,20 @@ memberId|fullName|phone|points
 ```
 
 Điểm không âm, bằng tổng pointsEarned của các vé SOLD gắn thành viên (thành viên khởi tạo 0 điểm, chưa có đổi điểm).
+
+### pricing.txt
+
+Mỗi dòng đúng dạng `KEY|VALUE`, không có schema hoặc dòng tiêu đề. File phải có đúng năm khóa, mỗi khóa xuất hiện một lần; thứ tự khi nạp tùy ý, khi ghi theo thứ tự sau:
+
+```text
+STANDARD|70000
+VIP|100000
+COUPLE|160000
+STUDENT_DISCOUNT|10
+MEMBER_DISCOUNT|5
+```
+
+Ba giá ghế là `double` VND và phải dương; hai tỷ lệ là phần trăm trong `[0,100]`. Giá trị TXT phải là số thập phân parse hết, hữu hạn; không nhận khóa lạ, khóa trùng, thiếu khóa, dòng thiếu/thừa dấu `|` hoặc số dòng khác năm. `PricingRepository::load()` trả `false` khi file thiếu/sai và chỉ công bố cấu hình sau khi toàn file hợp lệ; code hiện **không báo file/dòng lỗi** và không tự tạo file mặc định. `save()`/`update()` ghi bằng `std::to_string()` nên có thể tạo sáu chữ số thập phân. Không lưu quy tắc 1 điểm/10.000 VND trong file này.
 
 ### sequences.txt
 

@@ -123,3 +123,39 @@ bool Validator::isValidDateTime(const string& dateTime)
            minute >= 0 && minute <= 59 &&
            second >= 0 && second <= 59;
 }
+
+bool Validator::isValidNumber(const string& value)
+{
+    if (value.empty())
+    {
+        return false;
+    }
+    int start = 0;
+    int dotCount = 0;
+    bool hasDigit = false;
+    if (value[0] == '-')
+    {
+        start = 1;
+    }
+    for (int i = start; i < static_cast<int>(value.length()); i++)
+    {
+        if (value[i] >= '0' && value[i] <= '9')
+        {
+            hasDigit = true;
+        }
+        else if (value[i] == '.')
+        {
+            dotCount++;
+            if (dotCount > 1)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return hasDigit;
+}
+

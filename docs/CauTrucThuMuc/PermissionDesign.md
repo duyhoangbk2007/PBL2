@@ -1,6 +1,6 @@
 # PermissionDesign — Thiết kế phân quyền RBAC (PBL2)
 
-**Trạng thái:** Đặc tả thiết kế, chưa triển khai code.  
+**Trạng thái:** Đặc tả RBAC; `RolePermissionRepository` và `AuthService::requirePermission()` đã có code. Một số nghiệp vụ được liệt kê vẫn chưa triển khai.
 **Nguồn dữ liệu đã chốt:** `role_permissions.txt` (không có dòng schema).  
 **Phạm vi:** Chỉ đọc và kiểm tra quyền theo vai trò; **chưa** có API hay giao diện cấp/thu hồi quyền.
 
@@ -29,7 +29,7 @@ STAFF|MOVIE_VIEW
 
 - UTF-8; mỗi dòng một bản ghi; **không có `#schema=1`**; không có tên cột.
 - Role chỉ được là `ADMIN` hoặc `STAFF`.
-- `permissionCode` phải nằm trong danh sách 29 mã được hỗ trợ bên dưới; phân biệt chữ hoa/chữ thường.
+- `permissionCode` phải nằm trong danh sách 31 mã được hỗ trợ bên dưới; phân biệt chữ hoa/chữ thường.
 - Khóa duy nhất là `(role, permissionCode)`; không chấp nhận dòng trùng, dòng thiếu/thừa trường, role hoặc permission không hợp lệ.
 - Không có cặp `(role, permissionCode)` nghĩa là **không có quyền**.
 - Không được âm thầm bỏ qua dòng lỗi; khi nạp lỗi, báo lỗi và không cho phép thực hiện nghiệp vụ được bảo vệ.
@@ -37,7 +37,7 @@ STAFF|MOVIE_VIEW
 
 ## 3. Danh sách quyền đã chốt
 
-Tổng cộng **29 mã quyền** và **38 bản ghi** trong file hiện tại (29 Admin, 9 Staff).
+Tổng cộng **31 mã quyền** và **41 bản ghi** trong `data/role_permissions.txt` hiện tại (31 Admin, 10 Staff).
 
 | Permission | ADMIN mặc định | STAFF mặc định |
 |---|---|---|
@@ -70,6 +70,8 @@ Tổng cộng **29 mã quyền** và **38 bản ghi** trong file hiện tại (2
 | `INVOICE_VIEW_OWN` | Có | Có |
 | `INVOICE_VIEW_ALL` | Có | Không |
 | `REPORT_VIEW` | Có | Không |
+| `PRICING_VIEW` | Có | Có |
+| `PRICING_UPDATE` | Có | Không |
 
 **Lưu ý triển khai:** Những mã cho Member, Ticket, Invoice, Report và hai thao tác hủy/xóa suất chiếu có thể chưa có nghiệp vụ hoàn chỉnh trên `main`. Khai báo quyền không có nghĩa là chức năng đã sẵn sàng.
 
@@ -84,6 +86,7 @@ Tổng cộng **29 mã quyền** và **38 bản ghi** trong file hiện tại (2
 - Ticket: `TICKET_SELL`, `TICKET_CANCEL`.
 - Invoice: `INVOICE_VIEW_OWN` (phải kiểm tra người lập và điều kiện ngày/mã theo business rules), `INVOICE_VIEW_ALL`.
 - Report: `REPORT_VIEW`.
+- Pricing: `PRICING_VIEW` cho xem cấu hình/giá gốc, `PRICING_UPDATE` cho sửa giá ghế/tỷ lệ. Ba hàm tính giảm, tiền trả và điểm của `PricingService` hiện chỉ yêu cầu đăng nhập, chưa yêu cầu `PRICING_VIEW`.
 - `load()`/`save()` là thao tác vòng đời dữ liệu nội bộ, **không** là quyền thao tác GUI.
 
 ## 5. Luồng kiểm tra quyền
@@ -111,7 +114,7 @@ Tổng cộng **29 mã quyền** và **38 bản ghi** trong file hiện tại (2
 
 ## 8. Tác động đến tài liệu hiện hành
 
-- `data_format.md` hiện ghi **mọi file** phải bắt đầu bằng `#schema=1`; cần bổ sung **ngoại lệ rõ ràng** cho `role_permissions.txt`, không xóa quy tắc schema của các file khác.
+- `data_format.md` hiện quy định các file TXT không có dòng `#schema=1`; `role_permissions.txt` và `pricing.txt` cũng tuân theo quy ước đó.
 - `business_rules.md` hiện mô tả quyền theo vai trò; cần ghi rõ quyền thao tác được tra từ bảng quyền, trong khi các giới hạn nghiệp vụ như hủy vé và xem hóa đơn của mình vẫn có hiệu lực.
 - Backend–Frontend Contract cần ghi mã permission của từng hàm, kết quả khi không có quyền, và API kiểm tra quyền của người dùng hiện tại.
 

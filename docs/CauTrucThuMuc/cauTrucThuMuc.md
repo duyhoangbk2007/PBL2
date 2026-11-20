@@ -53,6 +53,8 @@ PBL2/
 │   │   ├── ShowtimeService.cpp           [Dự kiến]
 │   │   ├── MemberService.h
 │   │   ├── MemberService.cpp
+│   │   ├── PricingService.h
+│   │   ├── PricingService.cpp
 │   │   ├── StaffService.h                [Dự kiến]
 │   │   ├── StaffService.cpp              [Dự kiến]
 │   │   ├── BookingService.h              [Dự kiến]
@@ -72,11 +74,13 @@ PBL2/
 │   │   ├── UserRepository.cpp
 │   │   ├── MemberRepository.h
 │   │   ├── MemberRepository.cpp
+│   │   ├── PricingRepository.h
+│   │   ├── PricingRepository.cpp
 │   │   ├── TicketRepository.h            [Dự kiến]
 │   │   ├── TicketRepository.cpp          [Dự kiến]
 │   │   ├── InvoiceRepository.h           [Dự kiến]
 │   │   └── InvoiceRepository.cpp         [Dự kiến]
-│   ├── models/                            [Đã chuyển tám cặp Model]
+│   ├── models/                            [Đã chuyển chín cặp Model]
 │   │   ├── Movie.h
 │   │   ├── Movie.cpp
 │   │   ├── Room.h
@@ -92,7 +96,9 @@ PBL2/
 │   │   ├── Ticket.h
 │   │   ├── Ticket.cpp
 │   │   ├── Invoice.h
-│   │   └── Invoice.cpp
+│   │   ├── Invoice.cpp
+│   │   ├── Pricing.h
+│   │   └── Pricing.cpp
 │   ├── data_structures/                   [Đã chuyển]
 │   │   └── DoublyLinkedList.h
 │   └── utils/
@@ -189,7 +195,7 @@ GUI nhận thao tác và hiển thị dữ liệu; không mở TXT, tự tính g
 | `BookingService.h/.cpp` | Chọn ghế, Undo trước thanh toán, tính giá/ưu đãi, bán/hủy vé và điều phối lưu. |
 | `ReportService.h/.cpp` | Thống kê tiền bán, tiền hoàn, doanh thu và vé. |
 
-`StaffService` thuộc Bước 07 và dùng lại `UserRepository` của Bước 05; không mặc định thêm `StaffRepository`. `PricingService` chỉ tạo ở Bước 09 nếu có lý do rõ. Chưa mặc định thêm Service cho từng Model. Business gọi Repository, không đọc hoặc ghi TXT trực tiếp.
+`StaffService` thuộc Bước 07 và dùng lại `UserRepository` của Bước 05; không mặc định thêm `StaffRepository`. `PricingService` đã triển khai ở Bước 09. Chưa mặc định thêm Service cho từng Model. Business gọi Repository, không đọc hoặc ghi TXT trực tiếp.
 
 ### `src/data_access/` — truy xuất dữ liệu
 
@@ -275,7 +281,7 @@ Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` g
 | Đường dẫn hiện có | Vị trí mục tiêu | Ghi chú |
 | --- | --- | --- |
 | `main.cpp` | `src/main.cpp` | Đã chuyển; hiện vẫn là chương trình thử, chưa phải GUI. |
-| `core/dal/models/*.h`, `*.cpp` | `src/models/` | Đã chuyển tám Model và giữ quan hệ/định dạng hiện hành. |
+| `core/dal/models/*.h`, `*.cpp` | `src/models/` | Đã chuyển chín Model và giữ quan hệ/định dạng hiện hành. |
 | `core/dal/dalc/MovieDALC.h/.cpp` | `src/data_access/MovieRepository.h/.cpp` | Từng chuyển và đổi tên; bản cũ đã bị xóa ở mốc lịch sử Bước 04, bản `MovieRepository` hiện tại đã được tạo lại. |
 | `core/data_structures/DoublyLinkedList.h` | `src/data_structures/` | Đã chuyển cấu trúc dữ liệu tự cài đặt. |
 | `core/utils/FileHandler.h/.cpp` | `src/utils/FileIO.h/.cpp` | Đã đổi tên class và phương thức đọc thành `readLines`. |
@@ -283,4 +289,4 @@ Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` g
 | `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
-Hiện `src/` đã có tám Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản/thành viên, Service phim/phòng/ghế/suất/xác thực/nhân viên/thành viên và `main.cpp` thử nghiệm. `MemberRepository` có test riêng 63/63, `MemberService` có test riêng 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.
+Hiện `src/` đã có chín Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản/thành viên, Service phim/phòng/ghế/suất/xác thực/nhân viên/thành viên/giá vé và `main.cpp` thử nghiệm. `MemberRepository` có test riêng 63/63, `MemberService` có test riêng 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.

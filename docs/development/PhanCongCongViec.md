@@ -18,7 +18,7 @@ Kiến trúc mục tiêu: **GUI (`src/gui/`) → Business (`src/business/`) → 
 | 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | Repository/Service phòng, ghế, suất đã có test riêng đạt theo [tiến độ](TongQuanTienDo.md); `ShowtimeService` đạt 89/89 trong phạm vi hiện có. Hủy/xóa suất còn chờ `TicketRepository`; tiếp tục kiểm tra ràng buộc vé và tích hợp trước nghiệm thu. |
 | 07 | Quản lý nhân viên | Hoàng | `StaffService` dùng lại `UserRepository`, thêm/sửa/tìm/vô hiệu hóa Staff, kiểm tra quyền Admin, kiểm thử. |
 | 08 | Quản lý thành viên | Hoàng | `MemberRepository` đạt 63/63; `MemberService` đủ 8 phương thức public ngoài constructor, kiểm tra RBAC và đạt 69/69. Tiếp tục kiểm chứng liên kết hóa đơn/điểm; xem [Bước 08](Buoc08_QuanLyThanhVien.md). |
-| 09 | Giá vé, ưu đãi và tích điểm | Hoàng | Xử lý giá theo cấu hình, loại ghế, ưu đãi học sinh/thành viên, tiền và điểm; kiểm thử C++. |
+| 09 | Giá vé, ưu đãi và tích điểm | Hoàng | `Pricing`, `PricingRepository`, `PricingService` đã triển khai; `test_pricing.cpp` đạt 63/63. Còn tích hợp giá và điểm vào luồng giao dịch; xem [Bước 09](Buoc09_QuanLyGiaVeUuDaiVaTichDiem.md). |
 | 10 | Bán vé tại quầy | Hoàng | `TicketRepository`, `InvoiceRepository`, `BookingService`, chọn/Undo ghế, hóa đơn nhiều vé, điểm và lưu TXT; kiểm thử. |
 | 11 | Hủy vé, lịch sử hóa đơn và thống kê | Hoàng | Xử lý hủy/hoàn/thu hồi điểm/lịch sử, `ReportService` và thống kê; kiểm thử C++. |
 | 12 | Xây dựng giao diện Qt | Kiệt | Toàn bộ View Admin/Staff, `MainWindow`, dashboard, `SeatMapView` và cấu hình build GUI Qt; kết nối với API Backend. |

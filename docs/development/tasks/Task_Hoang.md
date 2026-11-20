@@ -122,10 +122,14 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 09 – Giá vé, ưu đãi và tích điểm
 
-**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện.** Xem [Bước 09](../Buoc09_QuanLyGiaVeUuDaiVaTichDiem.md).
 
-- [ ] Cài quy tắc giá theo loại ghế/vé và ưu đãi học sinh/thành viên; lấy mức giảm hợp lệ cao nhất, không cộng dồn.
-- [ ] Tính tiền, điểm và kiểm thử C++ các trường hợp biên; chỉ tạo `PricingService` nếu có lý do rõ.
+- [x] Triển khai `Pricing` với giá ba loại ghế, hai mức giảm và `isValid()` kiểm tra `std::isfinite()` cho cả năm thuộc tính.
+- [x] Triển khai `PricingRepository` đọc/ghi/cập nhật năm khóa trong `pricing.txt`; reload lỗi giữ nguyên cấu hình hợp lệ trước đó và trạng thái `loaded`.
+- [x] Triển khai `PricingService`: xem/cập nhật cấu hình theo RBAC, tính giá cơ bản, mức giảm cao nhất không cộng dồn, tiền phải trả và điểm dự kiến.
+- [x] Biên dịch và chạy `test_pricing.cpp` ngày 2026-11-20: **69 PASS, 0 FAIL** cho phạm vi Model/Repository/Service, gồm ca kiểm tra giữ cấu hình khi reload lỗi.
+- [ ] Tích hợp giá/giảm giá vào giao dịch bán vé và cộng điểm thực tế cho thành viên; kiểm thử luồng giao dịch.
+- [ ] Bổ sung test trực tiếp cho `NaN`/vô cực và hoàn thiện xử lý lỗi cấu hình chưa được kiểm chứng (báo file/dòng, ghi file thất bại hoặc ghi dở).
 
 ### Bước 10 – Bán vé tại quầy
 
