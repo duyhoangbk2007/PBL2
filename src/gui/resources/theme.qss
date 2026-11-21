@@ -60,3 +60,8 @@ QPushButton#signIn { background: #455fe1; border-color: #455fe1; color: white; p
 QPushButton#signIn:hover { background: #364ebf; }
 QPushButton#signIn:disabled { background: #e4e8f2; color: #62708a; border-color: #d8deec; }
 QLabel#loginError { color: #a33040; }
+QLabel#cinemaScreen { background: #edf0fa; color: #627293; border-top: 3px solid #b6c2dc; border-radius: 8px; padding: 6px; margin: 4px 36px 14px; }
+QLabel#legend { background: #e6eaf1; color: #43516f; border: 1px solid #cbd4e0; border-radius: 6px; padding: 5px 9px; }
+QLabel#legend[kind="VIP"] { background: #eceaff; color: #5547a7; }
+QLabel#legend[kind="COUPLE"] { background: #fcecf4; color: #934a73; }
+QLabel#legend[kind="Ô trống (+)"] { background: white; border-style: dashed; }

@@ -3,6 +3,7 @@
 #include <QMainWindow>
 
 class AuthService;
+class ApplicationContext;
 class LoginView;
 class QLabel;
 class QStackedWidget;
@@ -10,7 +11,7 @@ class QStackedWidget;
 class MainWindow : public QMainWindow
 {
 public:
-    MainWindow(AuthService& auth, const QString& startupError, QWidget* parent = nullptr);
+    MainWindow(ApplicationContext& context, const QString& startupError, QWidget* parent = nullptr);
 
 private:
     QWidget* createSidebar();
@@ -18,6 +19,7 @@ private:
 
     void openSession();
     void closeSession();
+    ApplicationContext& context;
     AuthService& auth;
     LoginView* login;
     QStackedWidget* screens;

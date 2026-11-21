@@ -1,5 +1,9 @@
 #include "MainWindow.h"
 #include "LoginView.h"
+#include "ApplicationContext.h"
+#include "MovieManagementView.h"
+#include "RoomManagementView.h"
+#include "SeatMapView.h"
 #include "../business/AuthService.h"
 
 #include <QButtonGroup>
@@ -57,7 +61,7 @@ QLabel* label(const QString& text, const QString& style)
     return result;
 }
 
-QWidget* createPage(const Page& page)
+QWidget* createPage(const Page& page, QWidget* content)
 {
     auto* view = new QWidget;
     auto* layout = new QVBoxLayout(view);
@@ -70,6 +74,10 @@ QWidget* createPage(const Page& page)
     layout->addWidget(description);
     layout->addSpacing(17);
 
+    if (content) {
+        layout->addWidget(content, 1);
+        return view;
+    }
     auto* panel = new QFrame;
     panel->setObjectName("panel");
     auto* body = new QVBoxLayout(panel);
@@ -99,8 +107,8 @@ QWidget* createPage(const Page& page)
 }
 }
 
-MainWindow::MainWindow(AuthService& auth, const QString& startupError, QWidget* parent)
-    : QMainWindow(parent), auth(auth), login(new LoginView(auth, startupError)),
+MainWindow::MainWindow(ApplicationContext& context, const QString& startupError, QWidget* parent)
+    : QMainWindow(parent), context(context), auth(context.auth), login(new LoginView(auth, startupError)),
       screens(new QStackedWidget)
 {
     setWindowTitle("PBL2 Cinema");
@@ -185,6 +193,15 @@ QWidget* MainWindow::createSidebar()
     auto* buttons = new QButtonGroup(sidebar);
     QString group;
     int landing = 0;
+    auto navigate = [this, buttons](const QString& permission) -> QWidget* {
+        for (auto* target : buttons->buttons()) {
+            if (target->property("permission").toString() == permission && canOpen(auth, permission)) {
+                target->click();
+                return pages->currentWidget();
+            }
+        }
+        return nullptr;
+    };
     for (const auto& page : navigation) {
         if (!canOpen(auth, page.permission)) {
             continue;
@@ -208,7 +225,36 @@ QWidget* MainWindow::createSidebar()
         line->addWidget(icon);
         line->addWidget(label(page.title, "navTitle"), 1);
         items->addWidget(button);
-        const int index = pages->addWidget(createPage(page));
+        QWidget* content = nullptr;
+        const bool catalog = page.permission == "MOVIE_VIEW" || page.permission == "ROOM_VIEW" || page.permission == "SEAT_VIEW";
+        if (catalog && !context.catalogError.isEmpty()) {
+            content = label(context.catalogError, "description");
+        } else if (page.permission == "MOVIE_VIEW") {
+            auto* movies = new MovieManagementView(context.movies, auth);
+            content = movies;
+            connect(movies, &CatalogView::openRelated, this, [navigate](const QString& id) {
+                if (auto* target = navigate("SHOWTIME_VIEW")) {
+                    // TODO: BACKEND INTEGRATION — consume this filter in the phase 4 view.
+                    target->setProperty("movieFilter", id);
+                    target->findChild<QLabel*>("empty")->setText("Bộ lọc phim: " + id + " · Chờ tích hợp suất chiếu.");
+                }
+            });
+        } else if (page.permission == "ROOM_VIEW") {
+            auto* rooms = new RoomManagementView(context.rooms, auth);
+            content = rooms;
+            connect(rooms, &CatalogView::openRelated, this, [navigate](const QString& id) {
+                if (auto* target = navigate("SEAT_VIEW")) {
+                    if (auto* map = target->findChild<SeatMapView*>("seatMap")) {
+                        map->refresh(id);
+                    }
+                }
+            });
+        } else if (page.permission == "SEAT_VIEW") {
+            auto* map = new SeatMapView(context.rooms, context.seats, auth);
+            map->setObjectName("seatMap");
+            content = map;
+        }
+        const int index = pages->addWidget(createPage(page, content));
         buttons->addButton(button, index);
         button->setProperty("permission", page.permission);
         if (auth.isStaff() && page.permission == "TICKET_SELL") {
@@ -228,6 +274,15 @@ QWidget* MainWindow::createSidebar()
             if (canOpen(auth, permission)) {
                 pages->setCurrentIndex(index);
                 currentTitle->setText(button->accessibleName());
+                auto* current = pages->currentWidget();
+                if (permission == "SEAT_VIEW") {
+                    if (auto* map = current->findChild<SeatMapView*>("seatMap")) {
+                        map->refresh();
+                    }
+                } else if (permission == "SHOWTIME_VIEW") {
+                    current->setProperty("movieFilter", {});
+                    current->findChild<QLabel*>("empty")->setText("Chức năng đang chờ tích hợp.");
+                }
             }
         });
         buttons->button(landing)->click();

@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "test_catalog.h"
 #include "ApplicationContext.h"
 
 #include <QFile>
@@ -30,7 +31,7 @@ int main(int argc, char* argv[])
     users.close();
     ApplicationContext missing(data.path());
     const QString startupError = missing.load();
-    MainWindow blocked(missing.auth, startupError);
+    MainWindow blocked(missing, startupError);
     if (startupError.isEmpty() || blocked.findChild<QPushButton*>("signIn")->isEnabled()) {
         qCritical("Missing permission data must block sign-in");
         return 1;
@@ -39,13 +40,18 @@ int main(int argc, char* argv[])
     if (!QFile::copy(PBL2_PERMISSIONS_FILE, permissionsPath)) {
         return 1;
     }
+    for (const QString file : {"movies.txt", "rooms.txt", "seats.txt", "showtimes.txt"}) {
+        if (!QFile::copy(QString(PBL2_GUI_FIXTURES) + "/" + file, data.filePath(file))) {
+            return 1;
+        }
+    }
     ApplicationContext context(data.path());
     const auto error = context.load();
-    if (!error.isEmpty()) {
+    if (!error.isEmpty() || !context.catalogError.isEmpty()) {
         qCritical("Could not load test accounts");
         return 1;
     }
-    MainWindow window(context.auth, error);
+    MainWindow window(context, error);
     window.show();
     auto signIn = [&](MainWindow& target, const QString& name, const QString& pass) {
         target.findChild<QLineEdit*>("username")->setText(name);
@@ -102,6 +108,10 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+    if (!testCatalog(window, context)) {
+        qCritical("Catalog interaction failed");
+        return 1;
+    }
     auto logout = [&] {
         window.findChild<QPushButton*>("logout")->click();
         QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -127,7 +137,7 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
-    if (!logout()) {
+    if (!testReadOnlyCatalog(window) || !logout()) {
         return 1;
     }
     QFile limited(permissionsPath);
@@ -138,7 +148,7 @@ int main(int argc, char* argv[])
     limited.close();
     ApplicationContext restricted(data.path());
     const QString restrictedError = restricted.load();
-    MainWindow limitedWindow(restricted.auth, restrictedError);
+    MainWindow limitedWindow(restricted, restrictedError);
     limitedWindow.show();
     signIn(limitedWindow, "manager", secret);
     auto* allowed = limitedWindow.findChild<QButtonGroup*>();
