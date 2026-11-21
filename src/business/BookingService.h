@@ -40,6 +40,7 @@ private:
 
     PricingService& pricingService;
     AuthService& authService;
+    bool storageFailed = false;
 
 public:
     BookingService(ShowtimeRepository& showtimeRepo,
@@ -60,6 +61,8 @@ public:
     bool createBooking(const std::string& showtimeId,
                        const std::vector<BookingItem>& items,
                        const std::string& memberId,
+                       bool ageConfirmed,
+                       bool paymentConfirmed,
                        std::string& invoiceId);
 };
 

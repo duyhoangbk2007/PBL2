@@ -368,7 +368,12 @@ bool TicketRepository::load()
 
 bool TicketRepository::save()
 {
-    return repo.save();
+    if (!repo.save())
+    {
+        return false;
+    }
+    pendingIds.clear();
+    return true;
 }
 
 bool TicketRepository::add(Ticket* ticket)
@@ -403,6 +408,7 @@ bool TicketRepository::add(Ticket* ticket)
     Showtime* showtime = showtimeRepo.findById(ticket->getShowtimeId());
     Seat* seat = seatRepo.findById(showtime->getRoomId(), ticket->getSeatId());
     Invoice* invoice = invoiceRepo.findById(ticket->getInvoiceId());
+    pendingIds.push_back(ticket->getTicketId());
     try
     {
         if (!ticket->linkShowtime(showtime) ||
@@ -410,20 +416,43 @@ bool TicketRepository::add(Ticket* ticket)
             !ticket->linkInvoice(invoice))
         {
             ticket->unlinkReferences();
+            pendingIds.pop_back();
             return false;
         }
 
         if (!repo.add(ticket))
         {
             ticket->unlinkReferences();
+            pendingIds.pop_back();
             return false;
         }
     }
     catch (...)
     {
         ticket->unlinkReferences();
+        pendingIds.pop_back();
         throw;
     }
+    return true;
+}
+
+bool TicketRepository::rollbackPending(const string& ticketId)
+{
+    if (pendingIds.empty() || pendingIds.back() != ticketId)
+    {
+        return false;
+    }
+    Ticket* ticket = repo.findById(ticketId);
+    if (ticket == nullptr)
+    {
+        return false;
+    }
+    ticket->unlinkReferences();
+    if (!repo.removeById(ticketId))
+    {
+        return false;
+    }
+    pendingIds.pop_back();
     return true;
 }
 

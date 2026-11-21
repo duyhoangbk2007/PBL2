@@ -15,6 +15,7 @@ class TicketRepository
 {
 private:
     Repository<Ticket> repo;
+    std::vector<std::string> pendingIds;
     ShowtimeRepository& showtimeRepo;
     SeatRepository& seatRepo;
     InvoiceRepository& invoiceRepo;
@@ -35,6 +36,7 @@ public:
     bool save();
 
     bool add(Ticket* ticket);
+    bool rollbackPending(const std::string& ticketId);
     Ticket* findById(const std::string& ticketId);
     Ticket* getAt(int index);
     int count();

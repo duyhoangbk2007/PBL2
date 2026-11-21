@@ -1,4 +1,3 @@
-
 #ifndef INVOICE_REPOSITORY_H
 #define INVOICE_REPOSITORY_H
 
@@ -16,6 +15,7 @@ class InvoiceRepository
 {
 private:
     Repository<Invoice> repo;
+    std::vector<std::string> pendingIds;
     ShowtimeRepository& showtimeRepo;
     UserRepository& userRepo;
     MemberRepository& memberRepo;
@@ -41,6 +41,7 @@ public:
     bool save();
 
     bool add(Invoice* invoice);
+    bool rollbackPending(const std::string& invoiceId);
 
     Invoice* findById(const std::string& invoiceId);
     Invoice* getAt(int index);

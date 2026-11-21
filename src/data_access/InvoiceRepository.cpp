@@ -246,7 +246,12 @@ bool InvoiceRepository::load()
 
 bool InvoiceRepository::save()
 {
-    return repo.save();
+    if (!repo.save())
+    {
+        return false;
+    }
+    pendingIds.clear();
+    return true;
 }
 
 bool InvoiceRepository::add(Invoice* invoice)
@@ -283,6 +288,7 @@ bool InvoiceRepository::add(Invoice* invoice)
     {
         member = memberRepo.findById(invoice->getMemberId());
     }
+    pendingIds.push_back(invoice->getInvoiceId());
     try
     {
         if (!invoice->linkShowtime(showtime) ||
@@ -290,21 +296,44 @@ bool InvoiceRepository::add(Invoice* invoice)
             !invoice->linkMember(member))
         {
             invoice->unlinkReferences();
+            pendingIds.pop_back();
             return false;
         }
 
         if (!repo.add(invoice))
         {
             invoice->unlinkReferences();
+            pendingIds.pop_back();
             return false;
         }
     }
     catch (...)
     {
         invoice->unlinkReferences();
+        pendingIds.pop_back();
         throw;
     }
 
+    return true;
+}
+
+bool InvoiceRepository::rollbackPending(const string& invoiceId)
+{
+    if (pendingIds.empty() || pendingIds.back() != invoiceId)
+    {
+        return false;
+    }
+    Invoice* invoice = repo.findById(invoiceId);
+    if (invoice == nullptr || invoice->getTicketCount() != 0)
+    {
+        return false;
+    }
+    invoice->unlinkReferences();
+    if (!repo.removeById(invoiceId))
+    {
+        return false;
+    }
+    pendingIds.pop_back();
     return true;
 }
 
