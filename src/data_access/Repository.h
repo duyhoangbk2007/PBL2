@@ -95,13 +95,17 @@ T* Repository<T>::findById(const string& id)
 template <typename T>
 bool Repository<T>::add(T* item)
 {
-    if (!loaded)
+    if (!loaded || item == nullptr)
     {
         return false;
     }
-    if (item == nullptr)
+    // kiểm tra trùng 
+    for (int i = 0; i < count(); i++)
     {
-        return false;
+        if (getAt(i) == item)
+        {
+            return false;
+        }
     }
     string id = getId(item);
     if (id.empty())
@@ -139,80 +143,75 @@ bool Repository<T>::removeById(const string& id)
 template <typename T>
 bool Repository<T>::load()
 {
+    if (loaded)
+    {
+        return false;
+    }
     vector<string> lines;
     if (!FileIO::readLines(filePath, lines))
     {
         return false;
     }
-    // Danh sach tam de tranh mat du lieu cu khi doc loi
-    DoublyLinkedList<T*> tempItems;  //
+    DoublyLinkedList<T*> tempItems;
     try
     {
-        for (int i = 0; i < (int)lines.size(); i++) //duyệt từng dòng trong lines
+        for (int i = 0; i < (int)lines.size(); i++)
         {
             T* item = nullptr;
             try
             {
                 item = parse(lines[i]);
+                if (item == nullptr)
+                {
+                    throw runtime_error("Du lieu khong hop le");
+                }
+                string id = getId(item);
+                if (id.empty())
+                {
+                    throw runtime_error("ID rong");
+                }
+                // Kiem tra ID trung trong danh sach tam
+                for (int j = 0; j < tempItems.nodeCount(); j++)
+                {
+                    T* current = tempItems.getAt(j)->data;
+                    if (getId(current) == id)
+                    {
+                        throw runtime_error("Trung ID");
+                    }
+                }
+                tempItems.pushBack(item);
+                // Tu day tempItems quan ly item
+                item = nullptr;
             }
             catch (const exception& e)
             {
+                // giải phóng đối tượng bị lỗi
+                delete item;
                 throw runtime_error(
                     "Loi doc file " + filePath +
                     " tai dong " + to_string(i + 1) +
                     ": " + e.what()
                 );
             }
-            if (item == nullptr)
-            {
-                throw runtime_error("Du lieu khong hop le tai dong " + to_string(i + 1));
-            }
-            string id = getId(item);
-            if (id.empty())
+            catch (...)
             {
                 delete item;
-                throw runtime_error("ID rong tai dong " + to_string(i + 1));
+                throw;
             }
-            bool duplicate = false; // xử lý lặp
-            for (int j = 0; j < tempItems.nodeCount(); j++)
-            {
-                ListNode<T*>* node = tempItems.getAt(j);
-                if (getId(node->data) == id)
-                {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if (duplicate)
-            {
-                delete item;
-               throw runtime_error(
-                    "Trung ID trong file " + filePath +
-                    " tai dong " + to_string(i + 1)
-                );
-            }
-            tempItems.pushBack(item);
         }
     }
     catch (...)
     {
+        // Giải phóng các đối tượng còn lại
         while (tempItems.nodeCount() > 0)
         {
-            ListNode<T*>* node = tempItems.getAt(0);
-            delete node->data;
+            T* item = tempItems.getAt(0)->data;
             tempItems.popFront();
+            delete item;
         }
         throw;
     }
-
-    // Chi thay du lieu cu sau khi doc thanh cong
-    clear(); //xóa dữ liệu cũ trong items
-    while (tempItems.nodeCount() > 0)
-    {
-        ListNode<T*>* node = tempItems.getAt(0);
-        items.pushBack(node->data);
-        tempItems.popFront();
-    }
+    items.swap(tempItems);
     loaded = true;
     return true;
 }

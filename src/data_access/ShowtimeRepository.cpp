@@ -355,23 +355,38 @@ bool ShowtimeRepository::add(Showtime* showtime)
     }
     Movie* movie = movieRepo.findById(showtime->getMovieId());
     Room* room = roomRepo.findById(showtime->getRoomId());
-    if (!showtime->linkMovie(movie))
+    try
     {
-        return false;
+        if (!showtime->linkMovie(movie))
+        {
+            return false;
+        }
+        if (!showtime->linkRoom(room))
+        {
+            movie->unlinkShowtime(showtime);
+            return false;
+        }
+        if (!repo.add(showtime))
+        {
+            room->unlinkShowtime(showtime);
+            movie->unlinkShowtime(showtime);
+            return false;
+        }
     }
-    if (!showtime->linkRoom(room))
+    catch (...)
     {
-        movie->unlinkShowtime(showtime);
-        return false;
-    }
-    //nếu liên kết thành công mà ko thêm vào Repo, Nếu không tháo liên kết, Movie và Room sẽ giữ một Showtime không thuộc danh sách quản lý của Repository.
-    if (!repo.add(showtime))
-    {
-        room->unlinkShowtime(showtime);
-        movie->unlinkShowtime(showtime);
-        return false;
+        if (showtime->getRoom() != nullptr)
+        {
+            room->unlinkShowtime(showtime);
+        }
+        if (showtime->getMovie() != nullptr)
+        {
+            movie->unlinkShowtime(showtime);
+        }
+        throw;
     }
     return true;
+
 }
 
 bool ShowtimeRepository::update(const Showtime& newValues)

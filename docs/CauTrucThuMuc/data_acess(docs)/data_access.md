@@ -88,6 +88,10 @@ Các hàm hiện có:
 
 `Repository<T>` sử dụng `DoublyLinkedList<T*>` để lưu các đối tượng.
 
+Không sao chép `Repository<T>` hoặc `DoublyLinkedList<T>` theo giá trị: hai lớp hiện chưa vô hiệu hóa copy constructor/copy assignment; bản sao mặc định chia sẻ node/con trỏ sở hữu và có thể giải phóng lặp. Đây là quy tắc sử dụng, chưa phải ràng buộc do compiler thực thi.
+
+`Repository<T>::add()` từ chối `nullptr`, repository chưa load, con trỏ đã có trong danh sách, ID rỗng hoặc ID trùng. Chỉ khi thêm thành công Repository mới sở hữu con trỏ; nếu thất bại caller vẫn chịu trách nhiệm giải phóng.
+
 Lớp này không biết các quy tắc riêng của Movie, Room, Seat, Invoice hoặc Ticket.
 
 ### 2.2. Repository cụ thể
@@ -446,13 +450,13 @@ if (!repo.load())
 
 `Repository<T>::load()` chịu trách nhiệm:
 
-- Đọc các dòng qua `FileIO`.
-- Parse dữ liệu.
-- Kiểm tra ID trùng.
-- Quản lý các đối tượng đã tạo.
-- Dọn dữ liệu tạm khi parse thất bại.
+- Trả `false` ngay nếu đã loaded hoặc `FileIO::readLines()` thất bại; không nạp lại dữ liệu cũ.
+- Parse từng dòng vào `DoublyLinkedList<T*> tempItems`, kiểm tra con trỏ khác `nullptr`, ID không rỗng và không trùng trong danh sách tạm.
+- `try/catch` bên trong xóa `item` của dòng đang xử lý nếu có lỗi; với `std::exception`, ném lại `runtime_error` kèm đường dẫn, số dòng và nguyên nhân. `catch (...)` ném lại ngoại lệ khác sau khi xóa `item`.
+- `try/catch` bên ngoài giải phóng mọi đối tượng đã thêm vào `tempItems` rồi ném lại ngoại lệ. `items` và trạng thái `loaded` chưa thay đổi khi xử lý thất bại.
+- Khi toàn bộ dòng hợp lệ, dùng `items.swap(tempItems)`, đặt `loaded = true` và trả `true`.
 
-Lưu ý: Trong code hiện tại, lỗi parse có thể ném `runtime_error`, không nhất thiết trả về `false`.
+Các kiểm tra tham chiếu, xung đột và liên kết Model vẫn thuộc Repository cụ thể; kết quả thành công của `Repository<T>::load()` chưa chứng minh các bước đó đã hoàn tất.
 
 ### 6.5. Giai đoạn 3 — Kiểm tra toàn bộ
 

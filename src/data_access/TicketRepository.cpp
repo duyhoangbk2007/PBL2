@@ -326,7 +326,6 @@ bool TicketRepository::load()
             }
         }
     }
-
     // Lien ket Ticket voi cac doi tuong tham chieu
     for (int i = 0; i < repo.count(); i++)
     {
@@ -394,24 +393,31 @@ bool TicketRepository::add(Ticket* ticket)
     Showtime* showtime = showtimeRepo.findById(ticket->getShowtimeId());
     Seat* seat = seatRepo.findById(showtime->getRoomId(), ticket->getSeatId());
     Invoice* invoice = invoiceRepo.findById(ticket->getInvoiceId());
-
     if (!ticket->linkShowtime(showtime) ||
         !ticket->linkSeat(seat))
     {
         return false;
     }
-    if (!repo.add(ticket))
-    {
-        return false;
-    }
+
     if (!ticket->linkInvoice(invoice))
     {
-        // Ticket chua duoc lien ket Invoice,
-        // nen co the xoa khoi Repository.
-        repo.removeById(ticket->getTicketId());
         return false;
     }
+    try
+    {
+        if (!repo.add(ticket))
+        {
+            invoice->unlinkTicket(ticket);
+            return false;
+        }
+    }
+    catch (...)
+    {
+        invoice->unlinkTicket(ticket);
+        throw;
+    }
     return true;
+
 }
 
 Ticket* TicketRepository::findById(const string& ticketId)

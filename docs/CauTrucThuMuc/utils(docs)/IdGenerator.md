@@ -1,5 +1,7 @@
 # IdGenerator
 
+`IdGenerator` đã có bài kiểm thử trong `tests/test_all_utils.cpp` và `tests/test_utils_edge_cases.cpp`. Chưa có lời gọi `generateNextId()` trong luồng tạo đối tượng của Service; việc kiểm thử tiện ích không đồng nghĩa đã tích hợp cấp ID vào nghiệp vụ.
+
 **Mã nguồn hiện có:** `src/utils/IdGenerator.h`, `src/utils/IdGenerator.cpp`; đã chuyển từ `core/utils/`, giữ nguyên quy tắc cấp mã.
 
 `IdGenerator` đọc bộ đếm trong `sequences.txt` và **tính** mã kế tiếp cùng nội dung bộ đếm mới. File này chỉ chứa các dòng `entity|nextValue`, không có `#schema=1` hoặc dòng tiêu đề, giống các file TXT dữ liệu khác. Hàm hiện tại không tự ghi `sequences.txt`: bên gọi phải lưu nội dung được trả về khi tạo bản ghi mới. Nếu chỉ lấy mã mà không lưu bộ đếm, lần gọi sau có thể cấp lại mã đó.
