@@ -25,10 +25,12 @@ private:
     static bool isValidTicket(const Ticket* ticket);
 
     bool isValidReference(const Ticket* ticket);
+    void unlinkAll();
 
 public:
     TicketRepository(const std::string& filePath, ShowtimeRepository& showtimeRepo, SeatRepository& seatRepo, InvoiceRepository& invoiceRepo);
-
+    ~TicketRepository();
+    
     bool load();
     bool save();
 

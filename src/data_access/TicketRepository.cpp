@@ -21,6 +21,22 @@ TicketRepository::TicketRepository(const string& filePath, ShowtimeRepository& s
       seatRepo(seatRepo),
       invoiceRepo(invoiceRepo)
 {}
+TicketRepository::~TicketRepository()
+{
+    unlinkAll();
+}
+
+void TicketRepository::unlinkAll()
+{
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Ticket* ticket = repo.getAt(i);
+        if (ticket != nullptr)
+        {
+            ticket->unlinkReferences();
+        }
+    }
+}
 
 string TicketRepository::getTicketId(Ticket* ticket)
 {
@@ -299,59 +315,53 @@ bool TicketRepository::load()
     {
         return false;
     }
-    // Kiem tra toan bo du lieu truoc khi lien ket
-    for (int i = 0; i < repo.count(); i++)
+    try
     {
-        Ticket* ticket = repo.getAt(i);
-        if (!isValidReference(ticket))
+        // Kiem tra du lieu
+        for (int i = 0; i < repo.count(); i++)
         {
-            repo.clear();
-            return false;
-        }
-        // nếu vé đang xét là CANCELLED thì bỏ qua
-        if (ticket->getStatus() != TicketStatus::SOLD)
-        {
-            continue;
-        }
-        // kiểm tra trùng
-        for (int j = 0; j < i; j++)
-        {
-            Ticket* other = repo.getAt(j);
-            if (other->getStatus() == TicketStatus::SOLD &&
-                other->getShowtimeId() == ticket->getShowtimeId() &&
-                other->getSeatId() == ticket->getSeatId())
+            Ticket* ticket = repo.getAt(i);
+            if (!isValidReference(ticket))
             {
-                repo.clear();
-                return false;
+                throw runtime_error("Ticket co tham chieu khong hop le");
+            }
+            if (ticket->getStatus() != TicketStatus::SOLD)
+            {
+                continue;
+            }
+            for (int j = 0; j < i; j++)
+            {
+                Ticket* other = repo.getAt(j);
+
+                if (other->getStatus() == TicketStatus::SOLD &&
+                    other->getShowtimeId() == ticket->getShowtimeId() &&
+                    other->getSeatId() == ticket->getSeatId())
+                {
+                    throw runtime_error("Trung ghe da ban");
+                }
+            }
+        }
+        // Lien ket du lieu
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Ticket* ticket = repo.getAt(i);
+            Showtime* showtime = showtimeRepo.findById(ticket->getShowtimeId());
+            Seat* seat = seatRepo.findById(showtime->getRoomId(), ticket->getSeatId());
+            Invoice* invoice = invoiceRepo.findById(ticket->getInvoiceId());
+
+            if (!ticket->linkShowtime(showtime) ||
+                !ticket->linkSeat(seat) ||
+                !ticket->linkInvoice(invoice))
+            {
+                throw runtime_error("Khong the lien ket Ticket");
             }
         }
     }
-    // Lien ket Ticket voi cac doi tuong tham chieu
-    for (int i = 0; i < repo.count(); i++)
+    catch (...)
     {
-        Ticket* ticket = repo.getAt(i);
-        Showtime* showtime = showtimeRepo.findById(ticket->getShowtimeId());
-        Seat* seat = seatRepo.findById(showtime->getRoomId(), ticket->getSeatId());
-        Invoice* invoice = invoiceRepo.findById(ticket->getInvoiceId());
-
-        if (!ticket->linkShowtime(showtime) ||
-            !ticket->linkSeat(seat) ||
-            !ticket->linkInvoice(invoice))
-        {
-            // Thao cac lien ket Ticket-Invoice da tao
-            for (int j = 0; j <= i; j++)
-            {
-                Ticket* linked = repo.getAt(j);
-                Invoice* owner = invoiceRepo.findById(linked->getInvoiceId());
-                if (owner != nullptr &&
-                    linked->getInvoice() == owner)
-                {
-                    owner->unlinkTicket(linked);
-                }
-            }
-            repo.clear();
-            return false;
-        }
+        unlinkAll();
+        repo.clear();
+        throw;
     }
     return true;
 }
@@ -371,7 +381,7 @@ bool TicketRepository::add(Ticket* ticket)
     {
         return false;
     }
-    // có rồi thì không thêm nữa
+    // Khong them lai con tro da duoc quan ly
     for (int i = 0; i < repo.count(); i++)
     {
         if (repo.getAt(i) == ticket)
@@ -393,31 +403,28 @@ bool TicketRepository::add(Ticket* ticket)
     Showtime* showtime = showtimeRepo.findById(ticket->getShowtimeId());
     Seat* seat = seatRepo.findById(showtime->getRoomId(), ticket->getSeatId());
     Invoice* invoice = invoiceRepo.findById(ticket->getInvoiceId());
-    if (!ticket->linkShowtime(showtime) ||
-        !ticket->linkSeat(seat))
-    {
-        return false;
-    }
-
-    if (!ticket->linkInvoice(invoice))
-    {
-        return false;
-    }
     try
     {
+        if (!ticket->linkShowtime(showtime) ||
+            !ticket->linkSeat(seat) ||
+            !ticket->linkInvoice(invoice))
+        {
+            ticket->unlinkReferences();
+            return false;
+        }
+
         if (!repo.add(ticket))
         {
-            invoice->unlinkTicket(ticket);
+            ticket->unlinkReferences();
             return false;
         }
     }
     catch (...)
     {
-        invoice->unlinkTicket(ticket);
+        ticket->unlinkReferences();
         throw;
     }
     return true;
-
 }
 
 Ticket* TicketRepository::findById(const string& ticketId)

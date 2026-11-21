@@ -149,6 +149,11 @@ bool Invoice::unlinkTicket(Ticket* ticket)
 
 void Invoice::unlinkReferences()
 {
+    while (tickets.nodeCount() > 0)
+    {
+        Ticket* ticket = tickets.getAt(0)->data;
+        unlinkTicket(ticket);
+    }
     if (seller != nullptr)
     {
         seller->unlinkInvoice(this);

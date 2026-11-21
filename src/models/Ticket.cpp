@@ -143,6 +143,15 @@ bool Ticket::linkInvoice(Invoice* invoice) {
 
     return invoice->linkTicket(this);
 }
+void Ticket::unlinkReferences()
+{
+    if (invoice != nullptr)
+    {
+        invoice->unlinkTicket(this);
+    }
+    showtime = nullptr;
+    seat = nullptr;
+}
 
 void Ticket::markCancelled(const string& cancelledAt,
                            const string& cancelledBy,

@@ -212,9 +212,7 @@ bool InvoiceRepository::load()
             Invoice* invoice = repo.getAt(i);
             if (!isValidReference(invoice))
             {
-                unlinkAll();
-                repo.clear();
-                return false;
+                throw runtime_error("Invoice co tham chieu khong hop le");
             }
         }
         // Giai doan 2: Lien ket doi tuong
@@ -224,6 +222,7 @@ bool InvoiceRepository::load()
             Showtime* showtime = showtimeRepo.findById(invoice->getShowtimeId());
             User* seller = userRepo.findById(invoice->getStaffId());
             Member* member = nullptr;
+
             if (!invoice->getMemberId().empty())
             {
                 member = memberRepo.findById(invoice->getMemberId());
@@ -232,9 +231,7 @@ bool InvoiceRepository::load()
                 !invoice->linkSeller(seller) ||
                 !invoice->linkMember(member))
             {
-                unlinkAll();
-                repo.clear();
-                return false;
+                throw runtime_error("Khong the lien ket Invoice");
             }
         }
     }
@@ -244,7 +241,6 @@ bool InvoiceRepository::load()
         repo.clear();
         throw;
     }
-
     return true;
 }
 
@@ -264,10 +260,25 @@ bool InvoiceRepository::add(Invoice* invoice)
     {
         return false;
     }
-
+    // không thêm trùng
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == invoice)
+        {
+            return false;
+        }
+    }
+    // Khong them Invoice da duoc lien ket
+    if (invoice->getShowtime() != nullptr ||
+        invoice->getSeller() != nullptr ||
+        invoice->getMember() != nullptr)
+    {
+        return false;
+    }
     Showtime* showtime = showtimeRepo.findById(invoice->getShowtimeId());
     User* seller = userRepo.findById(invoice->getStaffId());
     Member* member = nullptr;
+
     if (!invoice->getMemberId().empty())
     {
         member = memberRepo.findById(invoice->getMemberId());

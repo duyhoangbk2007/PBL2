@@ -74,6 +74,7 @@ public:
     bool linkShowtime(Showtime* showtime);
     bool linkSeat(Seat* seat);
     bool linkInvoice(Invoice* invoice);
+    void unlinkReferences();
 
     void markCancelled(const std::string& cancelledAt, const std::string& cancelledBy, const std::string& cancelReason);
 
