@@ -23,10 +23,16 @@ public:
     bool addMovie(Movie* movie);
     bool updateMovie(const Movie& newValues);
     bool removeMovie(const string& movieId);
+    bool setMovieActive(const string& movieId, bool active);
+
     // Tra cuu phim
     const Movie* findMovieById(const string& movieId);
     const Movie* getMovieAt(int index);
     int getMovieCount();
+
+    vector<const Movie*> getNowShowingMovies();
+    vector<const Movie*> getComingSoonMovies();
+    vector<const Movie*> searchMoviesByTitle(const string& keyword);
 };
 
 #endif
