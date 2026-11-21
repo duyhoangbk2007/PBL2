@@ -1,4 +1,4 @@
-﻿# Quy tắc nghiệp vụ
+# Quy tắc nghiệp vụ
 
 Đây là thiết kế mục tiêu của bản PBL2. Giá và tỷ lệ dưới đây là mặc định mô phỏng được chọn cho dự án, có thể chỉnh trong cấu hình.
 
@@ -98,7 +98,7 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 3. Mỗi lần chọn ghế đẩy mã ghế vào stack. Undo bỏ ghế chọn gần nhất. Bản đầu chỉ hỗ trợ bỏ lựa chọn theo thứ tự undo; đổi suất hoặc bỏ giao dịch xóa danh sách và stack.
 4. Chọn loại vé từng ghế, gắn tối đa một thành viên và xem lại giá.
 5. Xác nhận thu tiền tại quầy; service kiểm tra lại quyền, giờ chiếu, ghế, thành viên và việc xác nhận độ tuổi.
-6. Tạo một hóa đơn không rỗng với các vé cùng suất; ghi lần lượt hóa đơn, vé, điểm và bộ đếm mã vào các file TXT liên quan.
+6. Tạo một hóa đơn không rỗng với các vé cùng suất; ghi hóa đơn, vé và điểm vào các file TXT liên quan. ID hiện được cấp từ các mã đang nạp, không ghi bộ đếm riêng.
 7. Kiểm tra từng lần ghi; chỉ thông báo thành công sau khi tất cả lần ghi thành công. Nếu có lỗi, báo rõ file bị lỗi và dữ liệu có thể không nhất quán để người dùng xử lý.
 
 Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh toán không lưu vé/hóa đơn/điểm. Không tích hợp cổng thanh toán; xác nhận thu/hoàn tiền là thao tác tại quầy.

@@ -57,8 +57,8 @@ PBL2/
 │   │   ├── PricingService.cpp
 │   │   ├── StaffService.h                [Dự kiến]
 │   │   ├── StaffService.cpp              [Dự kiến]
-│   │   ├── BookingService.h              [Dự kiến]
-│   │   ├── BookingService.cpp            [Dự kiến]
+│   │   ├── BookingService.h              [Đã có, đang hoàn thiện]
+│   │   ├── BookingService.cpp            [Đã có, đang hoàn thiện]
 │   │   ├── ReportService.h               [Dự kiến]
 │   │   └── ReportService.cpp             [Dự kiến]
 │   ├── data_access/                       [Đã có Repository phim, phòng, ghế, suất, tài khoản]
@@ -76,10 +76,10 @@ PBL2/
 │   │   ├── MemberRepository.cpp
 │   │   ├── PricingRepository.h
 │   │   ├── PricingRepository.cpp
-│   │   ├── TicketRepository.h            [Dự kiến]
-│   │   ├── TicketRepository.cpp          [Dự kiến]
-│   │   ├── InvoiceRepository.h           [Dự kiến]
-│   │   └── InvoiceRepository.cpp         [Dự kiến]
+│   │   ├── TicketRepository.h            [Đã có]
+│   │   ├── TicketRepository.cpp          [Đã có]
+│   │   ├── InvoiceRepository.h           [Đã có]
+│   │   └── InvoiceRepository.cpp         [Đã có]
 │   ├── models/                            [Đã chuyển chín cặp Model]
 │   │   ├── Movie.h
 │   │   ├── Movie.cpp
@@ -117,7 +117,7 @@ PBL2/
 │   ├── members.txt
 │   ├── tickets.txt
 │   ├── invoices.txt
-│   └── sequences.txt
+│   └── (sequences.txt: thiết kế cũ, không dùng cấp ID)
 ├── tests/
 │   ├── test_all_utils.cpp               [Đã có; kiểm tra FileIO và tiện ích]
 │   └── legacy/                          [Lưu mã TransactionManager cũ để đối chiếu]
@@ -234,7 +234,7 @@ Tám cặp này **đã có mã ở `src/models/`**. Model không tự đọc/ghi
 | `DoublyLinkedList.h` | Danh sách liên kết đôi tự cài đặt, hiện ở `src/data_structures/`; không có `.cpp` vì là template. |
 | `FileIO.h/.cpp` | Tiện ích đã có ở `src/utils/` với `readLines(...)`, `writeLines(...)` để đọc/ghi dòng TXT. |
 | `DateTime.h/.cpp` | Hỗ trợ ngày giờ; mã hiện ở `src/utils/` mới cung cấp thời điểm hiện tại, chưa có API parse đầy đủ. |
-| `IdGenerator.h/.cpp` | Đọc `sequences.txt`, tính mã và nội dung bộ đếm mới; mã hiện ở `src/utils/`, không tự ghi file. |
+| `IdGenerator.h/.cpp` | Nhận danh sách ID đang nạp và trả mã lớn nhất cộng một; không dùng `sequences.txt`. |
 
 Mã `TransactionManager` cũ được lưu ở `tests/legacy/` để đối chiếu và chạy bài thử lịch sử; ứng dụng trong `src/` không dùng lớp này. Không có `data/transactions/` trong thiết kế mục tiêu. Không tự thêm `Validator`, factory hoặc các class tiện ích chưa cần thiết.
 
@@ -254,10 +254,10 @@ Mã `TransactionManager` cũ được lưu ở `tests/legacy/` để đối chi�
 | `data/members.txt` | Thông tin thành viên và điểm. |
 | `data/tickets.txt` | Vé bán và lịch sử vé hủy. |
 | `data/invoices.txt` | Hóa đơn; vé liên kết bằng mã hóa đơn. |
-| `data/sequences.txt` | Các dòng `entity|nextValue` dùng cấp mã. |
+| `data/sequences.txt` | Thiết kế cũ; không dùng để cấp ID hiện hành. |
 | `tests/test_all_utils.cpp` | Bài thử đã cập nhật đường dẫn `src/utils/`; vẫn thử cả mã giao dịch lịch sử trong `tests/legacy/`. |
 
-`data/` hiện **trống**; chín file TXT trong bảng là dự kiến. Mọi file TXT, kể cả `sequences.txt`, không có dòng `#schema=1` hoặc tiêu đề. Số trường, thứ tự và kiểu dữ liệu giữ theo [data_format.md](../TongQuan/data_format.md). Không tạo `data/transactions/` trong thiết kế mục tiêu.
+Cây trên là thiết kế tham khảo; kiểm tra `data/` thực tế khi chạy. Các file TXT nghiệp vụ không có dòng `#schema=1` hoặc tiêu đề. Số trường, thứ tự và kiểu dữ liệu giữ theo [data_format.md](../TongQuan/data_format.md). Không tạo `data/transactions/` trong thiết kế mục tiêu.
 
 Các file dưới `docs/` đã được liệt kê đúng đường dẫn trong cây ở Mục 1: `TongQuan/` giải thích phạm vi, nghiệp vụ và TXT; `CauTrucThuMuc/` mô tả cấu trúc, Model, Repository và lịch sử tiện ích; `DS/DLL.md` giải thích danh sách liên kết đôi; `development/` chứa tiến độ, phân công, nhật ký Bước 01–04 và hai checklist cá nhân. Chưa có nhật ký các bước sau Bước 04.
 
@@ -270,7 +270,7 @@ src/gui/ → src/business/ → src/data_access/ → data/*.txt
                             src/utils/FileIO
 ```
 
-`src/models/` và `src/data_structures/` hỗ trợ việc giữ dữ liệu trong RAM; `src/utils/` hỗ trợ kỹ thuật, không phải tầng nghiệp vụ thứ tư. Ví dụ Admin thêm phim: `MovieManagementView` gọi `MovieService`; Service kiểm tra quyền và dữ liệu; `MovieRepository` cập nhật tập phim và dùng `FileIO` lưu `movies.txt` khi cần. Khi cấp mã, luồng tạo còn phải lưu nội dung `updatedSequences` của `IdGenerator` vào `sequences.txt`.
+`src/models/` và `src/data_structures/` hỗ trợ việc giữ dữ liệu trong RAM; `src/utils/` hỗ trợ kỹ thuật, không phải tầng nghiệp vụ thứ tư. Ví dụ Admin thêm phim: `MovieManagementView` gọi `MovieService`; Service kiểm tra quyền và dữ liệu; `MovieRepository` cập nhật tập phim và dùng `FileIO` lưu `movies.txt` khi cần. Khi cấp mã, Service dùng các ID đang nạp; không lưu bộ đếm riêng.
 
 Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` gọi `BookingService`; Service kiểm tra suất, ghế, giá, thành viên và quyền; các Repository liên quan chuẩn bị vé, hóa đơn, điểm và bộ đếm rồi ghi các file TXT tương ứng. **Ghi nhiều file tuần tự không nguyên tử**: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Phải kiểm tra từng lần ghi, báo lỗi và không âm thầm bỏ dữ liệu sai.
 
@@ -286,7 +286,9 @@ Ví dụ bán vé (Bước 10; GUI triển khai ở Bước 12): `BookingView` g
 | `core/data_structures/DoublyLinkedList.h` | `src/data_structures/` | Đã chuyển cấu trúc dữ liệu tự cài đặt. |
 | `core/utils/FileHandler.h/.cpp` | `src/utils/FileIO.h/.cpp` | Đã đổi tên class và phương thức đọc thành `readLines`. |
 | `core/utils/DateTime.h/.cpp` | `src/utils/` | Đã chuyển, chưa đổi API. |
-| `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển, giữ quy tắc cấp mã và `sequences.txt`. |
+| `core/utils/IdGenerator.h/.cpp` | `src/utils/` | Đã chuyển; cơ chế hiện hành lấy ID lớn nhất đang nạp rồi cộng một. |
 | `core/utils/TransactionManager.h/.cpp` | `tests/legacy/TransactionManager.h/.cpp` | Lưu mã lịch sử để bài thử cũ tiếp tục đối chiếu; ứng dụng không dùng. |
 
 Hiện `src/` đã có chín Model, `DoublyLinkedList`, các tiện ích, Repository phim/phòng/ghế/suất/tài khoản/thành viên, Service phim/phòng/ghế/suất/xác thực/nhân viên/thành viên/giá vé và `main.cpp` thử nghiệm. `MemberRepository` có test riêng 63/63, `MemberService` có test riêng 69/69; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có; hủy/xóa suất vẫn chờ `TicketRepository`. GUI Qt và `CMakeLists.txt` chưa có. Xem [tiến độ](../development/TongQuanTienDo.md) để biết phạm vi đã kiểm thử.
+
+**Cập nhật cơ chế ID:** Hiện IdGenerator nhận danh sách ID trong RAM, lấy số lớn nhất rồi cộng một; không đọc/ghi sequences.txt. Các mô tả sequences.txt và trạng thái data/ ở cây thiết kế phía trên là lịch sử/thiết kế cũ, không phải hợp đồng cấp ID hiện hành. Bước 10 đã có TicketRepository, InvoiceRepository và bản đầu BookingService nhưng chưa nghiệm thu.

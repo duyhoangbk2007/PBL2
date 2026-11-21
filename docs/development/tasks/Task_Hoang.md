@@ -133,9 +133,10 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 10 – Bán vé tại quầy
 
-**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; chưa nghiệm thu.**
 
-- [ ] Triển khai `TicketRepository`, `InvoiceRepository`, `BookingService` và luồng chọn/Undo ghế trước thanh toán.
+- [x] Đã có `TicketRepository`, `InvoiceRepository` và bản đầu `BookingService`.
+- [ ] Chốt API với GUI, hoàn thiện chọn/Undo ghế trước thanh toán và kiểm thử Booking riêng.
 - [ ] Kiểm tra ghế theo suất, xác nhận thu tiền, tạo hóa đơn nhiều vé, cập nhật điểm và ghi TXT.
 - [ ] Kiểm thử C++ trùng ghế, tham chiếu, lỗi ghi và tích hợp các Repository; cung cấp API cho GUI của Kiệt.
 

@@ -49,7 +49,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 **Checklist công việc:**
 
-- [x] Cài `IdGenerator` đọc `sequences.txt`, tạo mã và trả `updatedSequences` để bên gọi lưu khi tạo bản ghi; file bộ đếm không có dòng `#schema=1`.
+- [x] Cài `IdGenerator` đã có đóng góp lịch sử; API hiện hành nhận các ID đang nạp và trả mã lớn nhất cộng một, không dùng `sequences.txt`.
 - [x] Cài `DateTime::getCurrentDateTime()` lấy và định dạng thời gian hiện tại.
 - [x] Kiểm thử cơ bản `IdGenerator` và định dạng đầu ra `DateTime` trong `test_all_utils.cpp`; lần chạy sau chuyển thư mục có 4 PASS, 0 FAILED cho toàn bộ bài thử.
 
@@ -57,7 +57,7 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 **Pull Request:** Chưa có
 
-**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`, phối hợp với `FileIO` của Hoàng. `IdGenerator` chỉ tính nội dung bộ đếm mới, chưa tự ghi `sequences.txt`; Repository cần lưu nội dung này khi tạo bản ghi. Tại thời điểm ghi chú cũ, `DateTime` mới có `getCurrentDateTime()`; hiện mã còn có `addMinutes()`, `isBefore()` và `isOverlapping()`. Phần kiểm tra Backend tiếp theo thuộc Hoàng. Review và tích hợp chính thức chưa được xác nhận. `Validator` hoãn sang Repository, chỉ cài hàm kiểm tra TXT thật sự cần dùng.
+**Ghi chú:** Kiệt phụ trách `IdGenerator` và `DateTime`, phối hợp với `FileIO` của Hoàng. Ghi chú về bộ đếm thuộc thiết kế cũ; API hiện hành không dùng `sequences.txt` và Service cấp mã từ các ID đang nạp. Tại thời điểm ghi chú cũ, `DateTime` mới có `getCurrentDateTime()`; hiện mã còn có `addMinutes()`, `isBefore()` và `isOverlapping()`. Phần kiểm tra Backend tiếp theo thuộc Hoàng. Review và tích hợp chính thức chưa được xác nhận. `Validator` hoãn sang Repository, chỉ cài hàm kiểm tra TXT thật sự cần dùng.
 
 ## Công việc hiện hành: GUI Bước 12–14
 
@@ -67,7 +67,7 @@ Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị
 
 ### Bước 12 – Xây dựng giao diện Qt
 
-**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: chưa bắt đầu.**
+**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: đang thực hiện theo trao đổi từ Kiệt; phần bán vé chờ chốt API Business.**
 
 - [ ] Xây dựng `MainWindow`, dashboard Admin/Staff, `LoginView`, `MovieManagementView`, `RoomManagementView`, `ShowtimeManagementView`, `StaffManagementView`, `MemberManagementView`, `BookingView`, `SeatMapView`, `InvoiceHistoryView` và `ReportView` theo phạm vi chức năng đã thống nhất.
 - [ ] Tích hợp các View với Service do Hoàng cung cấp; GUI chỉ hiển thị và nhận thao tác, không xử lý quyền hoặc quy tắc nghiệp vụ thay Backend.

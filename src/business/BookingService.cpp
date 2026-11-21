@@ -165,7 +165,7 @@ bool BookingService::createBooking(const string& showtimeId,
 {
     invoiceId = "";
     // 1. Kiem tra quyen
-    const User& staff = authService.requirePermission("BOOKING_CREATE");
+    const User& staff = authService.requirePermission("TICKET_SELL");
 
     // 2. Kiem tra Repository
     if (!showtimeRepo.isLoaded() ||

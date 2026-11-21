@@ -1,11 +1,11 @@
-﻿# Định dạng dữ liệu TXT
+# Định dạng dữ liệu TXT
 
 Đặc tả thiết kế mục tiêu; việc cập nhật tài liệu chưa tạo file dữ liệu hoặc triển khai chức năng đọc/ghi nghiệp vụ.
 
 ## 1. Quy ước
 
 - Dữ liệu lưu bằng UTF-8, mỗi bản ghi nằm trên một dòng, các trường cách nhau bằng ký tự |.
-- Mọi file TXT dữ liệu, kể cả `sequences.txt`, không có dòng `#schema=1` hoặc dòng tiêu đề cột; bản ghi đầu tiên nằm ngay ở dòng đầu file.
+- Mọi file TXT nghiệp vụ hiện hành không có dòng `#schema=1` hoặc dòng tiêu đề cột; bản ghi đầu tiên nằm ngay ở dòng đầu file.
 - Thứ tự và số lượng trường của mỗi loại file tuân theo định dạng quy định trong tài liệu này.
 - Không cho phép `|`, xuống dòng hoặc ký tự điều khiển trong trường văn bản; bản đầu không dùng escape.
 - Trường tùy chọn để rỗng, giữ dấu phân cách và cả trường rỗng cuối dòng khi parse; không dùng chữ null.
@@ -120,7 +120,7 @@ MEMBER_DISCOUNT|5
 
 Ba giá ghế là `double` VND và phải dương; hai tỷ lệ là phần trăm trong `[0,100]`. Giá trị TXT phải là số thập phân parse hết, hữu hạn; không nhận khóa lạ, khóa trùng, thiếu khóa, dòng thiếu/thừa dấu `|` hoặc số dòng khác năm. `PricingRepository::load()` trả `false` khi file thiếu/sai và chỉ công bố cấu hình sau khi toàn file hợp lệ; code hiện **không báo file/dòng lỗi** và không tự tạo file mặc định. `save()`/`update()` ghi bằng `std::to_string()` nên có thể tạo sáu chữ số thập phân. Không lưu quy tắc 1 điểm/10.000 VND trong file này.
 
-### sequences.txt
+### Cấp ID hiện hành (ví dụ bộ đếm dưới đây là thiết kế cũ)
 
 ```text
 USR|1
@@ -132,7 +132,7 @@ INV|1
 MEM|1
 ```
 
-`sequences.txt` cũng tuân theo quy ước không có schema hoặc dòng tiêu đề; mỗi dòng chỉ chứa `entity|nextValue`. Mỗi loại một dòng; entity = USR/MOV/ROM/SHW/TKT/INV/MEM. nextValue dương, lớn hơn phần số của mọi mã hiện có cùng loại. Khi cấp mã, phải lưu bộ đếm mới cùng dữ liệu được tạo trong luồng nghiệp vụ; xóa không giảm bộ đếm. Tràn kiểu số phải báo lỗi.
+Đoạn `sequences.txt` ở trên là thiết kế cũ, không phải định dạng được dùng để cấp ID hiện nay. `IdGenerator::generateNextId(entity, existingIds)` nhận danh sách ID đang có trong bộ nhớ, tìm số lớn nhất và trả mã kế tiếp dạng ba chữ cái + bốn chữ số (`MOV0001` đến `MOV9999`). Các loại hợp lệ: USR/MOV/ROM/SHW/TKT/INV/MEM. Danh sách rỗng bắt đầu từ 0001; mã sai định dạng hoặc hết dải sẽ ném lỗi. Không đọc/ghi `sequences.txt` trong luồng cấp mã. Nếu xóa bản ghi có ID lớn nhất, mã đó có thể được cấp lại. Nhóm đã chọn giữ cơ chế này ở giai đoạn hiện tại; thay đổi sang bộ đếm bền vững cần được thống nhất riêng.
 
 ## 3. Tải và kiểm tra
 
@@ -144,11 +144,10 @@ MEM|1
 
 Thứ tự khởi động mục tiêu là: đọc và kiểm tra file, dựng dữ liệu trong bộ nhớ rồi mới phục vụ thao tác. Dự án dự kiến chỉ có một phiên ứng dụng thao tác trên bộ dữ liệu tại một thời điểm.
 
-File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: tạo mọi file TXT không có dòng schema hoặc tiêu đề; bộ đếm trong `sequences.txt` bắt đầu từ 1.
+File thiếu trong bộ dữ liệu có sẵn không tự coi là rỗng. Báo file/dòng lỗi và chặn ghi. Khởi tạo bộ dữ liệu mới là thao tác riêng: tạo các file TXT nghiệp vụ không có dòng schema hoặc tiêu đề. `sequences.txt` không cần cho cơ chế cấp ID hiện hành.
 
 ## 4. Đọc và ghi TXT theo thiết kế mục tiêu
 
 Repository dùng `FileIO` để đọc các dòng TXT, kiểm tra định dạng, khóa và tham chiếu rồi chuyển thành Model trong RAM. Khi nghiệp vụ yêu cầu lưu, Repository chuyển dữ liệu thành các dòng và gọi `FileIO` ghi **toàn bộ nội dung** từng file tương ứng; không append từng bản ghi. `FileIO` chỉ đọc/ghi dòng, không hiểu quy tắc nghiệp vụ.
 
 Nếu đọc hoặc ghi thất bại, phải báo lỗi rõ ràng. Không bỏ qua bản ghi sai hoặc âm thầm ghi đè dữ liệu không hợp lệ. Khi một nghiệp vụ ghi nhiều file, các lần ghi diễn ra tuần tự và **không nguyên tử**: lỗi hoặc gián đoạn có thể khiến dữ liệu giữa các file không nhất quán. Luồng xử lý phải kiểm tra kết quả từng lần ghi và không báo thành công khi có lỗi. Thiết kế mục tiêu không dùng `TransactionManager`, backup giao dịch hay phục hồi lúc khởi động.
-
