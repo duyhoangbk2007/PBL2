@@ -69,6 +69,7 @@ vector<Seat*> BookingService::getAvailableSeats(const string& showtimeId)
     }
     return result;
 }
+
 bool BookingService::calculateBooking(const string& showtimeId, const vector<BookingItem>& items, const string& memberId, BookingSummary& summary)
 {
     summary = BookingSummary{};
@@ -164,7 +165,6 @@ bool BookingService::calculateBooking(const string& showtimeId, const vector<Boo
     return true;
 }
 
-
 bool BookingService::createBooking(const string& showtimeId,
                                    const vector<BookingItem>& items,
                                    const string& memberId,
@@ -203,7 +203,6 @@ bool BookingService::createBooking(const string& showtimeId,
     string staffId = staff.getUserId();
     string createdAt = DateTime::getCurrentDateTime();
     Showtime* showtime = showtimeRepo.findById(showtimeId);
-
     Member* member = nullptr;
     if (!memberId.empty())
     {
@@ -245,13 +244,12 @@ bool BookingService::createBooking(const string& showtimeId,
     }
 
     // 7. Kiem tra gioi han diem
-    if (member != nullptr &&
-        summary.earnedPoints > numeric_limits<int>::max() - member->getPoints())
+    if (member != nullptr && summary.earnedPoints > numeric_limits<int>::max() - member->getPoints())
     {
         return false;
     }
 
-    vector<double> basePrices;
+    vector<double> basePrices; // lưu giá gốc
     vector<int> ticketPoints;
     for (size_t i = 0; i < items.size(); i++)
     {
@@ -264,34 +262,14 @@ bool BookingService::createBooking(const string& showtimeId,
         ticketPoints.push_back(pricingService.calculatePoints(summary.ticketPrices[i], member != nullptr));
     }
 
-    vector<string> addedTicketIds;
-    addedTicketIds.reserve(items.size());
-    bool invoiceAdded = false;
-    bool ticketAddFailed = false;
+    vector<string> addedTicketIds; // theo dõi các id vừa thêm
+    addedTicketIds.reserve(items.size()); //thêm dung lượng cho vector
+    bool invoiceAdded = false; // Đánh dấu Invoice đã được thêm hay chưa
+    bool ticketAddFailed = false; // vé thêm vào bị lỗi
     int oldPoints = member == nullptr ? 0 : member->getPoints();
-    auto rollback = [&]()
-    {
-        if (member != nullptr)
-        {
-            member->setPoints(oldPoints);
-        }
-        for (int i = static_cast<int>(addedTicketIds.size()) - 1; i >= 0; i--)
-        {
-            if (!ticketRepo.rollbackPending(addedTicketIds[i]))
-            {
-                throw runtime_error("Khong the rollback Ticket trong RAM");
-            }
-        }
-        if (invoiceAdded && !invoiceRepo.rollbackPending(newInvoiceId))
-        {
-            throw runtime_error("Khong the rollback Invoice trong RAM");
-        }
-    };
-
     try
     {
-        Invoice* invoice = new Invoice(newInvoiceId, showtimeId, staffId,
-                                       memberId, createdAt, summary.totalAmount);
+        Invoice* invoice = new Invoice(newInvoiceId, showtimeId, staffId, memberId, createdAt, summary.totalAmount);
         try
         {
             if (!invoiceRepo.add(invoice))
@@ -306,7 +284,7 @@ bool BookingService::createBooking(const string& showtimeId,
             throw;
         }
         invoiceAdded = true;
-
+        // Tạo từng vé
         for (size_t i = 0; i < items.size(); i++)
         {
             double paidAmount = summary.ticketPrices[i];
@@ -341,12 +319,12 @@ bool BookingService::createBooking(const string& showtimeId,
     }
     catch (...)
     {
-        rollback();
+        rollbackBooking(addedTicketIds,newInvoiceId, invoiceAdded, member, oldPoints);
         throw;
     }
     if (ticketAddFailed)
     {
-        rollback();
+        rollbackBooking(addedTicketIds,newInvoiceId, invoiceAdded, member, oldPoints);
         return false;
     }
 
@@ -373,6 +351,32 @@ bool BookingService::createBooking(const string& showtimeId,
     }
     invoiceId = newInvoiceId;
     return true;
+}
+
+void BookingService::rollbackBooking(const vector<string>& addedTicketIds,
+                                     const string& invoiceId,
+                                     bool invoiceAdded,
+                                     Member* member,
+                                     int oldPoints)
+{
+    // Khoi phuc diem thanh vien
+    if (member != nullptr)
+    {
+        member->setPoints(oldPoints);
+    }
+    // Rollback Ticket theo thu tu nguoc
+    for (int i = static_cast<int>(addedTicketIds.size()) - 1; i >= 0; i--)
+    {
+        if (!ticketRepo.rollbackPending(addedTicketIds[i]))
+        {
+            throw runtime_error("Khong the rollback Ticket trong RAM");
+        }
+    }
+    // Rollback Invoice sau khi da xoa het Ticket
+    if (invoiceAdded && !invoiceRepo.rollbackPending(invoiceId))
+    {
+        throw runtime_error("Khong the rollback Invoice trong RAM");
+    }
 }
 
 
