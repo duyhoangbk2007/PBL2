@@ -65,3 +65,6 @@ QLabel#legend { background: #e6eaf1; color: #43516f; border: 1px solid #cbd4e0; 
 QLabel#legend[kind="VIP"] { background: #eceaff; color: #5547a7; }
 QLabel#legend[kind="COUPLE"] { background: #fcecf4; color: #934a73; }
 QLabel#legend[kind="Ô trống (+)"] { background: white; border-style: dashed; }
+QLabel#demoNotice { background: #fff4e5; color: #805115; border: 1px solid #eed9b7; border-radius: 9px; padding: 9px 12px; }
+QLabel#priceValue { color: #455fe1; font-size: 21px; font-weight: bold; }
+QLabel#priceRules { background: #fff; border: 1px solid #e1e6ee; border-radius: 14px; padding: 18px; }

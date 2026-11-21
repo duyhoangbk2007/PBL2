@@ -10,7 +10,10 @@ ApplicationContext::ApplicationContext(const QString& dataDirectory)
       roomRepo(QDir(dataDirectory).filePath("rooms.txt").toStdString()),
       seatRepo(QDir(dataDirectory).filePath("seats.txt").toStdString(), roomRepo),
       showtimeRepo(QDir(dataDirectory).filePath("showtimes.txt").toStdString(), movieRepo, roomRepo),
-      auth(users, permissions), movies(movieRepo, auth), rooms(roomRepo, auth), seats(seatRepo, auth)
+      memberRepo(QDir(dataDirectory).filePath("members.txt").toStdString()),
+      pricingRepo(QDir(dataDirectory).filePath("pricing.txt").toStdString()),
+      auth(users, permissions), movies(movieRepo, auth), rooms(roomRepo, auth), seats(seatRepo, auth),
+      showtimes(showtimeRepo, movieRepo, roomRepo, auth), staff(users, auth), members(memberRepo, auth), pricing(pricingRepo, auth)
 {
 }
 
@@ -32,6 +35,24 @@ QString ApplicationContext::load()
         return error();
     }
 
+    source = "pricing.txt";
+    try {
+        if (!pricing.load()) {
+            pricingError = error();
+        }
+    } catch (const std::exception&) {
+        pricingError = error();
+    }
+
+    source = "members.txt";
+    try {
+        if (!members.load()) {
+            memberError = error();
+        }
+    } catch (const std::exception&) {
+        memberError = error();
+    }
+
     // Login remains available if a catalog or its references could not be loaded.
     try {
         source = "movies.txt";
@@ -50,7 +71,7 @@ QString ApplicationContext::load()
             return {};
         }
         source = "showtimes.txt";
-        if (!showtimeRepo.load()) {
+        if (!showtimes.load()) {
             catalogError = error();
         }
     } catch (const std::exception&) {

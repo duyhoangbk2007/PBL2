@@ -16,9 +16,14 @@
 #include <QStackedWidget>
 #include <QTest>
 
+int testHistory();
+
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    if (app.arguments().contains("--history")) {
+        return testHistory();
+    }
     QTemporaryDir data;
     const auto secret = QUuid::createUuid().toByteArray(QUuid::WithoutBraces);
     QFile users(data.filePath("users.txt"));
@@ -27,7 +32,8 @@ int main(int argc, char* argv[])
     }
     users.write("USR0001|manager|" + secret + "|Quan ly rap|ADMIN|1\n"
                 "USR0002|cashier|" + secret + "|Nhan vien rap|STAFF|1\n"
-                "USR0003|inactive|" + secret + "|Tai khoan khoa|STAFF|0\n");
+                "USR0003|inactive|" + secret + "|Tai khoan khoa|STAFF|0\n"
+                "USR0004|second|" + secret + "|Thu ngan|STAFF|1\n");
     users.close();
     ApplicationContext missing(data.path());
     const QString startupError = missing.load();
@@ -37,10 +43,10 @@ int main(int argc, char* argv[])
         return 1;
     }
     const auto permissionsPath = data.filePath("role_permissions.txt");
-    if (!QFile::copy(PBL2_PERMISSIONS_FILE, permissionsPath)) {
+    if (!QFile::copy(QString(PBL2_GUI_FIXTURES) + "/role_permissions.txt", permissionsPath)) {
         return 1;
     }
-    for (const QString file : {"movies.txt", "rooms.txt", "seats.txt", "showtimes.txt"}) {
+    for (const QString file : {"movies.txt", "rooms.txt", "seats.txt", "showtimes.txt", "members.txt", "pricing.txt"}) {
         if (!QFile::copy(QString(PBL2_GUI_FIXTURES) + "/" + file, data.filePath(file))) {
             return 1;
         }
@@ -53,6 +59,11 @@ int main(int argc, char* argv[])
     }
     MainWindow window(context, error);
     window.show();
+    const auto captures = qEnvironmentVariable("PBL2_CATALOG_SCREENSHOTS");
+    if (!captures.isEmpty()) {
+        QApplication::processEvents();
+        if (!window.grab().save(QDir(captures).filePath("dang-nhap.png"))) { return 1; }
+    }
     auto signIn = [&](MainWindow& target, const QString& name, const QString& pass) {
         target.findChild<QLineEdit*>("username")->setText(name);
         target.findChild<QLineEdit*>("password")->setText(pass);
@@ -62,7 +73,8 @@ int main(int argc, char* argv[])
         QApplication::processEvents();
         return busy;
     };
-    if (!window.findChild<QPushButton*>("signIn")->isVisible() ||
+    if (window.findChild<QStackedWidget*>("pages") || context.auth.hasPermission("TICKET_SELL") ||
+        !window.findChild<QPushButton*>("signIn")->isVisible() ||
         window.findChild<QLineEdit*>("password")->echoMode() != QLineEdit::Password ||
         !signIn(window, "manager", secret + "-incorrect") || context.auth.isLoggedIn() ||
         !window.findChild<QLabel*>("loginError")->isVisible() ||
@@ -81,7 +93,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    for (const QSize size : {QSize(1280, 820), QSize(960, 580)}) {
+    for (const QSize size : {QSize(1280, 820), QSize(1366, 768), QSize(960, 580)}) {
         window.resize(size);
         for (int i = 0; i < pages->count(); ++i) {
             auto* button = buttons->button(i);
@@ -89,9 +101,10 @@ int main(int argc, char* argv[])
             QApplication::processEvents();
             QTest::mouseClick(button, Qt::LeftButton);
             auto* heading = pages->currentWidget()->findChild<QLabel*>("pageTitle");
-            if (!heading || pages->currentIndex() != i || buttons->checkedId() != i ||
+            if (window.size() != size || !heading || pages->currentIndex() != i || buttons->checkedId() != i ||
                 crumb->text() != button->accessibleName() || heading->text() != crumb->text()) {
-                qCritical("Navigation failed at page %d", i);
+                qCritical() << "Navigation failed" << i << pages->currentIndex() << button->accessibleName()
+                            << "requested" << size << "actual" << window.size();
                 return 1;
             }
         }
@@ -120,14 +133,14 @@ int main(int argc, char* argv[])
             && window.findChild<QLineEdit*>("username")->text().isEmpty()
             && window.findChild<QLineEdit*>("password")->text().isEmpty();
     };
-    if (!logout() || !signIn(window, "cashier", secret) || !context.auth.isStaff()) {
+    if (!logout() || !signIn(window, "cashier2", secret) || !context.auth.isStaff()) {
         qCritical("Account switch failed");
         return 1;
     }
     buttons = window.findChild<QButtonGroup*>();
     if (buttons->buttons().size() != 8 || buttons->checkedButton()->accessibleName() != "Bán vé tại quầy" ||
-        window.findChild<QLabel*>("account")->text() != "Nhan vien rap" ||
-        window.findChild<QLabel*>("accountStatus")->text() != "cashier · STAFF") {
+        window.findChild<QLabel*>("account")->text() != "Nhan vien moi" ||
+        window.findChild<QLabel*>("accountStatus")->text() != "cashier2 · STAFF") {
         qCritical("Staff landing page, header or permission count failed");
         return 1;
     }

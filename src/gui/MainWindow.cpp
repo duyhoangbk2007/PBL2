@@ -4,6 +4,14 @@
 #include "MovieManagementView.h"
 #include "RoomManagementView.h"
 #include "SeatMapView.h"
+#include "BookingView.h"
+#include "InvoiceHistoryView.h"
+#include "TicketCancellationView.h"
+#include "ReportView.h"
+#include "PricingManagementView.h"
+#include "ShowtimeManagementView.h"
+#include "StaffManagementView.h"
+#include "MemberManagementView.h"
 #include "../business/AuthService.h"
 
 #include <QButtonGroup>
@@ -46,6 +54,9 @@ const Page navigation[] = {
 
 bool canOpen(const AuthService& auth, const QString& permission)
 {
+    if (permission == "TICKET_CANCEL" && !auth.isAdmin()) {
+        return false;
+    }
     if (auth.hasPermission(permission.toStdString())) {
         return true;
     }
@@ -76,7 +87,14 @@ QWidget* createPage(const Page& page, QWidget* content)
 
     if (content) {
         layout->addWidget(content, 1);
-        return view;
+        auto* scroll = new QScrollArea;
+        scroll->setObjectName("pageScroll");
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setWidgetResizable(true);
+        scroll->setWidget(view);
+        scroll->viewport()->setAutoFillBackground(false);
+        view->setAutoFillBackground(false);
+        return scroll;
     }
     auto* panel = new QFrame;
     panel->setObjectName("panel");
@@ -131,6 +149,7 @@ void MainWindow::openSession()
     pages = new QStackedWidget;
     pages->setObjectName("pages");
     currentTitle = label({}, "crumbTitle");
+    currentTitle->setWordWrap(true);
     auto* shell = new QWidget;
     shell->setObjectName("shell");
     screens->addWidget(shell);
@@ -226,7 +245,7 @@ QWidget* MainWindow::createSidebar()
         line->addWidget(label(page.title, "navTitle"), 1);
         items->addWidget(button);
         QWidget* content = nullptr;
-        const bool catalog = page.permission == "MOVIE_VIEW" || page.permission == "ROOM_VIEW" || page.permission == "SEAT_VIEW";
+        const bool catalog = page.permission == "MOVIE_VIEW" || page.permission == "ROOM_VIEW" || page.permission == "SEAT_VIEW" || page.permission == "SHOWTIME_VIEW";
         if (catalog && !context.catalogError.isEmpty()) {
             content = label(context.catalogError, "description");
         } else if (page.permission == "MOVIE_VIEW") {
@@ -234,11 +253,39 @@ QWidget* MainWindow::createSidebar()
             content = movies;
             connect(movies, &CatalogView::openRelated, this, [navigate](const QString& id) {
                 if (auto* target = navigate("SHOWTIME_VIEW")) {
-                    // TODO: BACKEND INTEGRATION — consume this filter in the phase 4 view.
-                    target->setProperty("movieFilter", id);
-                    target->findChild<QLabel*>("empty")->setText("Bộ lọc phim: " + id + " · Chờ tích hợp suất chiếu.");
+                    if (auto* shows = target->findChild<ShowtimeManagementView*>()) {
+                        shows->refresh(id);
+                    }
                 }
             });
+        } else if (page.permission == "PRICING_VIEW") {
+            if (context.pricingError.isEmpty()) {
+                content = new PricingManagementView(context.pricing, auth);
+            } else {
+                content = label(context.pricingError, "description");
+            }
+        } else if (page.permission == "INVOICE_VIEW_OWN") {
+            content = new InvoiceHistoryView(auth);
+        } else if (page.permission == "TICKET_CANCEL") {
+            content = new TicketCancellationView(auth);
+        } else if (page.permission == "REPORT_VIEW") {
+            content = new ReportView(auth);
+        } else if (page.permission == "TICKET_SELL") {
+            if (context.catalogError.isEmpty()) {
+                content = new BookingView(context);
+            } else {
+                content = label(context.catalogError, "description");
+            }
+        } else if (page.permission == "SHOWTIME_VIEW") {
+            content = new ShowtimeManagementView(context.showtimes, context.movies, context.rooms, auth);
+        } else if (page.permission == "STAFF_VIEW") {
+            content = new StaffManagementView(context.staff, auth);
+        } else if (page.permission == "MEMBER_VIEW") {
+            if (context.memberError.isEmpty()) {
+                content = new MemberManagementView(context.members, auth);
+            } else {
+                content = label(context.memberError, "description");
+            }
         } else if (page.permission == "ROOM_VIEW") {
             auto* rooms = new RoomManagementView(context.rooms, auth);
             content = rooms;
@@ -275,13 +322,28 @@ QWidget* MainWindow::createSidebar()
                 pages->setCurrentIndex(index);
                 currentTitle->setText(button->accessibleName());
                 auto* current = pages->currentWidget();
-                if (permission == "SEAT_VIEW") {
+                if (permission == "PRICING_VIEW") {
+                    if (auto* prices = current->findChild<PricingManagementView*>()) {
+                        prices->refresh();
+                    }
+                } else if (permission == "TICKET_SELL") {
+                    if (auto* booking = current->findChild<BookingView*>()) {
+                        booking->refresh();
+                    }
+                } else if (permission == "SEAT_VIEW") {
                     if (auto* map = current->findChild<SeatMapView*>("seatMap")) {
                         map->refresh();
                     }
                 } else if (permission == "SHOWTIME_VIEW") {
-                    current->setProperty("movieFilter", {});
-                    current->findChild<QLabel*>("empty")->setText("Chức năng đang chờ tích hợp.");
+                    if (auto* shows = current->findChild<ShowtimeManagementView*>()) {
+                        shows->refresh();
+                    }
+                } else if (permission == "STAFF_VIEW") {
+                    current->findChild<StaffManagementView*>()->refresh();
+                } else if (permission == "MEMBER_VIEW") {
+                    if (auto* members = current->findChild<MemberManagementView*>()) {
+                        members->refresh();
+                    }
                 }
             }
         });
@@ -296,7 +358,7 @@ QWidget* MainWindow::createHeader()
     header->setObjectName("header");
     header->setFixedHeight(78);
     auto* row = new QHBoxLayout(header);
-    row->setContentsMargins(36, 0, 36, 0);
+    row->setContentsMargins(22, 0, 22, 0);
     row->setSpacing(10);
     row->addWidget(label("PBL2 Cinema  /", "crumb"));
     row->addWidget(currentTitle);
@@ -306,9 +368,14 @@ QWidget* MainWindow::createHeader()
     account->setSpacing(1);
     const User* user = auth.getCurrentUser();
     if (user) {
-        account->addWidget(label(QString::fromStdString(user->getFullName()), "account"));
+        auto* name = label(QString::fromStdString(user->getFullName()), "account");
+        name->setWordWrap(true);
+        name->setToolTip(name->text());
+        account->addWidget(name);
         const QString role = auth.isAdmin() ? "ADMIN" : "STAFF";
-        account->addWidget(label(QString::fromStdString(user->getUsername()) + " · " + role, "accountStatus"));
+        auto* identity = label(QString::fromStdString(user->getUsername()) + " · " + role, "accountStatus");
+        identity->setWordWrap(true);
+        account->addWidget(identity);
     }
     row->addLayout(account);
     auto* avatar = label(auth.isAdmin() ? "A" : "S", "avatar");

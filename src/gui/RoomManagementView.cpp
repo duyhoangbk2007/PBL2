@@ -13,7 +13,7 @@ RoomManagementView::RoomManagementView(RoomService& service, AuthService& auth)
     : CatalogView({"Mã phòng", "Tên phòng", "Hàng", "Cột", "Trạng thái", "Sơ đồ"}),
       service(service), auth(auth)
 {
-    pending("Thêm phòng", auth.hasPermission("ROOM_ADD"), "Đang chờ Service cấp mã phòng.");
+    pending("Thêm phòng", auth.hasPermission("ROOM_ADD"), "Service đã cấp mã. Đang chờ tích hợp lưu phòng mới.");
     action("Sửa", auth.hasPermission("ROOM_UPDATE"), [this] { edit(); });
     pending("Bật / tắt", auth.hasPermission("ROOM_UPDATE"), "Chưa có API thay đổi trạng thái phòng trên nhánh này.");
     action("Xóa", auth.hasPermission("ROOM_DELETE"), [this] { remove(); });

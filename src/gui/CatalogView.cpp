@@ -1,5 +1,7 @@
 #include "CatalogView.h"
 #include <QFormLayout>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
@@ -17,6 +19,20 @@ void CatalogUi::run(QLabel* status, const std::function<void()>& action)
     } catch (const std::exception& error) {
         status->setText(QString("Không thực hiện được thao tác. %1").arg(QString::fromUtf8(error.what())));
     }
+}
+
+bool CatalogUi::confirmForm(QDialog& dialog, QFormLayout& form, bool creating)
+{
+    QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    if (creating) {
+        // TODO: BACKEND INTEGRATION — persist the issued ID together with the new entity.
+        form.addRow(new QLabel("Service đã cấp mã. Đang chờ tích hợp lưu bản ghi mới."));
+        buttons.button(QDialogButtonBox::Ok)->setEnabled(false);
+    }
+    form.addRow(&buttons);
+    QObject::connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    return dialog.exec() == QDialog::Accepted && !creating;
 }
 
 void CatalogUi::result(QLabel* status, bool changed)
@@ -75,7 +91,9 @@ void CatalogView::append(const QStringList& values, const QString& link, const Q
     const int row = table->rowCount();
     table->insertRow(row);
     for (int i = 0; i < values.size(); ++i) {
-        table->setItem(row, i, new QTableWidgetItem(values.at(i)));
+        auto* cell = new QTableWidgetItem(values.at(i));
+        cell->setToolTip(values.at(i));
+        table->setItem(row, i, cell);
     }
     if (!link.isEmpty()) {
         auto* button = new QPushButton(link);

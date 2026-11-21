@@ -4,7 +4,10 @@
 #include "../business/MovieService.h"
 #include "../business/RoomService.h"
 #include "../business/SeatService.h"
-#include "../data_access/ShowtimeRepository.h"
+#include "../business/ShowtimeService.h"
+#include "../business/StaffService.h"
+#include "../business/MemberService.h"
+#include "../business/PricingService.h"
 #include <QString>
 
 class ApplicationContext
@@ -17,6 +20,8 @@ private:
     RoomRepository roomRepo;
     SeatRepository seatRepo;
     ShowtimeRepository showtimeRepo;
+    MemberRepository memberRepo;
+    PricingRepository pricingRepo;
 
 public:
     explicit ApplicationContext(const QString& dataDirectory);
@@ -25,5 +30,11 @@ public:
     MovieService movies;
     RoomService rooms;
     SeatService seats;
+    ShowtimeService showtimes;
+    StaffService staff;
+    MemberService members;
+    PricingService pricing;
+    QString pricingError;
+    QString memberError;
     QString catalogError;
 };

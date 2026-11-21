@@ -10,9 +10,11 @@ class QPushButton;
 class QTableWidget;
 class QFormLayout;
 class QSpinBox;
+class QDialog;
 
 namespace CatalogUi {
 void run(QLabel* status, const std::function<void()>& action);
+bool confirmForm(QDialog& dialog, QFormLayout& form, bool creating);
 void result(QLabel* status, bool changed);
 QSpinBox* number(QFormLayout& form, const QString& caption, int value, int minimum);
 }
@@ -33,5 +35,5 @@ protected:
     void action(const QString& caption, bool allowed, const std::function<void()>& handler);
     void pending(const QString& caption, bool allowed, const QString& reason);
     QString selectedId() const;
-    void filter();
+    virtual void filter();
 };

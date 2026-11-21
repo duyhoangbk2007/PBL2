@@ -13,9 +13,23 @@ MovieManagementView::MovieManagementView(MovieService& service, AuthService& aut
     : CatalogView({"Mã phim", "Tên phim", "Thể loại", "Phút", "Tuổi", "Khởi chiếu", "Kết thúc", "Trạng thái", "Suất chiếu"}),
       service(service), auth(auth)
 {
-    pending("Thêm phim", auth.hasPermission("MOVIE_ADD"), "Đang chờ Service cấp mã phim.");
+    pending("Thêm phim", auth.hasPermission("MOVIE_ADD"), "Service đã cấp mã. Đang chờ tích hợp lưu phim mới.");
     action("Sửa", auth.hasPermission("MOVIE_UPDATE"), [this] { edit(); });
-    pending("Bật / tắt", auth.hasPermission("MOVIE_UPDATE"), "Chưa có API thay đổi trạng thái phim trên nhánh này.");
+    action("Bật / tắt", auth.hasPermission("MOVIE_UPDATE"), [this] {
+        const auto id = selectedId().toStdString();
+        const auto* film = this->service.findMovieById(id);
+        if (!film) {
+            status->setText("Hãy chọn một phim trong danh sách.");
+            return;
+        }
+        const bool activate = !film->isActive();
+        const QString caption = activate ? "Bật hoạt động" : "Ngừng hoạt động";
+        if (QMessageBox::question(this, caption, caption + " phim " + QString::fromStdString(id) + "?",
+                                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
+            CatalogUi::result(status, this->service.setMovieActive(id, activate));
+            refresh();
+        }
+    });
     action("Xóa", auth.hasPermission("MOVIE_DELETE"), [this] { remove(); });
     refresh();
 }
