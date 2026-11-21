@@ -1,5 +1,6 @@
 #include "StaffService.h"
-
+#include "../utils/IdGenerator.h"
+#include <vector>
 using namespace std;
 
 StaffService::StaffService(UserRepository& staffRepo, AuthService& authService)
@@ -16,15 +17,54 @@ bool StaffService::save()
     return staffRepo.save();
 }
 
+
 bool StaffService::addStaff(User* staff)
 {
     authService.requirePermission("STAFF_ADD");
-    if (staff == nullptr || staff->getRole() != UserRole::STAFF)
+
+    if (!staffRepo.isLoaded() ||
+        staff == nullptr ||
+        staff->getRole() != UserRole::STAFF)
     {
         return false;
     }
-    return staffRepo.add(staff);
+    vector<string> existingIds;
+
+    for (int i = 0; i < staffRepo.count(); i++)
+    {
+        User* current = staffRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getUserId());
+    }
+
+    string userId = IdGenerator::generateNextId("USR", existingIds);
+
+    User* newStaff = new User(userId,
+                              staff->getUsername(),
+                              staff->getPassword(),
+                              staff->getFullName(),
+                              UserRole::STAFF,
+                              staff->isActive());
+
+    try
+    {
+        if (!staffRepo.add(newStaff))
+        {
+            delete newStaff;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newStaff;
+        throw;
+    }
+    return true;
 }
+
 
 bool StaffService::updateStaff(const User& newValues)
 {

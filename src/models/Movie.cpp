@@ -124,7 +124,6 @@ bool Movie::unlinkShowtime(Showtime* showtime)
     return false;
 }
 
-
 Showtime* Movie::findShowtime(const std::string& showtimeId) {
     int n = this->showtimes.nodeCount();
     for (int i = 0; i < n; i++)
@@ -137,4 +136,13 @@ Showtime* Movie::findShowtime(const std::string& showtimeId) {
 }
 int Movie::getShowtimeCount() const {
     return this->showtimes.nodeCount();
+}
+
+const Showtime* Movie::getShowtimeAt(int index)
+{
+    if (index < 0 || index >= showtimes.nodeCount())
+    {
+        return nullptr;
+    }
+    return showtimes.getAt(index)->data;
 }

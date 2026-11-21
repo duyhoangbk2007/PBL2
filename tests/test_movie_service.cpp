@@ -1,588 +1,302 @@
-
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 #include <stdexcept>
-
+#include <string>
+#include <vector>
+#include <ctime>
 #include "../src/business/MovieService.h"
+#include "../src/models/Showtime.h"
+#include "../src/utils/DateTime.h"
 
 using namespace std;
 
 int passed = 0;
 int failed = 0;
-
 const string USER_FILE = "test_service_users.txt";
 const string MOVIE_FILE = "test_service_movies.txt";
 const string PERMISSION_FILE = "test_service_permissions.txt";
 
-void check(const string& name, bool actual, bool expected)
+void check(const string& name, bool actual, bool expected = true)
 {
     if (actual == expected)
     {
-        cout << "[PASS] " << name << endl;
-        passed++;
+        cout << "[PASS] " << name << '\n';
+        ++passed;
     }
     else
     {
-        cout << "[FAIL] " << name << endl;
-        failed++;
+        cout << "[FAIL] " << name << " (actual=" << actual
+             << ", expected=" << expected << ")\n";
+        ++failed;
     }
 }
 
-void writeTestFiles()
+template <typename Action>
+bool throwsRuntimeError(Action action)
 {
-    ofstream users(USER_FILE);
+    try { action(); }
+    catch (const runtime_error&) { return true; }
+    return false;
+}
+
+void writeFiles(const string& permissions =
+    "ADMIN|MOVIE_ADD\nADMIN|MOVIE_UPDATE\nADMIN|MOVIE_DELETE\n"
+    "ADMIN|MOVIE_VIEW\nSTAFF|MOVIE_VIEW\n")
+{
+    ofstream users(USER_FILE, ios::trunc);
     users << "USR0001|admin|AdminPass|Admin User|ADMIN|1\n";
     users << "USR0002|staff|StaffPass|Staff User|STAFF|1\n";
     users.close();
 
-    ofstream movies(MOVIE_FILE);
-    movies << "MOV0001|Avatar|Action|120|13|2026-01-01|2026-12-31|1\n";
+    ofstream movies(MOVIE_FILE, ios::trunc);
+    movies << "MOV0001|Avatar|Action|120|13|2020-01-01|2099-12-31|1\n";
     movies.close();
 
-    ofstream permissions(PERMISSION_FILE);
-    permissions << "ADMIN|MOVIE_VIEW\nADMIN|MOVIE_ADD\n"
-                << "ADMIN|MOVIE_UPDATE\nADMIN|MOVIE_DELETE\n"
-                << "STAFF|MOVIE_VIEW\n";
+    ofstream perms(PERMISSION_FILE, ios::trunc);
+    perms << permissions;
 }
 
-void testNotLoggedIn()
+Movie* makeMovie(const string& id, const string& title = "Test Movie",
+                 int duration = 120, bool active = true,
+                 const string& release = "2020-01-01",
+                 const string& end = "2099-12-31")
 {
-    cout << "\n===== TEST NOT LOGGED IN =====\n";
-
-    UserRepository userRepo(USER_FILE);
-    MovieRepository movieRepo(MOVIE_FILE);
-
-    userRepo.load();
-    movieRepo.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService authService(userRepo, permissionRepo);
-    MovieService movieService(movieRepo, authService);
-
-    bool threw = false;
-
-    try
-    {
-        movieService.findMovieById("MOV0001");
-    }
-    catch (const runtime_error& e)
-    {
-        threw = true;
-    }
-
-    check("Chua dang nhap khong duoc tim phim", threw, true);
-
-    threw = false;
-
-    try
-    {
-        movieService.getMovieAt(0);
-    }
-    catch (const runtime_error& e)
-    {
-        threw = true;
-    }
-
-    check("Chua dang nhap khong duoc lay phim", threw, true);
-
-    threw = false;
-
-    try
-    {
-        movieService.getMovieCount();
-    }
-    catch (const runtime_error& e)
-    {
-        threw = true;
-    }
-
-    check("Chua dang nhap khong duoc dem phim", threw, true);
+    return new Movie(id, title, "Action", duration, 13, release, end, active);
 }
 
-void testAdmin()
+// Each fixture gets fresh files and repositories. Destruction order:
+// service -> auth -> permissions -> movies -> users.
+struct Fixture
 {
-    cout << "\n===== TEST ADMIN =====\n";
+    UserRepository users;
+    MovieRepository movies;
+    RolePermissionRepository permissions;
+    AuthService auth;
+    MovieService service;
 
-    UserRepository userRepo(USER_FILE);
-    MovieRepository movieRepo(MOVIE_FILE);
+    Fixture()
+        : users(USER_FILE), movies(MOVIE_FILE), permissions(PERMISSION_FILE),
+          auth(users, permissions), service(movies, auth)
+    {
+        check("Load users", users.load());
+        check("Load movies", service.load());
+        check("Load permissions", permissions.load());
+    }
 
-    userRepo.load();
-    movieRepo.load();
+    void loginAdmin() { check("Admin login", auth.login("admin", "AdminPass")); }
+    void loginStaff() { check("Staff login", auth.login("staff", "StaffPass")); }
+};
 
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService authService(userRepo, permissionRepo);
-    MovieService movieService(movieRepo, authService);
-
-    // Dang nhap Admin
-    check("Admin dang nhap",
-          authService.login("admin", "AdminPass"), true);
-
-    // Tim phim theo ID
-    const Movie* movie = movieService.findMovieById("MOV0001");
-
-    check("Admin tim phim",
-          movie != nullptr, true);
-
-    // Lay phim theo vi tri
-    const Movie* movieAt = movieService.getMovieAt(0);
-
-    check("Admin lay phim",
-          movieAt != nullptr, true);
-
-    // Lay so luong phim
-    check("Admin dem phim",
-          movieService.getMovieCount() == 1, true);
-}
-
-void testStaff()
+void testBasicCrud()
 {
-    cout << "\n===== TEST STAFF =====\n";
+    cout << "\n===== CRUD =====\n";
+    writeFiles();
+    Fixture f;
+    f.loginAdmin();
+    check("Initial count", f.service.getMovieCount() == 1);
+    check("Find existing", f.service.findMovieById("MOV0001") != nullptr);
+    check("Find missing", f.service.findMovieById("MOV9999") == nullptr);
+    check("Get at 0", f.service.getMovieAt(0) != nullptr);
+    check("Get negative index", f.service.getMovieAt(-1) == nullptr);
+    check("Get out of range", f.service.getMovieAt(999) == nullptr);
 
-    UserRepository userRepo(USER_FILE);
-    MovieRepository movieRepo(MOVIE_FILE);
+    Movie* added = makeMovie("MOV0002");
+    bool ok = f.service.addMovie(added);
+    check("Add valid", ok);
+    if (!ok) delete added;
+    check("Count after add", f.service.getMovieCount() == 2);
 
-    userRepo.load();
-    movieRepo.load();
+    Movie* duplicate = makeMovie("MOV0002");
+    ok = f.service.addMovie(duplicate);
+    check("Reject duplicate", !ok);
+    if (!ok) delete duplicate;
 
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService authService(userRepo, permissionRepo);
-    MovieService movieService(movieRepo, authService);
+    Movie* invalid = makeMovie("MOV0003", "Bad", 0);
+    ok = f.service.addMovie(invalid);
+    check("Reject invalid duration", !ok);
+    if (!ok) delete invalid;
 
-    // Dang nhap Staff
-    check("Staff dang nhap",
-          authService.login("staff", "StaffPass"), true);
+    Movie updated("MOV0001", "Avatar Updated", "Sci-Fi", 150, 16,
+                  "2021-01-01", "2099-12-31", true);
+    check("Update without showtime", f.service.updateMovie(updated));
+    const Movie* m = f.service.findMovieById("MOV0001");
+    check("Updated fields", m && m->getTitle() == "Avatar Updated" &&
+          m->getDurationMinutes() == 150 && m->getReleaseDate() == "2021-01-01");
 
-    // Staff duoc tra cuu
-    const Movie* movie = movieService.findMovieById("MOV0001");
-
-    check("Staff tim phim",
-          movie != nullptr, true);
-
-    check("Staff lay phim",
-          movieService.getMovieAt(0) != nullptr, true);
-
-    check("Staff dem phim",
-          movieService.getMovieCount() == 1, true);
-
-    // Staff khong duoc them phim
-    Movie* newMovie = new Movie(
-        "MOV0002",
-        "Titanic",
-        "Drama",
-        150,
-        13,
-        "2026-01-01",
-        "2026-12-31",
-        true
-    );
-
-    bool threw = false;
-
-    try
-    {
-        movieService.addMovie(newMovie);
-    }
-    catch (const runtime_error& e)
-    {
-        threw = true;
-    }
-
-    check("Staff khong duoc them phim", threw, true);
-
-    // Kiem tra phim khong bi them vao Repository
-    check("Staff khong lam thay doi du lieu",
-          movieService.getMovieCount() == 1, true);
-
-    // Repository khong nhan quyen so huu con tro khi them that bai
-    delete newMovie;
+    Movie wrongActive("MOV0001", "Avatar Updated", "Sci-Fi", 150, 16,
+                      "2021-01-01", "2099-12-31", false);
+    check("Update cannot change active", !f.service.updateMovie(wrongActive));
+    Movie bad("MOV0001", "Bad", "Action", 0, 13,
+              "2021-01-01", "2099-12-31", true);
+    check("Reject invalid update", !f.service.updateMovie(bad));
+    check("Invalid update preserves title",
+          f.service.findMovieById("MOV0001")->getTitle() == "Avatar Updated");
+    Movie missing("MOV9999", "Missing", "Action", 120, 13,
+                  "2020-01-01", "2099-12-31", true);
+    check("Reject update missing movie", !f.service.updateMovie(missing));
+    check("Reject remove missing", !f.service.removeMovie("MOV9999"));
+    check("Remove unlinked movie", f.service.removeMovie("MOV0002"));
+    check("Removed movie absent", f.service.findMovieById("MOV0002") == nullptr);
+    check("Save", f.service.save());
 }
 
-#include "../src/models/Showtime.h"
-
-// Kiem tra mot thao tac co nem runtime_error hay khong
-template <typename Action>
-bool throwsRuntimeError(Action action)
-{
-    try
-    {
-        action();
-    }
-    catch (const runtime_error&)
-    {
-        return true;
-    }
-    return false;
-}
-
-// Tao phim mau
-Movie* createTestMovie(const string& id, int duration = 120)
-{
-    return new Movie(
-        id, "Test Movie", "Action", duration, 13,
-        "2026-01-01", "2026-12-31", true
-    );
-}
-
-// Test Admin them phim
-void testAddMovie()
-{
-    cout << "\n===== TEST ADD MOVIE =====\n";
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    check("Admin login", auth.login("admin", "AdminPass"), true);
-
-    Movie* movie = createTestMovie("MOV0002");
-    bool added = service.addMovie(movie);
-    check("Admin them phim", added, true);
-
-    if (!added)
-    {
-        delete movie;
-    }
-
-    check("Tim phim vua them",
-          service.findMovieById("MOV0002") != nullptr, true);
-
-    Movie* duplicate = createTestMovie("MOV0002");
-    bool duplicateAdded = service.addMovie(duplicate);
-    check("Khong them trung ID", duplicateAdded, false);
-    if (!duplicateAdded)
-    {
-        delete duplicate;
-    }
-
-    Movie* invalid = createTestMovie("MOV0003", 0);
-    bool invalidAdded = service.addMovie(invalid);
-    check("Khong them phim sai thoi luong", invalidAdded, false);
-    if (!invalidAdded)
-    {
-        delete invalid;
-    }
-
-    check("So luong sau khi them",
-          service.getMovieCount() == 2, true);
-}
-
-// Test Admin cap nhat phim
-void testUpdateMovie()
-{
-    cout << "\n===== TEST UPDATE MOVIE =====\n";
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    auth.login("admin", "AdminPass");
-
-    Movie updated(
-        "MOV0001", "Avatar Updated", "Sci-Fi",
-        150, 16, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Admin update phim", service.updateMovie(updated), true);
-
-    const Movie* movie = service.findMovieById("MOV0001");
-
-    check("Ten phim sau update",
-          movie != nullptr && movie->getTitle() == "Avatar Updated", true);
-
-    Movie changedActive(
-        "MOV0001", "Avatar Updated", "Sci-Fi",
-        150, 16, "2026-01-01", "2026-12-31", false
-    );
-
-    check("Khong cho doi active",
-          service.updateMovie(changedActive), false);
-
-    check("Active khong bi thay doi",
-          service.findMovieById("MOV0001")->isActive(), true);
-
-    Movie missing(
-        "MOV9999", "Missing", "Action",
-        120, 13, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Khong update phim khong ton tai",
-          service.updateMovie(missing), false);
-
-    Movie invalid(
-        "MOV0001", "Invalid", "Action",
-        0, 13, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Khong update du lieu sai",
-          service.updateMovie(invalid), false);
-
-    check("Du lieu cu duoc giu nguyen",
-          service.findMovieById("MOV0001")->getTitle() == "Avatar Updated",
-          true);
-}
-
-// Test rang buoc Showtime
 void testShowtimeRules()
 {
-    cout << "\n===== TEST SHOWTIME RULES =====\n";
+    cout << "\n===== SHOWTIME / ACTIVE =====\n";
+    writeFiles();
+    Fixture f;
+    f.loginAdmin();
+    Movie* movie = f.movies.findById("MOV0001");
+    const string now = DateTime::getCurrentDateTime();
+    const string future = DateTime::addMinutes(now, 180);
 
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
+    time_t pastTime = time(nullptr) - 180 * 60;
+    tm* pastInfo = localtime(&pastTime);
 
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
+    char buffer[20];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", pastInfo);
 
-    auth.login("admin", "AdminPass");
+    const string past = buffer;
 
-    // Showtime duoc tao tren stack va ton tai
-    // trong suot thoi gian Movie su dung no.
-    Showtime showtime(
-        "SHW0001", "MOV0001", "ROM0001",
-        "2026-06-01 10:00", "2026-06-01 12:00",
-        ShowtimeStatus::SCHEDULED
-    );
 
-    Movie* movie = movies.findById("MOV0001");
+    Showtime upcoming("SHW0001", "MOV0001", "ROM0001", future,
+                      DateTime::addMinutes(future, 120), ShowtimeStatus::SCHEDULED);
+    check("Link upcoming showtime", upcoming.linkMovie(movie));
+    check("Get showtime at 0", movie->getShowtimeAt(0) == &upcoming);
+    check("Get showtime invalid", movie->getShowtimeAt(-1) == nullptr &&
+          movie->getShowtimeAt(1) == nullptr);
 
-    check("Lien ket Showtime",
-          showtime.linkMovie(movie), true);
+    Movie changedDuration("MOV0001", "Avatar", "Action", 150, 13,
+                          "2020-01-01", "2099-12-31", true);
+    check("Block duration change with showtime", !f.service.updateMovie(changedDuration));
+    Movie changedDate("MOV0001", "Avatar", "Action", 120, 13,
+                      "2021-01-01", "2099-12-31", true);
+    check("Block date change with showtime", !f.service.updateMovie(changedDate));
+    Movie changedTitle("MOV0001", "New Title", "Action", 120, 13,
+                       "2020-01-01", "2099-12-31", true);
+    check("Allow title change with showtime", f.service.updateMovie(changedTitle));
+    check("Block remove linked movie", !f.service.removeMovie("MOV0001"));
+    check("Block deactivate with future scheduled", !f.service.setMovieActive("MOV0001", false));
+    check("Still active after rejection", movie->isActive());
+    check("Same active state succeeds", f.service.setMovieActive("MOV0001", true));
 
-    check("Phim co mot Showtime",
-          movie->getShowtimeCount() == 1, true);
+    upcoming.setStatus(ShowtimeStatus::CANCELLED);
+    check("Allow deactivate when future cancelled", f.service.setMovieActive("MOV0001", false));
+    check("Inactive persisted in memory", !movie->isActive());
+    check("Same inactive state succeeds", f.service.setMovieActive("MOV0001", false));
+    check("Reactivate", f.service.setMovieActive("MOV0001", true));
+    check("Reactivate changes state", movie->isActive());
+    check("Unlink upcoming", movie->unlinkShowtime(&upcoming));
 
-    Movie changedDates(
-        "MOV0001", "Changed Dates", "Action",
-        120, 13, "2026-02-01", "2026-12-31", true
-    );
-
-    check("Khong doi ngay khi co Showtime",
-          service.updateMovie(changedDates), false);
-
-    check("Ngay phat hanh khong thay doi",
-          movie->getReleaseDate() == "2026-01-01", true);
-
-    // Khong doi ngay thi van duoc sua thong tin khac
-    Movie changedTitle(
-        "MOV0001", "New Title", "Action",
-        120, 13, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Co Showtime van duoc doi ten",
-          service.updateMovie(changedTitle), true);
-
-    check("Khong xoa phim co Showtime",
-          service.removeMovie("MOV0001"), false);
-
-    check("Phim van ton tai",
-          service.findMovieById("MOV0001") != nullptr, true);
+    Showtime historical("SHW0002", "MOV0001", "ROM0001", past,
+                        DateTime::addMinutes(past, 120), ShowtimeStatus::SCHEDULED);
+    check("Link past showtime", historical.linkMovie(movie));
+    check("Allow deactivate with past showtime", f.service.setMovieActive("MOV0001", false));
+    check("Cannot remove even with past showtime", !f.service.removeMovie("MOV0001"));
+    check("Unlink past showtime", movie->unlinkShowtime(&historical));
+    check("Reactivate after unlink", f.service.setMovieActive("MOV0001", true));
+    check("Reject setActive missing movie", !f.service.setMovieActive("MOV9999", false));
+    check("Remove after unlink", f.service.removeMovie("MOV0001"));
 }
 
-// Test Admin xoa phim
-void testRemoveMovie()
+void testFilteringAndSearch()
 {
-    cout << "\n===== TEST REMOVE MOVIE =====\n";
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    auth.login("admin", "AdminPass");
-
-    check("Xoa phim khong ton tai",
-          service.removeMovie("MOV9999"), false);
-
-    check("Admin xoa phim",
-          service.removeMovie("MOV0001"), true);
-
-    check("Phim da bi xoa",
-          service.findMovieById("MOV0001") == nullptr, true);
-
-    check("So luong sau khi xoa",
-          service.getMovieCount() == 0, true);
-}
-
-// Test Staff khong duoc sua, xoa
-void testStaffPermissions()
-{
-    cout << "\n===== TEST STAFF PERMISSIONS =====\n";
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    auth.login("staff", "StaffPass");
-
-    Movie updated(
-        "MOV0001", "Hacked", "Action",
-        120, 13, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Staff khong duoc update",
-          throwsRuntimeError([&]()
-          {
-              service.updateMovie(updated);
-          }), true);
-
-    check("Staff khong duoc xoa",
-          throwsRuntimeError([&]()
-          {
-              service.removeMovie("MOV0001");
-          }), true);
-
-    check("Du lieu khong thay doi",
-          service.findMovieById("MOV0001")->getTitle() == "Avatar",
-          true);
-
-    check("Phim khong bi xoa",
-          service.getMovieCount() == 1, true);
-}
-
-// Test chua dang nhap khong duoc quan ly phim
-void testAnonymousPermissions()
-{
-    cout << "\n===== TEST ANONYMOUS PERMISSIONS =====\n";
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    users.load();
-    movies.load();
-
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    Movie* movie = createTestMovie("MOV0002");
-
-    check("Anonymous khong duoc them",
-          throwsRuntimeError([&]()
-          {
-              service.addMovie(movie);
-          }), true);
-
-    delete movie;
-
-    Movie updated(
-        "MOV0001", "Changed", "Action",
-        120, 13, "2026-01-01", "2026-12-31", true
-    );
-
-    check("Anonymous khong duoc update",
-          throwsRuntimeError([&]()
-          {
-              service.updateMovie(updated);
-          }), true);
-
-    check("Anonymous khong duoc xoa",
-          throwsRuntimeError([&]()
-          {
-              service.removeMovie("MOV0001");
-          }), true);
-
-    check("Du lieu khong thay doi",
-          movies.count() == 1 &&
-          movies.findById("MOV0001")->getTitle() == "Avatar",
-          true);
-}
-
-void testConfiguredPermissions()
-{
-    ofstream permissions(PERMISSION_FILE, ios::trunc);
-    permissions << "STAFF|MOVIE_ADD\nADMIN|MOVIE_VIEW\n";
-    permissions.close();
-
-    UserRepository users(USER_FILE);
-    MovieRepository movies(MOVIE_FILE);
-    RolePermissionRepository permissionRepo(PERMISSION_FILE);
-    users.load();
-    movies.load();
-    permissionRepo.load();
-    AuthService auth(users, permissionRepo);
-    MovieService service(movies, auth);
-
-    Movie* anonymousMovie = createTestMovie("MOV0002");
-    check("Anonymous bi tu choi du Staff duoc cap MOVIE_ADD",
-          throwsRuntimeError([&]() { service.addMovie(anonymousMovie); }), true);
-    delete anonymousMovie;
-
-    check("Staff login voi bang quyen tuy chinh",
-          auth.login("staff", "StaffPass"), true);
-    Movie* staffMovie = createTestMovie("MOV0002");
-    bool added = service.addMovie(staffMovie);
-    check("Staff duoc them khi co MOVIE_ADD", added, true);
-    if (!added)
+    cout << "\n===== FILTER / SEARCH =====\n";
+    writeFiles();
+    Fixture f;
+    f.loginStaff();
+    const string today = DateTime::getCurrentDateTime().substr(0, 10);
+    // The baseline MOV0001 is active and spans 2020-2099.
+    Movie* coming = makeMovie("MOV0002", "Future Batman", 120, true,
+                             "2099-12-30", "2099-12-31");
+    Movie* inactive = makeMovie("MOV0003", "Hidden Avatar", 120, false);
+    Movie* expired = makeMovie("MOV0004", "Old Movie", 120, true,
+                              "2000-01-01", "2001-01-01");
+    for (Movie* m : {coming, inactive, expired})
     {
-        delete staffMovie;
+        bool ok = f.movies.add(m);
+        check("Fixture movie added", ok);
+        if (!ok) delete m;
     }
-    check("Staff thieu MOVIE_VIEW bi tu choi",
-          throwsRuntimeError([&]() { service.getMovieCount(); }), true);
+    // Check exact boundary on today using another movie.
+    Movie* boundary = makeMovie("MOV0005", "Today Premiere", 120, true,
+                                today, today);
+    bool ok = f.movies.add(boundary);
+    check("Add boundary movie", ok);
+    if (!ok) delete boundary;
 
-    check("Admin login voi bang quyen tuy chinh",
-          auth.login("admin", "AdminPass"), true);
-    check("Admin co MOVIE_VIEW duoc xem",
-          service.getMovieCount() == 2, true);
-    Movie* adminMovie = createTestMovie("MOV0003");
-    check("Admin thieu MOVIE_ADD bi tu choi",
-          throwsRuntimeError([&]() { service.addMovie(adminMovie); }), true);
-    delete adminMovie;
+    vector<const Movie*> now = f.service.getNowShowingMovies();
+    vector<const Movie*> soon = f.service.getComingSoonMovies();
+    check("Now showing includes baseline and boundary", now.size() == 2);
+    check("Coming soon includes future movie", soon.size() == 1 &&
+          soon[0]->getMovieId() == "MOV0002");
+    check("Case-insensitive search", f.service.searchMoviesByTitle("aVaTaR").size() == 2);
+    check("Partial title search", f.service.searchMoviesByTitle("BAT").size() == 1);
+    check("Search missing keyword", f.service.searchMoviesByTitle("zzzz").empty());
+    check("Empty keyword returns all", f.service.searchMoviesByTitle("").size() == 5);
+    check("Search includes inactive movie", f.service.searchMoviesByTitle("Hidden").size() == 1);
 }
 
+void testPermissions()
+{
+    cout << "\n===== PERMISSIONS =====\n";
+    writeFiles();
+    Fixture f;
+    Movie* temp = makeMovie("MOV0002");
+    check("Anonymous cannot add", throwsRuntimeError([&]() { f.service.addMovie(temp); }));
+    delete temp;
+    check("Anonymous cannot view", throwsRuntimeError([&]() { f.service.getMovieCount(); }));
+    check("Anonymous cannot search", throwsRuntimeError([&]() { f.service.searchMoviesByTitle("Avatar"); }));
+    check("Anonymous cannot filter", throwsRuntimeError([&]() { f.service.getNowShowingMovies(); }));
+    check("Anonymous cannot deactivate", throwsRuntimeError([&]() { f.service.setMovieActive("MOV0001", false); }));
+    f.loginStaff();
+    check("Staff can view", f.service.findMovieById("MOV0001") != nullptr);
+    check("Staff can search", f.service.searchMoviesByTitle("Avatar").size() == 1);
+    check("Staff cannot deactivate", throwsRuntimeError([&]() { f.service.setMovieActive("MOV0001", false); }));
+    Movie updated("MOV0001", "Changed", "Action", 120, 13,
+                  "2020-01-01", "2099-12-31", true);
+    check("Staff cannot update", throwsRuntimeError([&]() { f.service.updateMovie(updated); }));
+    check("Staff cannot remove", throwsRuntimeError([&]() { f.service.removeMovie("MOV0001"); }));
+    temp = makeMovie("MOV0002");
+    check("Staff cannot add", throwsRuntimeError([&]() { f.service.addMovie(temp); }));
+    delete temp;
+    check("Unauthorized actions preserve movie", f.movies.findById("MOV0001") != nullptr &&
+          f.movies.findById("MOV0001")->isActive());
+}
+
+void testCustomPermissions()
+{
+    cout << "\n===== CUSTOM RBAC =====\n";
+    writeFiles("STAFF|MOVIE_ADD\nADMIN|MOVIE_VIEW\n");
+    Fixture f;
+    f.loginStaff();
+    Movie* m = makeMovie("MOV0002");
+    bool ok = f.service.addMovie(m);
+    check("Staff can add if granted", ok);
+    if (!ok) delete m;
+    check("Staff cannot view without permission", throwsRuntimeError([&]() { f.service.getMovieCount(); }));
+    f.loginAdmin();
+    check("Admin can view if granted", f.service.getMovieCount() == 2);
+    check("Admin cannot update without permission", throwsRuntimeError([&]() { f.service.setMovieActive("MOV0001", false); }));
+    m = makeMovie("MOV0003");
+    check("Admin cannot add without permission", throwsRuntimeError([&]() { f.service.addMovie(m); }));
+    delete m;
+}
 
 int main()
 {
-    writeTestFiles();
-
-    testNotLoggedIn();
-    testAdmin();
-    testStaff();
-
-    testAddMovie();
-    testUpdateMovie();
+    testBasicCrud();
     testShowtimeRules();
-    testRemoveMovie();
-    testStaffPermissions();
-    testAnonymousPermissions();
-    testConfiguredPermissions();
-
+    testFilteringAndSearch();
+    testPermissions();
+    testCustomPermissions();
     remove(USER_FILE.c_str());
     remove(MOVIE_FILE.c_str());
     remove(PERMISSION_FILE.c_str());
-
-    cout << "\nPassed: " << passed << endl;
-    cout << "Failed: " << failed << endl;
-
+    cout << "\n===== SUMMARY =====\n";
+    cout << "Passed: " << passed << '\n';
+    cout << "Failed: " << failed << '\n';
+    cout << "Total: " << passed + failed << '\n';
     return failed == 0 ? 0 : 1;
 }
-

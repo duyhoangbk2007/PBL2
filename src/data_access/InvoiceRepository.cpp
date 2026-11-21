@@ -283,7 +283,6 @@ bool InvoiceRepository::add(Invoice* invoice)
     {
         member = memberRepo.findById(invoice->getMemberId());
     }
-
     try
     {
         if (!invoice->linkShowtime(showtime) ||

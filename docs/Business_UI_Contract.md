@@ -200,3 +200,11 @@ Các hàm thêm nhận `Movie*`, `Room*`, `Seat*`, `Showtime*`, `User*`, `Member
 - Mọi thay đổi ảnh hưởng tới UI phải được thông báo trước khi tích hợp.
 
 **Trạng thái:** Draft v0.2 – Có thể dùng để bắt đầu phát triển giao diện, chưa phải API ổn định cuối cùng.
+
+## Phụ lục: trạng thái nhánh Bước 10 (chưa chốt tích hợp GUI)
+
+Nhánh Backend hiện có `TicketRepository`, `InvoiceRepository` và `BookingService`. Đây là phần đang làm, chưa phải API bán vé ổn định. `BookingService` hiện khai báo `getAvailableSeats(showtimeId)` trả `std::vector<Seat*>`, `calculateBooking(showtimeId, items, memberId, summary)` trả `bool` và `createBooking(showtimeId, items, memberId, invoiceId)` trả `bool`. `BookingItem` gồm `seatId` và `ticketType`; `BookingSummary` gồm giá từng vé, tổng tiền và điểm dự kiến. Người bán được lấy từ tài khoản đăng nhập.
+
+Chưa có đầu vào xác nhận thu tiền/độ tuổi, kết quả lỗi có cấu trúc, bảo đảm giao dịch khi ghi nhiều file lỗi, hoặc test riêng cho Booking. Mã quyền trong `createBooking()` hiện là `BOOKING_CREATE`, chưa khớp quyền `TICKET_SELL` trong bảng RBAC. Điểm đang tính trên tổng hóa đơn, chưa khớp quy tắc cộng trên từng vé. GUI giữ nút hoàn tất giao dịch ở trạng thái chưa tích hợp cho đến khi hai bên chốt và kiểm thử API.
+
+ID MOV/ROM/SHW/USR/MEM/INV/TKT hiện lấy số lớn nhất trong các bản ghi đang nạp rồi cộng một; không dùng `sequences.txt`. Xóa bản ghi mang ID lớn nhất có thể khiến ID được dùng lại. Các Service danh mục cần gọi `save()` riêng sau thêm/sửa; `PricingService` ghi khi cập nhật giá thành công; `createBooking()` hiện gọi lưu hóa đơn, vé và thành viên bên trong nhưng chưa xử lý an toàn lỗi lưu dở.
