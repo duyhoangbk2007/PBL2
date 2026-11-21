@@ -164,7 +164,6 @@ bool BookingService::createBooking(const string& showtimeId,
                                    string& invoiceId)
 {
     invoiceId = "";
-
     // 1. Kiem tra quyen
     const User& staff = authService.requirePermission("BOOKING_CREATE");
 
@@ -177,38 +176,50 @@ bool BookingService::createBooking(const string& showtimeId,
     {
         return false;
     }
-
-    // 3. Kiem tra thong tin va tinh tien
+    // 3. Kiem tra du lieu va tinh tien
     BookingSummary summary;
-
     if (!calculateBooking(showtimeId, items, memberId, summary))
     {
         return false;
     }
+
+    // 4. Lay thong tin giao dich
     string staffId = staff.getUserId();
     string createdAt = DateTime::getCurrentDateTime();
     Showtime* showtime = showtimeRepo.findById(showtimeId);
+
     Member* member = nullptr;
     if (!memberId.empty())
     {
         member = memberRepo.findById(memberId);
     }
 
-    // 4. Lay danh sach ID hoa don
+    // 5. Sinh ID hoa don
     vector<string> invoiceIds;
     for (int i = 0; i < invoiceRepo.count(); i++)
     {
-        invoiceIds.push_back(invoiceRepo.getAt(i)->getInvoiceId());
+        Invoice* invoice = invoiceRepo.getAt(i);
+        if (invoice == nullptr)
+        {
+            return false;
+        }
+        invoiceIds.push_back(invoice->getInvoiceId());
     }
     string newInvoiceId = IdGenerator::generateNextId("INV", invoiceIds);
-    // 5. Lay danh sach ID ve
+
+    // 6. Lay danh sach ID ve
     vector<string> ticketIds;
     for (int i = 0; i < ticketRepo.count(); i++)
     {
-        ticketIds.push_back(ticketRepo.getAt(i)->getTicketId());
+        Ticket* ticket = ticketRepo.getAt(i);
+        if (ticket == nullptr)
+        {
+            return false;
+        }
+        ticketIds.push_back(ticket->getTicketId());
     }
 
-    // Sinh truoc tat ca ID ve
+    // Sinh truoc ID cho tat ca ve
     vector<string> newTicketIds;
     for (int i = 0; i < static_cast<int>(items.size()); i++)
     {
@@ -217,116 +228,88 @@ bool BookingService::createBooking(const string& showtimeId,
         ticketIds.push_back(ticketId);
     }
 
-    // 6. Kiem tra gioi han diem
+    // 7. Kiem tra gioi han diem
     if (member != nullptr &&
         summary.earnedPoints > numeric_limits<int>::max() - member->getPoints())
     {
         return false;
     }
-    // 7. Khoi tao Stack
-    stack<RollbackAction> actions;
-    try
-    {
-        // 8. Tao Invoice
-        Invoice* invoice = new Invoice(newInvoiceId,
-                                       showtimeId,
-                                       staffId,
-                                       memberId,
-                                       createdAt,
-                                       summary.totalAmount);
 
-        try
+    // 8. Tao Invoice
+    Invoice* invoice = new Invoice(newInvoiceId,
+                                   showtimeId,
+                                   staffId,
+                                   memberId,
+                                   createdAt,
+                                   summary.totalAmount);
+
+    if (!invoiceRepo.add(invoice))
+    {
+        delete invoice;
+        return false;
+    }
+
+    // 9. Tao Ticket
+    int allocatedPoints = 0;
+    for (int i = 0; i < static_cast<int>(items.size()); i++)
+    {
+        const BookingItem& item = items[i];
+        Seat* seat = seatRepo.findById(showtime->getRoomId(), item.seatId);
+        double basePrice = pricingService.getBasePrice(seat->getSeatType());
+        double paidAmount = summary.ticketPrices[i];
+        double discount = basePrice - paidAmount;
+
+        int points = pricingService.calculatePoints(paidAmount, member != nullptr);
+
+        if (i == static_cast<int>(items.size()) - 1)
         {
-            actions.push({RollbackType::ADD_INVOICE, newInvoiceId, 0});
+            points = summary.earnedPoints - allocatedPoints;
         }
-        catch (...)
+
+        allocatedPoints += points;
+
+        Ticket* ticket = new Ticket(newTicketIds[i],
+                                    newInvoiceId,
+                                    showtimeId,
+                                    item.seatId,
+                                    item.ticketType,
+                                    basePrice,
+                                    discount,
+                                    paidAmount,
+                                    points,
+                                    TicketStatus::SOLD,
+                                    "",
+                                    "",
+                                    "",
+                                    0);
+
+        if (!ticketRepo.add(ticket))
         {
-            delete invoice;
-            throw;
-        }
-        if (!invoiceRepo.add(invoice))
-        {
-            actions.pop();
-            delete invoice;
+            delete ticket;
             return false;
         }
-
-        // 9. Tao cac Ticket
-        int allocatedPoints = 0;
-        for (int i = 0; i < static_cast<int>(items.size()); i++)
-        {
-            const BookingItem& item = items[i];
-            Seat* seat = seatRepo.findById(showtime->getRoomId(), item.seatId);
-            double basePrice = pricingService.getBasePrice(seat->getSeatType());
-            double paidAmount = summary.ticketPrices[i];
-            double discount = basePrice - paidAmount;
-
-            int points = pricingService.calculatePoints(paidAmount, member != nullptr);
-            // Phan bo phan diem le cho ve cuoi
-            if (i == static_cast<int>(items.size()) - 1)
-            {
-                points = summary.earnedPoints - allocatedPoints;
-            }
-            allocatedPoints += points;
-
-            Ticket* ticket = new Ticket(newTicketIds[i],
-                                        newInvoiceId,
-                                        showtimeId,
-                                        item.seatId,
-                                        item.ticketType,
-                                        basePrice,
-                                        discount,
-                                        paidAmount,
-                                        points,
-                                        TicketStatus::SOLD,
-                                        "",
-                                        "",
-                                        "",
-                                        0);
-
-            try
-            {
-                actions.push({RollbackType::ADD_TICKET, newTicketIds[i], 0});
-            }
-            catch (...)
-            {
-                delete ticket;
-                throw;
-            }
-
-            if (!ticketRepo.add(ticket))
-            {
-                actions.pop();
-                delete ticket;
-                rollback(actions);
-                return false;
-            }
-        }
-        // 10. Cong diem thanh vien
-        if (member != nullptr)
-        {
-            int oldPoints = member->getPoints();
-            actions.push({RollbackType::UPDATE_MEMBER_POINTS, memberId, oldPoints});
-            member->setPoints(oldPoints + summary.earnedPoints);
-        }
-        // 11. Luu du lieu
-        if (!invoiceRepo.save() ||
-            !ticketRepo.save() ||
-            (member != nullptr && !memberRepo.save()))
-        {
-            rollback(actions);
-            return false;
-        }
-        // 12. Hoan thanh
-        invoiceId = newInvoiceId;
-        return true;
     }
-    catch (...)
+
+    // 10. Cong diem thanh vien
+    if (member != nullptr)
     {
-        rollback(actions);
-        throw;
+        member->setPoints(member->getPoints() + summary.earnedPoints);
     }
+
+    // 11. Luu du lieu
+    if (!invoiceRepo.save() ||
+        !ticketRepo.save() ||
+        (member != nullptr && !memberRepo.save()))
+    {
+        return false;
+    }
+
+    // 12. Hoan thanh
+    invoiceId = newInvoiceId;
+    return true;
 }
+
+
 
 
 

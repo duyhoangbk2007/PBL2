@@ -1,4 +1,5 @@
-
+#include "../utils/IdGenerator.h"
+#include <vector>
 #include "ShowtimeService.h"
 #include "../utils/DateTime.h"
 #include "../utils/Validator.h"
@@ -54,11 +55,14 @@ bool ShowtimeService::save()
 bool ShowtimeService::addShowtime(Showtime* showtime)
 {
     authService.requirePermission("SHOWTIME_ADD");
-    if (showtime == nullptr)
+
+    if (!showtimeRepo.isLoaded() ||
+        !movieRepo.isLoaded() ||
+        !roomRepo.isLoaded() ||
+        showtime == nullptr)
     {
         return false;
     }
-    // Chi tao suat o trang thai SCHEDULED
     if (showtime->getStatus() != ShowtimeStatus::SCHEDULED)
     {
         return false;
@@ -67,7 +71,38 @@ bool ShowtimeService::addShowtime(Showtime* showtime)
     {
         return false;
     }
-    return showtimeRepo.add(showtime);
+    vector<string> existingIds;
+    for (int i = 0; i < showtimeRepo.count(); i++)
+    {
+        Showtime* current = showtimeRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getShowtimeId());
+    }
+    string showtimeId = IdGenerator::generateNextId("SHW", existingIds);
+    Showtime* newShowtime = new Showtime(showtimeId,
+                                         showtime->getMovieId(),
+                                         showtime->getRoomId(),
+                                         showtime->getStartAt(),
+                                         showtime->getEndAt(),
+                                         showtime->getStatus());
+
+    try
+    {
+        if (!showtimeRepo.add(newShowtime))
+        {
+            delete newShowtime;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newShowtime;
+        throw;
+    }
+    return true;
 }
 
 bool ShowtimeService::updateShowtime(const Showtime& newValues)

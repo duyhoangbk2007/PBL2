@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <stack>
 
 #include "../models/Seat.h"
 #include "../models/Ticket.h"
@@ -17,31 +16,17 @@
 #include "PricingService.h"
 #include "AuthService.h"
 
-struct BookingItem //một ghế được chọn cùng loại vé
+struct BookingItem
 {
     std::string seatId;
     TicketType ticketType;
 };
 
-struct BookingSummary //kết quả tính tiền trước khi khách xác nhận.
-{ 
-    std::vector<double> ticketPrices; //danh sách tiền của từng ghế khách mua
+struct BookingSummary
+{
+    std::vector<double> ticketPrices;
     double totalAmount = 0;
     int earnedPoints = 0;
-};
-
-enum class RollbackType
-{
-    ADD_INVOICE,
-    ADD_TICKET,
-    UPDATE_MEMBER_POINTS
-};
-
-struct RollbackAction
-{
-    RollbackType type;
-    std::string id;
-    int oldPoints = 0;
 };
 
 class BookingService
@@ -56,8 +41,6 @@ private:
     PricingService& pricingService;
     AuthService& authService;
 
-    bool rollback(std::stack<RollbackAction>& actions);
-
 public:
     BookingService(ShowtimeRepository& showtimeRepo,
                    SeatRepository& seatRepo,
@@ -69,9 +52,15 @@ public:
 
     std::vector<Seat*> getAvailableSeats(const std::string& showtimeId);
 
-    bool calculateBooking(const std::string& showtimeId, const std::vector<BookingItem>& items, const std::string& memberId, BookingSummary& summary);
+    bool calculateBooking(const std::string& showtimeId,
+                          const std::vector<BookingItem>& items,
+                          const std::string& memberId,
+                          BookingSummary& summary);
 
-    bool createBooking(const std::string& showtimeId, const std::vector<BookingItem>& items, const std::string& memberId, std::string& invoiceId);
+    bool createBooking(const std::string& showtimeId,
+                       const std::vector<BookingItem>& items,
+                       const std::string& memberId,
+                       std::string& invoiceId);
 };
 
 #endif

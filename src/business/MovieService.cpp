@@ -1,6 +1,7 @@
 #include "MovieService.h"
 #include "../models/Showtime.h"
 #include "../utils/DateTime.h"
+#include "../utils/IdGenerator.h"
 #include <algorithm>
 #include <cctype>
 #include <vector>
@@ -18,11 +19,54 @@ bool MovieService::save()
     return movieRepo.save();
 }
 
+
 bool MovieService::addMovie(Movie* movie)
 {
     authService.requirePermission("MOVIE_ADD");
-    return movieRepo.add(movie);
+
+    if (!movieRepo.isLoaded() || movie == nullptr)
+    {
+        return false;
+    }
+    // Lay danh sach ID hien co
+    vector<string> existingIds;
+    for (int i = 0; i < movieRepo.count(); i++)
+    {
+        Movie* current = movieRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getMovieId());
+    }
+    // Sinh ID moi
+    string movieId = IdGenerator::generateNextId("MOV", existingIds);
+    // Tao Movie moi voi ID vua sinh
+    Movie* newMovie = new Movie(movieId,
+                               movie->getTitle(),
+                               movie->getGenre(),
+                               movie->getDurationMinutes(),
+                               movie->getMinAge(),
+                               movie->getReleaseDate(),
+                               movie->getEndDate(),
+                               movie->isActive());
+    // Them vao Repository
+    try
+    {
+        if (!movieRepo.add(newMovie))
+        {
+            delete newMovie;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newMovie;
+        throw;
+    }
+    return true;
 }
+
 
 bool MovieService::updateMovie(const Movie& newValues)
 {
