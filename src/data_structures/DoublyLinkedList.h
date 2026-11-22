@@ -33,6 +33,7 @@ public:
     void clear();
     ListNode<T>* search(const T& x);
     ListNode<T>* getAt(int k);
+    void swap(DoublyLinkedList<T>& other);
 };
 
 //----
@@ -214,5 +215,11 @@ ListNode<T>* DoublyLinkedList<T>::getAt(int k) {
     }
     return nullptr;
 }
-
+template <typename T>
+void DoublyLinkedList<T>::swap(DoublyLinkedList<T>& other)
+{
+    ListNode<T>* temp = head;
+    head = other.head;
+    other.head = temp;
+}
 #endif

@@ -1,4 +1,6 @@
 #include "MemberService.h"
+#include "../utils/IdGenerator.h"
+#include <vector>
 using namespace std;
 
 MemberService::MemberService(MemberRepository& memberRepo, AuthService& authService)
@@ -17,11 +19,49 @@ bool MemberService::save()
     return memberRepo.save();
 }
 
+
 bool MemberService::addMember(Member* member)
 {
     authService.requirePermission("MEMBER_ADD");
-    return memberRepo.add(member);
+
+    if (!memberRepo.isLoaded() || member == nullptr)
+    {
+        return false;
+    }
+
+    vector<string> existingIds;
+
+    for (int i = 0; i < memberRepo.count(); i++)
+    {
+        Member* current = memberRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getMemberId());
+    }
+    string memberId = IdGenerator::generateNextId("MEM", existingIds);
+    Member* newMember = new Member(memberId,
+                                   member->getFullName(),
+                                   member->getPhone(),
+                                   member->getPoints());
+
+    try
+    {
+        if (!memberRepo.add(newMember))
+        {
+            delete newMember;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newMember;
+        throw;
+    }
+    return true;
 }
+
 
 bool MemberService::updateMember(const Member& newValues)
 {

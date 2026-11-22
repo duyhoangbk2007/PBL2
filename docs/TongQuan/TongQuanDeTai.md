@@ -1,6 +1,6 @@
 # Tổng quan đề tài và luồng chức năng
 
-Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có tám Model và tiện ích; nhánh hiện tại đã có Repository cho tài khoản, phim, phòng, ghế, suất chiếu, thành viên và Service xác thực, phim, phòng, ghế, suất chiếu, nhân viên, thành viên. `MemberService` có test riêng 69/69 cho thêm/sửa/tra cứu với RBAC; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có, nhưng hủy/xóa suất còn thiếu nghiệp vụ kiểm tra vé. Đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 12.
+Tài liệu này giúp nhìn toàn bộ **hệ thống quản lý bán vé rạp chiếu phim tại quầy** trước khi đi vào từng class. Đây là **thiết kế mục tiêu**, không có nghĩa các màn hình, Service hoặc Repository đã được lập trình. Hiện có chín Model và tiện ích; nhánh hiện tại đã có Repository cho tài khoản, phim, phòng, ghế, suất chiếu, thành viên và Service xác thực, phim, phòng, ghế, suất chiếu, nhân viên, thành viên. `MemberService` có test riêng 69/69 cho thêm/sửa/tra cứu với RBAC; nghiệp vụ điểm/hóa đơn chưa tích hợp. `ShowtimeService` có test riêng 89/89 cho phạm vi hiện có, nhưng hủy/xóa suất còn thiếu nghiệp vụ kiểm tra vé. Đối chiếu [tiến độ thực tế](../development/TongQuanTienDo.md). Từ Bước 04, mỗi chức năng được làm trọn Repository → Service → kiểm thử C++ → tài liệu; GUI Qt triển khai ở Bước 12.
 
 ## 1. Hệ thống giải quyết việc gì?
 
@@ -31,7 +31,7 @@ Ví dụ Admin thêm phim:
 MovieManagementView (UI)
     → MovieService: kiểm tra Admin, dữ liệu phim, quy tắc thêm phim
     → MovieRepository: thêm bản ghi Movie và chuẩn bị lưu
-    → FileIO: ghi toàn bộ movies.txt và sequences.txt khi luồng yêu cầu lưu
+    → FileIO: ghi toàn bộ movies.txt khi luồng yêu cầu lưu
     → trả kết quả về UI
 ```
 
@@ -44,10 +44,10 @@ Admin quản lý dữ liệu nền của rạp, nhân viên và báo cáo; đồ
 | Chức năng | UI → Service → Repository | File dữ liệu chính |
 | --- | --- | --- |
 | Đăng nhập | `LoginView` → `AuthService` → `UserRepository` | `users.txt` |
-| Thêm/sửa/tìm/ngừng phim; xóa khi đủ điều kiện | `MovieManagementView` → `MovieService` → `MovieRepository` | `movies.txt`, `sequences.txt` khi thêm |
-| Quản lý phòng và sơ đồ ghế | `RoomManagementView`/`SeatMapView` → `RoomService` → `RoomRepository` | `rooms.txt`, `seats.txt`, `sequences.txt` khi thêm phòng |
-| Tạo/sửa/hủy và xem lịch suất chiếu | `ShowtimeManagementView` → `ShowtimeService` → `ShowtimeRepository`; service còn tra phim/phòng/vé để kiểm tra điều kiện | `showtimes.txt`, `sequences.txt` khi tạo |
-| Thêm/sửa/tìm/vô hiệu hóa Staff | `StaffManagementView` → `StaffService` → `UserRepository` | `users.txt`, `sequences.txt` khi thêm |
+| Thêm/sửa/tìm/ngừng phim; xóa khi đủ điều kiện | `MovieManagementView` → `MovieService` → `MovieRepository` | `movies.txt` |
+| Quản lý phòng và sơ đồ ghế | `RoomManagementView`/`SeatMapView` → `RoomService` → `RoomRepository` | `rooms.txt`, `seats.txt` |
+| Tạo/sửa/hủy và xem lịch suất chiếu | `ShowtimeManagementView` → `ShowtimeService` → `ShowtimeRepository`; service còn tra phim/phòng/vé để kiểm tra điều kiện | `showtimes.txt` |
+| Thêm/sửa/tìm/vô hiệu hóa Staff | `StaffManagementView` → `StaffService` → `UserRepository` | `users.txt` |
 | Xem tất cả hóa đơn, lọc lịch sử | `InvoiceHistoryView` → `ReportService` → `InvoiceRepository`, `TicketRepository` và các repository tra cứu liên quan | Chủ yếu đọc `invoices.txt`, `tickets.txt` |
 | Hủy **vé đã bán** trước giờ chiếu | `InvoiceHistoryView` → `BookingService` (luồng hủy) → `TicketRepository`, `InvoiceRepository`, `MemberRepository` và các repository kiểm tra tham chiếu | Ghi `tickets.txt`, `members.txt` nếu có thành viên; giữ hóa đơn lịch sử |
 | Xem doanh thu, vé bán/hủy, top phim | `ReportView` → `ReportService` → các repository hóa đơn, vé, phim/suất | Chủ yếu đọc `invoices.txt`, `tickets.txt`, `movies.txt`, `showtimes.txt` |
@@ -64,9 +64,9 @@ Staff tập trung vào tra cứu thông tin, phục vụ khách và bán vé. Se
 | Đăng nhập | `LoginView` → `AuthService` → `UserRepository` | `users.txt` |
 | Xem/tìm phim sắp chiếu, đang chiếu; xem suất | `StaffDashboard`/`BookingView` → `MovieService`, `ShowtimeService` → `MovieRepository`, `ShowtimeRepository` | Đọc `movies.txt`, `showtimes.txt` |
 | Xem sơ đồ ghế và ghế còn trống của suất | `SeatMapView`/`BookingView` → `BookingService` → `RoomRepository`, `TicketRepository`, `ShowtimeRepository` | Đọc `rooms.txt`, `seats.txt`, `tickets.txt`, `showtimes.txt` |
-| Tạo, tìm, sửa **thông tin liên hệ** thành viên | `MemberManagementView` → `MemberService` → `MemberRepository` | `members.txt`, `sequences.txt` khi tạo |
+| Tạo, tìm, sửa **thông tin liên hệ** thành viên | `MemberManagementView` → `MemberService` → `MemberRepository` | `members.txt` |
 | Chọn ghế, Undo/bỏ giỏ trước thu tiền | `BookingView` → `BookingService` và `Stack` trong bộ nhớ | **Chưa ghi file** |
-| Tính giá, xác nhận đã thu tiền, bán vé | `BookingView` → `BookingService` → các repository vé, hóa đơn, thành viên cùng các nguồn kiểm tra suất/ghế | Ghi `invoices.txt`, `tickets.txt`, `members.txt` nếu có thành viên, `sequences.txt` |
+| Tính giá, xác nhận đã thu tiền, bán vé | `BookingView` → `BookingService` → các repository vé, hóa đơn, thành viên cùng các nguồn kiểm tra suất/ghế | Ghi `invoices.txt`, `tickets.txt`, `members.txt` nếu có thành viên |
 | Xem hóa đơn của mình trong ngày hoặc tra cứu hóa đơn cũ của mình theo mã | `StaffDashboard`/`InvoiceHistoryView` → `ReportService` → `InvoiceRepository`, `TicketRepository` | Đọc `invoices.txt`, `tickets.txt` |
 
 Staff **không** quản lý phim/phòng/suất/nhân viên, không sửa điểm thành viên tùy ý, không xem toàn bộ hóa đơn của người khác và không hủy vé đã bán. Với vé học sinh, nhân viên kiểm tra giấy tờ; với phim giới hạn tuổi, nhân viên xác nhận điều kiện tại quầy trước khi bán.
@@ -75,7 +75,7 @@ Staff **không** quản lý phim/phòng/suất/nhân viên, không sửa điểm
 
 `MovieService` xử lý **một nhóm nghiệp vụ phim**. Khi thêm phim, nó kiểm tra quyền và dữ liệu rồi yêu cầu `MovieRepository` lưu phim. Khi tìm phim, nó lấy dữ liệu từ repository và trả kết quả phù hợp.
 
-`BookingService` xử lý **một quy trình đi qua nhiều loại dữ liệu**. Trước thu tiền, nó giữ giỏ ghế và stack Undo trong bộ nhớ. Khi xác nhận bán, nó kiểm tra lại suất/ghế/quyền, tính giá từng vé và điểm, tạo `Invoice` cùng các `Ticket`, rồi phối hợp lưu nhiều file. Một hóa đơn có ít nhất một vé, mọi vé cùng suất, có tối đa một thành viên. Admin hoặc Staff bán đều ghi đúng `userId` người thao tác vào `Invoice.staffId`.
+`BookingService` xử lý **một quy trình đi qua nhiều loại dữ liệu**. Theo thiết kế mục tiêu, giỏ ghế và stack Undo được giữ trong bộ nhớ; bản BookingService hiện chưa triển khai phần này. Khi xác nhận bán, nó kiểm tra lại suất/ghế/quyền, tính giá từng vé và điểm, tạo `Invoice` cùng các `Ticket`, rồi phối hợp lưu nhiều file. Một hóa đơn có ít nhất một vé, mọi vé cùng suất, có tối đa một thành viên. Admin hoặc Staff bán đều ghi đúng `userId` người thao tác vào `Invoice.staffId`.
 
 ```text
 BookingView → BookingService
@@ -98,4 +98,6 @@ Xem [quy tắc nghiệp vụ](business_rules.md) để đối chiếu việc ch�
 4. **Tìm Repository theo loại dữ liệu:** nơi đọc/tìm/chuẩn bị cập nhật các bản ghi.
 5. **Xác định file dữ liệu bị ảnh hưởng:** một thao tác có thể đọc nhiều file nhưng chỉ ghi một số file. Nếu ghi nhiều file, kiểm tra từng lần ghi và nêu rõ giới hạn không nguyên tử như trong [định dạng dữ liệu](data_format.md).
 
-Các tên file dự kiến nằm trong [cấu trúc thư mục](../CauTrucThuMuc/cauTrucThuMuc.md). Hiện `src/data_access/` không có Repository; code `MovieRepository` cũ đã bị xóa và sẽ được viết lại. `src/business/` cũng chưa có mã. Các bảng trên dùng để **định hướng lúc xây dựng**, chưa xác nhận chức năng hoàn thành. Ghi nhiều file tuần tự không nguyên tử: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Không dùng `TransactionManager` trong ứng dụng mục tiêu.
+Các tên file nằm trong [cấu trúc thư mục](../CauTrucThuMuc/cauTrucThuMuc.md). Hiện `src/data_access/` và `src/business/` đã có các module nêu ở phần hiện trạng; các bảng trên vẫn mô tả luồng mục tiêu, chưa xác nhận chức năng hoàn thành. Ghi nhiều file tuần tự không nguyên tử: lỗi hoặc gián đoạn có thể khiến dữ liệu không nhất quán. Không dùng `TransactionManager` trong ứng dụng mục tiêu.
+
+**Hiện trạng ID và Bước 10:** Các Service tạo ID từ mã lớn nhất đang nạp rồi cộng một; không dùng sequences.txt. TicketRepository, InvoiceRepository và bản đầu BookingService đã có, nhưng xác nhận tại quầy, lỗi giao dịch, test Booking và tích hợp GUI chưa hoàn tất.

@@ -123,10 +123,48 @@ bool Invoice::linkTicket(Ticket* ticket) {
             return false;
         }
     }
-
     this->tickets.pushBack(ticket);
     ticket->invoice = this;
     return true;
+}
+bool Invoice::unlinkTicket(Ticket* ticket)
+{
+    if (ticket == nullptr)
+    {
+        return false;
+    }
+    for (int i = 0; i < tickets.nodeCount(); i++)
+    {
+        ListNode<Ticket*>* node = tickets.getAt(i);
+
+        if (node != nullptr && node->data == ticket)
+        {
+            tickets.erase(i);
+            ticket->invoice = nullptr;
+            return true;
+        }
+    }
+    return false;
+}
+
+void Invoice::unlinkReferences()
+{
+    while (tickets.nodeCount() > 0)
+    {
+        Ticket* ticket = tickets.getAt(0)->data;
+        unlinkTicket(ticket);
+    }
+    if (seller != nullptr)
+    {
+        seller->unlinkInvoice(this);
+        seller = nullptr;
+    }
+    if (member != nullptr)
+    {
+        member->unlinkInvoice(this);
+        member = nullptr;
+    }
+    showtime = nullptr;
 }
 
 int Invoice::getTicketCount() const {

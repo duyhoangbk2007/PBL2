@@ -1,5 +1,6 @@
 #include "RoomService.h"
-
+#include "../utils/IdGenerator.h"
+#include <vector>
 using namespace std;
 
 RoomService::RoomService(RoomRepository& roomRepo, AuthService& authService)
@@ -16,11 +17,53 @@ bool RoomService::save()
     return roomRepo.save();
 }
 
+
 bool RoomService::addRoom(Room* room)
 {
     authService.requirePermission("ROOM_ADD");
-    return roomRepo.add(room);
+
+    if (!roomRepo.isLoaded() || room == nullptr)
+    {
+        return false;
+    }
+
+    vector<string> existingIds;
+
+    for (int i = 0; i < roomRepo.count(); i++)
+    {
+        Room* current = roomRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getRoomId());
+    }
+
+    string roomId = IdGenerator::generateNextId("ROM", existingIds);
+
+    Room* newRoom = new Room(roomId,
+                             room->getName(),
+                             room->getRowCount(),
+                             room->getColumnCount(),
+                             room->isActive());
+
+    try
+    {
+        if (!roomRepo.add(newRoom))
+        {
+            delete newRoom;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newRoom;
+        throw;
+    }
+
+    return true;
 }
+
 
 bool RoomService::updateRoom(const Room& newValues)
 {

@@ -32,7 +32,7 @@ Chỉ số vị trí bắt đầu từ 0. `search(x)` dùng toán tử `==` củ
 
 Theo thiết kế, danh sách có thể lưu những tập thực thể trong bộ nhớ. Việc chọn thực thể cụ thể thuộc các bước sau; header hiện chưa được nối với model hay repository.
 
-- Lớp tự quản lý bộ nhớ động nhưng chưa định nghĩa hoặc vô hiệu hóa copy constructor/copy assignment. Sao chép mặc định sẽ sao chép `head`, có nguy cơ hai danh sách cùng sở hữu node và giải phóng lặp. Cần xử lý trước khi sao chép đối tượng.
+- Quy tắc sử dụng là cấm sao chép `DoublyLinkedList<T>` theo giá trị. Lớp chưa định nghĩa hoặc vô hiệu hóa copy constructor/copy assignment, nên compiler chưa chặn; sao chép mặc định chia sẻ `head`, có nguy cơ giải phóng node lặp. `swap()` chỉ hoán đổi `head` giữa hai danh sách.
 - Chưa có kiểm thử thực tế trong lần ghi tài liệu này. Nên kiểm tra danh sách rỗng, một node, chèn/xóa đầu–giữa–cuối và chỉ số ngoài phạm vi khi đến bước CTDL.
 
 ## Vai trò cụ thể trong dự án rạp chiếu phim

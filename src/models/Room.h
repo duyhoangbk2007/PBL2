@@ -32,10 +32,11 @@ public:
 
     bool linkSeat(Seat* seat);
     bool unlinkSeat(Seat* seat);
-    Seat* findSeat(const std::string& seatId);
-    int getSeatCount() const;
     bool linkShowtime(Showtime* showtime);
     bool unlinkShowtime(Showtime* showtime);
+    
+    Seat* findSeat(const std::string& seatId);
+    int getSeatCount() const;
     Showtime* findShowtime(const std::string& showtimeId);
     int getShowtimeCount() const;
     Seat* getSeatAt(int index);

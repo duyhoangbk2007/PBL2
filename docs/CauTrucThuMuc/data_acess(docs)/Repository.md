@@ -243,7 +243,7 @@ Destructor gọi `clear()` để xóa các đối tượng Model đang được 
 
 Điều này giúp hạn chế rò rỉ bộ nhớ.
 
-**Lưu ý về quyền sở hữu:** Không được tự ý `delete` một đối tượng đang thuộc quyền quản lý của Repository. Ngoài ra, lớp hiện chưa vô hiệu hóa thao tác sao chép; việc sao chép Repository có thể khiến nhiều đối tượng cùng giữ các con trỏ và gây lỗi giải phóng bộ nhớ hai lần.
+**Lưu ý về quyền sở hữu:** Không được tự ý `delete` một đối tượng đang thuộc quyền quản lý của Repository. Quy tắc sử dụng là cấm sao chép Repository theo giá trị; code hiện chưa vô hiệu hóa copy constructor/copy assignment nên compiler chưa chặn thao tác này. Bản sao có thể cùng sở hữu node và con trỏ, gây giải phóng lặp.
 
 ---
 
@@ -756,7 +756,7 @@ Hàm `parse()` và `serialize()` phải thống nhất với định dạng dữ
 
 Do Repository đang sở hữu các con trỏ thô (`T*`) và destructor giải phóng chúng, việc sao chép mặc định có nguy cơ dẫn đến lỗi bộ nhớ.
 
-Cần xử lý vấn đề quyền sở hữu và sao chép trước khi sử dụng Repository trong các tình huống có sao chép đối tượng.
+Không sao chép Repository theo giá trị khi chưa có cơ chế sao chép và quyền sở hữu an toàn được thống nhất.
 
 ---
 

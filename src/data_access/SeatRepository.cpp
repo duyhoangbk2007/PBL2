@@ -170,6 +170,7 @@ bool SeatRepository::save()
 }
 
 // load dữ liệu từ txt tạo thành đối tượng ghế rồi liên kết phòng với ghế
+
 bool SeatRepository::load()
 {
     if (repo.isLoaded() || !roomRepo.isLoaded())
@@ -180,32 +181,98 @@ bool SeatRepository::load()
     {
         return false;
     }
+    // Buoc 1: Kiem tra toan bo du lieu truoc khi lien ket
     for (int i = 0; i < repo.count(); i++)
     {
-        Seat* seat = repo.getAt(i); //tìm ghế trong danh sách ghế
-        Room* room = roomRepo.findById(seat->getRoomId()); //tìm phòng tương ứng từ ghế đó
-
-        if (room == nullptr || !seat->linkRoom(room)) //nếu k tìm thấy phòng hoặc có phòng nhưng ko link được ghế
+        Seat* seat = repo.getAt(i);
+        Room* room = roomRepo.findById(seat->getRoomId());
+        if (room == nullptr ||
+            seat->getRoom() != nullptr ||
+            seat->getRow() > room->getRowCount() ||
+            seat->getColumn() > room->getColumnCount())
         {
-            // xóa liên kết
-            for (int j = 0; j < i; j++) //j là duyệt lại những ghế trước đó đã liên kết (nếu dính 1 ghế lỗi(ghế thứ i))
-            {
-                Seat* linkedSeat = repo.getAt(j);
-                if (linkedSeat->getRoom() != nullptr)
-                {
-                    linkedSeat->getRoom()->unlinkSeat(linkedSeat);
-                }
-            }
-            repo.clear(); //xóa đối tượng seat
+            repo.clear();
             return false;
         }
+        // kiểm tra trùng ghế với những ghế có trong phòng
+        for (int j = 0; j < room->getSeatCount(); j++)
+        {
+            Seat* current = room->getSeatAt(j);
+            if (current == nullptr ||
+                current->getSeatId() == seat->getSeatId() ||
+                (current->getRow() == seat->getRow() &&
+                 current->getColumn() == seat->getColumn()))
+            {
+                repo.clear();
+                return false;
+            }
+        }
+
+        // Kiem tra trung giua cac Seat vua load
+        for (int j = 0; j < i; j++)
+        {
+            Seat* other = repo.getAt(j);
+            if (other->getRoomId() != seat->getRoomId())
+            {
+                continue;
+            }
+            if (other->getSeatId() == seat->getSeatId() ||
+                (other->getRow() == seat->getRow() &&
+                 other->getColumn() == seat->getColumn()))
+            {
+                repo.clear();
+                return false;
+            }
+        }
     }
+    // Buoc 2: Lien ket Seat voi Room
+    try
+    {
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Seat* seat = repo.getAt(i);
+            Room* room = roomRepo.findById(seat->getRoomId());
+            if (!seat->linkRoom(room))
+            {
+                // Thao tat ca lien ket da tao
+                for (int j = 0; j < repo.count(); j++)
+                {
+                    Seat* current = repo.getAt(j);
+                    if (current->getRoom() != nullptr)
+                    {
+                        current->getRoom()->unlinkSeat(current);
+                    }
+                }
+                repo.clear();
+                return false;
+            }
+        }
+    }
+    catch (...)
+    {
+        // rollback
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Seat* seat = repo.getAt(i);
+            if (seat->getRoom() != nullptr)
+            {
+                seat->getRoom()->unlinkSeat(seat);
+            }
+        }
+        repo.clear();
+        throw;
+    }
+
     return true;
 }
 
+
+
 bool SeatRepository::add(Seat* seat)
 {
-    if (!repo.isLoaded() || !roomRepo.isLoaded() || !isValidSeat(seat))
+    if (!repo.isLoaded() ||
+        !roomRepo.isLoaded() ||
+        !isValidSeat(seat))
     {
         return false;
     }
@@ -214,7 +281,7 @@ bool SeatRepository::add(Seat* seat)
     {
         return false;
     }
-    // duyệt các ghế có trong phòng xem thử có trùng không, ko cho thêm trùng
+    // Khong them lai con tro da duoc quan ly
     for (int i = 0; i < repo.count(); i++)
     {
         if (repo.getAt(i) == seat)
@@ -222,24 +289,31 @@ bool SeatRepository::add(Seat* seat)
             return false;
         }
     }
-    // kiểm tra ghế đã liên kết chưa, không thêm ghế đã liên kết
     if (seat->getRoom() != nullptr)
     {
         return false;
     }
-    // kiểm tra và liên kết ghế với phòng
+    // Lien ket Seat voi Room
     if (!seat->linkRoom(room))
     {
         return false;
     }
-    // Thêm ghế vào danh sách
-    if (!repo.add(seat))
+    try
+    {
+        if (!repo.add(seat))
+        {
+            room->unlinkSeat(seat);
+            return false;
+        }
+    }
+    catch (...)
     {
         room->unlinkSeat(seat);
-        return false;
+        throw;
     }
     return true;
 }
+
 
 bool SeatRepository::update(const Seat& newValues)
 {

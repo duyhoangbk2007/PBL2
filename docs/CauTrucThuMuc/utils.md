@@ -6,7 +6,7 @@
 | --- | --- |
 | `FileIO.h/.cpp` | `readLines(path, lines)` đọc các dòng TXT; `writeLines(path, lines)` ghi toàn bộ dòng; hai hàm trả `bool`. Không parse Model. |
 | `DateTime.h/.cpp` | `getCurrentDateTime()` trả chuỗi thời điểm hiện tại; chưa có API parse/so sánh ngày giờ đầy đủ. |
-| `IdGenerator.h/.cpp` | `generateNextId(entity, sequencesPath, id, updatedSequences)` tính mã mới và nội dung bộ đếm mới; **không tự ghi** `sequences.txt`. |
+| `IdGenerator.h/.cpp` | `generateNextId(entity, existingIds)` lấy ID lớn nhất đang có rồi cộng một; không dùng `sequences.txt`. |
 
 ## Sườn API đang có
 
@@ -26,15 +26,13 @@ public:
 
 class IdGenerator {
 public:
-    static void generateNextId(const std::string& entity,
-                               const std::string& sequencesPath,
-                               std::string& id,
-                               std::string& updatedSequences);
+    static std::string generateNextId(const std::string& entity,
+                                      const std::vector<std::string>& existingIds);
 };
 ```
 
 Đây là chữ ký rút từ các header hiện có; phần `#include` được lược bỏ để tập trung vào vai trò. Khi đọc dữ liệu, lớp truy xuất dữ liệu sẽ gọi `FileIO`, tự kiểm tra số trường/kiểu/khóa/tham chiếu và tạo Model. Khi cần lưu, lớp đó chuẩn bị các dòng rồi gọi `FileIO`; lỗi phải được báo rõ. Ghi nhiều file tuần tự **không nguyên tử**.
 
-Mọi TXT, kể cả `sequences.txt`, không có `#schema=1` hoặc dòng tiêu đề. Không đổi quy tắc ID hoặc định dạng TXT khi chỉ tổ chức lại thư mục. Thiết kế mới không dùng `TransactionManager`; mã cũ được lưu tại `tests/legacy/` để đối chiếu lịch sử Bước 03.
+Mọi TXT nghiệp vụ không có `#schema=1` hoặc dòng tiêu đề; `sequences.txt` không tham gia cấp ID hiện hành. Không đổi quy tắc ID hoặc định dạng TXT khi chỉ tổ chức lại thư mục. Thiết kế mới không dùng `TransactionManager`; mã cũ được lưu tại `tests/legacy/` để đối chiếu lịch sử Bước 03.
 
 Chi tiết từng tiện ích: [FileIO](<utils(docs)/FileIO.md>), [DateTime](<utils(docs)/DateTime.md>), [IdGenerator](<utils(docs)/IdGenerator.md>). Xem thêm [định dạng dữ liệu](../TongQuan/data_format.md) và [nhật ký Bước 03](../development/Buoc03_HaTangLuuTruDuLieu.md).
