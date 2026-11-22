@@ -88,20 +88,146 @@ Các thuộc tính đều là **tham chiếu**, giúp Service dùng chung các R
 | `getShowtimeAt(int)` | `const Showtime*` | Lấy suất tại vị trí trong Repository |
 | `getShowtimeCount()` | `int` | Đếm tổng số suất |
 
-## 6. Chi tiết các hàm
+## Chi tiết triển khai từng hàm (ShowtimeService.cpp)
 
-### 6.1. `isValidSchedule(const Showtime& showtime)` — private
+### ShowtimeService()
 
-**Quy trình:**
-1. Tìm phim theo `showtime.getMovieId()`; không có phim thì trả `false`.
-2. Kiểm tra `startAt` bằng `Validator::isValidDateTime()`.
-3. Yêu cầu `DateTime::getCurrentDateTime()` **nhỏ hơn** `startAt` (suất bắt đầu trong tương lai).
-4. Lấy ngày chiếu từ 10 ký tự đầu của `startAt`, yêu cầu thuộc đoạn từ `movie.getReleaseDate()` đến `movie.getEndDate()` (bao gồm hai đầu).
-5. Tính `expectedEnd = DateTime::addMinutes(startAt, movie.getDurationMinutes())` và yêu cầu `showtime.getEndAt() == expectedEnd`.
+#### A. Tổng quan
 
-Hàm này không trực tiếp kiểm tra trùng lịch phòng, trạng thái hoạt động của phòng/phim hoặc dữ liệu ID; các kiểm tra còn lại do `ShowtimeRepository` xử lý khi thêm/cập nhật.
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `ShowtimeRepository& showtimeRepo, MovieRepository& movieRepo, RoomRepository& roomRepo, AuthService& authService) : showtimeRepo(showtimeRepo), movieRepo(movieRepo), roomRepo(roomRepo), authService(authService`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-### 6.2. `load()`
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+ShowtimeService::ShowtimeService(ShowtimeRepository& showtimeRepo, MovieRepository& movieRepo, RoomRepository& roomRepo, AuthService& authService)
+    : showtimeRepo(showtimeRepo),
+      movieRepo(movieRepo),
+      roomRepo(roomRepo),
+      authService(authService)
+{}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### isValidSchedule()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tra cứu dữ liệu. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const Showtime& showtime`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tra cứu dữ liệu.**
+
+```cpp
+bool ShowtimeService::isValidSchedule(const Showtime& showtime)
+{
+    Movie* movie = movieRepo.findById(showtime.getMovieId());
+    if (movie == nullptr)
+    {
+        return false;
+    }
+    const string& startAt = showtime.getStartAt();
+    if (!Validator::isValidDateTime(startAt))
+    {
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        return false;
+    }
+    // Suat chieu phai bat dau trong tuong lai
+    if (!DateTime::isBefore(DateTime::getCurrentDateTime(), startAt))
+    {
+        return false;
+    }
+    // Ngay chieu nam trong khoang phat hanh phim
+    string showDate = startAt.substr(0, 10);
+    if (showDate < movie->getReleaseDate() ||
+```
+
+`false` báo thao tác không thành công. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        showDate > movie->getEndDate())
+    {
+        return false;
+    }
+    // Thoi gian ket thuc phai khop thoi luong phim
+    string expectedEnd = DateTime::addMinutes(startAt, movie->getDurationMinutes());
+    return showtime.getEndAt() == expectedEnd;
+}
+```
+
+`false` báo thao tác không thành công. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### load()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
 bool ShowtimeService::load()
@@ -110,9 +236,32 @@ bool ShowtimeService::load()
 }
 ```
 
-Nạp dữ liệu suất chiếu thông qua Repository. Nếu Repository đã được nạp, lần `load()` tiếp theo không được coi là một lần nạp mới thành công theo cơ chế Repository hiện tại.
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-### 6.3. `save()`
+### save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Cập nhật qua Repository.**
 
 ```cpp
 bool ShowtimeService::save()
@@ -121,94 +270,456 @@ bool ShowtimeService::save()
 }
 ```
 
-Ghi dữ liệu suất chiếu từ bộ nhớ xuống file TXT. Các thao tác `add`/`update` không đồng nghĩa với việc đã ghi file thành công; luồng ứng dụng cần gọi `save()` và kiểm tra kết quả.
+Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
 
-### 6.4. `addShowtime(Showtime* showtime)`
+### addShowtime()
 
-**Quy trình:**
-1. `authService.requireAdmin()`.
-2. Từ chối `nullptr`.
-3. Chỉ chấp nhận `ShowtimeStatus::SCHEDULED`.
-4. Gọi `isValidSchedule(*showtime)`.
-5. Gọi `showtimeRepo.add(showtime)` để kiểm tra và thêm dữ liệu.
+#### A. Tổng quan
 
-Trả `true` khi thêm thành công, `false` khi điều kiện không đạt. Nếu thêm thất bại, bên gọi vẫn phải quản lý/giải phóng con trỏ được cấp phát, trừ khi đã chuyển quyền sở hữu thành công cho Repository.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `Showtime* showtime`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
 
-### 6.5. `updateShowtime(const Showtime& newValues)`
+#### B. Quy trình thực hiện
 
-**Quy trình:**
-1. Yêu cầu quyền Admin.
-2. Tìm suất hiện tại theo `newValues.getShowtimeId()`; không thấy thì trả `false`.
-3. Chỉ sửa khi **suất hiện tại và dữ liệu mới đều có trạng thái `SCHEDULED`**.
-4. Suất hiện tại phải **chưa bắt đầu**.
-5. Dữ liệu mới phải vượt qua `isValidSchedule()`.
-6. Chuyển cho `showtimeRepo.update(newValues)` để kiểm tra/cập nhật.
-
-**Giới hạn hiện tại:** theo quy tắc nghiệp vụ, suất đã từng phát sinh vé (kể cả vé hủy) không được sửa phim/phòng/thời gian. `ShowtimeService` hiện chưa tự kiểm tra lịch sử vé vì chưa tích hợp `TicketRepository`; cần bổ sung trước khi áp dụng nghiệp vụ bán vé đầy đủ.
-
-### 6.6. `cancelShowtime(const string& showtimeId)`
-
-**Trạng thái: Chưa hoàn thiện.**
-
-Hàm hiện kiểm tra quyền Admin, Repository đã load, suất tồn tại, suất còn `SCHEDULED` và chưa bắt đầu. Sau đó hàm **trả `false`**, không thay đổi trạng thái suất.
-
-```cpp
-// TODO: Kiem tra khong con ve SOLD khi co TicketRepository.
-// Hien tai chua du thong tin de huy suat an toan.
-return false;
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
 ```
 
-Theo quy tắc nghiệp vụ, chỉ được hủy suất chưa bắt đầu và không còn vé `SOLD`. Không được tự động hủy vé hàng loạt. Sau khi có `TicketRepository`, cần bổ sung kiểm tra vé trước khi cập nhật trạng thái thành `CANCELLED`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### 6.7. `removeShowtime(const string& showtimeId)`
-
-**Trạng thái: Chưa hoàn thiện.**
-
-Hàm hiện kiểm tra quyền Admin, Repository đã load và suất tồn tại, rồi **trả `false`**; chưa gọi `showtimeRepo.removeById()`.
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
-// TODO: Chi duoc xoa khi suat chua tung co ve.
-// Chua co TicketRepository de xac minh dieu kien nay.
-return false;
+bool ShowtimeService::addShowtime(Showtime* showtime)
+{
+    authService.requirePermission("SHOWTIME_ADD");
+
+    if (!showtimeRepo.isLoaded() ||
+        !movieRepo.isLoaded() ||
+        !roomRepo.isLoaded() ||
+        showtime == nullptr)
+    {
+        return false;
 ```
 
-Chỉ được xóa vật lý suất chưa từng có vé, kể cả vé đã hủy. Cần kiểm tra lịch sử vé trước khi cho phép xóa.
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `SHOWTIME_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
 
-### 6.8. `findShowtimeById(const string& showtimeId)`
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    }
+    if (showtime->getStatus() != ShowtimeStatus::SCHEDULED)
+    {
+        return false;
+    }
+    if (!isValidSchedule(*showtime))
+    {
+        return false;
+    }
+    vector<string> existingIds;
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Tra cứu dữ liệu.**
+
+```cpp
+    for (int i = 0; i < showtimeRepo.count(); i++)
+    {
+        Showtime* current = showtimeRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getShowtimeId());
+    }
+    string showtimeId = IdGenerator::generateNextId("SHW", existingIds);
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 4 — Cập nhật qua Repository.**
+
+```cpp
+    Showtime* newShowtime = new Showtime(showtimeId,
+                                         showtime->getMovieId(),
+                                         showtime->getRoomId(),
+                                         showtime->getStartAt(),
+                                         showtime->getEndAt(),
+                                         showtime->getStatus());
+
+    try
+    {
+        if (!showtimeRepo.add(newShowtime))
+```
+
+Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `new` cấp phát đối tượng trên heap; cần theo dõi thời điểm quyền sở hữu được chuyển sang Repository để tránh rò rỉ bộ nhớ.
+
+**Bước 5 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        {
+            delete newShowtime;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newShowtime;
+        throw;
+    }
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+**Bước 6 — Trả kết quả.**
+
+```cpp
+    return true;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### updateShowtime()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const Showtime& newValues`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool ShowtimeService::updateShowtime(const Showtime& newValues)
+{
+    authService.requirePermission("SHOWTIME_UPDATE");
+    Showtime* current = showtimeRepo.findById(newValues.getShowtimeId());
+    if (current == nullptr)
+    {
+        return false;
+    }
+    // Khong sua suat da huy
+    if (current->getStatus() != ShowtimeStatus::SCHEDULED || newValues.getStatus() != ShowtimeStatus::SCHEDULED)
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `SHOWTIME_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    {
+        return false;
+    }
+    // Khong sua suat da bat dau
+    if (!DateTime::isBefore(DateTime::getCurrentDateTime(), current->getStartAt()))
+    {
+        return false;
+    }
+    if (!isValidSchedule(newValues))
+    {
+```
+
+`false` báo thao tác không thành công. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Cập nhật qua Repository.**
+
+```cpp
+        return false;
+    }
+    return showtimeRepo.update(newValues);
+}
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### cancelShowtime()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& showtimeId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool ShowtimeService::cancelShowtime(const string& showtimeId)
+{
+    authService.requirePermission("SHOWTIME_CANCEL");
+
+    if (!showtimeRepo.isLoaded())
+    {
+        return false;
+    }
+    Showtime* current = showtimeRepo.findById(showtimeId);
+    if (current == nullptr)
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `SHOWTIME_CANCEL` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    {
+        return false;
+    }
+    // Khong huy lai suat da huy
+    if (current->getStatus() != ShowtimeStatus::SCHEDULED)
+    {
+        return false;
+    }
+    // Chi huy suat chua bat dau
+    if (!DateTime::isBefore(DateTime::getCurrentDateTime(), current->getStartAt()))
+```
+
+`false` báo thao tác không thành công. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    {
+        return false;
+    }
+
+    // TODO: Kiem tra khong con ve SOLD khi co TicketRepository.
+    // Hien tai chua du thong tin de huy suat an toan.
+    return false;
+}
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### removeShowtime()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& showtimeId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool ShowtimeService::removeShowtime(const string& showtimeId)
+{
+    authService.requirePermission("SHOWTIME_DELETE");
+
+    if (!showtimeRepo.isLoaded())
+    {
+        return false;
+    }
+
+    Showtime* current = showtimeRepo.findById(showtimeId);
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `false` báo thao tác không thành công. Quyền `SHOWTIME_DELETE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+
+    if (current == nullptr)
+    {
+        return false;
+    }
+
+    // TODO: Chi duoc xoa khi suat chua tung co ve.
+    // Chua co TicketRepository de xac minh dieu kien nay.
+    return false;
+}
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### findShowtimeById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& showtimeId`.
+- **Giá trị trả về:** `const Showtime*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 const Showtime* ShowtimeService::findShowtimeById(const string& showtimeId)
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.findById(showtimeId);
 }
 ```
 
-Người dùng đăng nhập hợp lệ được tìm suất theo ID. Trả về `nullptr` nếu không tìm thấy; kết quả có thể là suất `SCHEDULED` hoặc `CANCELLED`.
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SHOWTIME_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
 
-### 6.9. `getShowtimeAt(int index)`
+### getShowtimeAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `const Showtime*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 const Showtime* ShowtimeService::getShowtimeAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.getAt(index);
 }
 ```
 
-Trả về suất tại vị trí `index` của Repository, không lọc trạng thái. Vị trí không hợp lệ được Repository xử lý bằng `nullptr`.
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SHOWTIME_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
-### 6.10. `getShowtimeCount()`
+### getShowtimeCount()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 int ShowtimeService::getShowtimeCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("SHOWTIME_VIEW");
     return showtimeRepo.count();
 }
 ```
 
-Đếm **toàn bộ suất chiếu** trong Repository, bao gồm cả suất đã hủy; không chỉ đếm suất sắp chiếu.
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SHOWTIME_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
 ## 7. Quy tắc dữ liệu và lưu trữ
 

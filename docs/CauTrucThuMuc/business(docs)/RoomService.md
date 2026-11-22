@@ -52,29 +52,65 @@ Vì vậy, RoomRepository và AuthService phải tồn tại lâu hơn RoomServi
 
 ---
 
-## 3. Constructor
+## Chi tiết triển khai từng hàm (RoomService.cpp)
+
+### RoomService()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `RoomRepository& roomRepo, AuthService& authService) : roomRepo(roomRepo), authService(authService`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
 
 ```cpp
-RoomService::RoomService(
-    RoomRepository& roomRepo,
-    AuthService& authService
-)
-    : roomRepo(roomRepo),
-      authService(authService)
+RoomService::RoomService(RoomRepository& roomRepo, AuthService& authService)
+    : roomRepo(roomRepo), authService(authService)
 {}
 ```
 
-### Chức năng
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Nhận các đối tượng Repository và AuthService đã được khởi tạo.
+### load()
 
-RoomService không tự tạo Repository hoặc tự đăng nhập.
+#### A. Tổng quan
 
-Cách thiết kế này giúp tách biệt trách nhiệm giữa tầng Business và Data Access.
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
----
+#### B. Quy trình thực hiện
 
-## 4. Hàm load()
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
 bool RoomService::load()
@@ -83,17 +119,32 @@ bool RoomService::load()
 }
 ```
 
-### Chức năng
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Nạp dữ liệu phòng chiếu từ file TXT thông qua RoomRepository.
+### save()
 
-RoomService không tự đọc file hoặc chuyển đổi dữ liệu.
+#### A. Tổng quan
 
-Đây là thao tác khởi tạo dữ liệu của hệ thống, không yêu cầu quyền Admin.
+- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
----
+#### B. Quy trình thực hiện
 
-## 5. Hàm save()
+```text
+Bắt đầu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Cập nhật qua Repository.**
 
 ```cpp
 bool RoomService::save()
@@ -102,269 +153,337 @@ bool RoomService::save()
 }
 ```
 
-### Chức năng
+Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
 
-Lưu dữ liệu Room hiện tại xuống file TXT thông qua Repository.
+### addRoom()
 
-Đây là thao tác lưu trữ dữ liệu của hệ thống, không yêu cầu quyền Admin.
+#### A. Tổng quan
 
----
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `Room* room`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
 
-## 6. Hàm addRoom()
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 bool RoomService::addRoom(Room* room)
 {
-    authService.requireAdmin();
-    return roomRepo.add(room);
+    authService.requirePermission("ROOM_ADD");
+
+    if (!roomRepo.isLoaded() || room == nullptr)
+    {
+        return false;
+    }
+
+    vector<string> existingIds;
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `ROOM_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+
+    for (int i = 0; i < roomRepo.count(); i++)
+    {
+        Room* current = roomRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getRoomId());
+    }
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 3 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+
+    string roomId = IdGenerator::generateNextId("ROM", existingIds);
+
+    Room* newRoom = new Room(roomId,
+                             room->getName(),
+                             room->getRowCount(),
+                             room->getColumnCount(),
+                             room->isActive());
+
+    try
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. `new` cấp phát đối tượng trên heap; cần theo dõi thời điểm quyền sở hữu được chuyển sang Repository để tránh rò rỉ bộ nhớ.
+
+**Bước 4 — Cập nhật qua Repository.**
+
+```cpp
+    {
+        if (!roomRepo.add(newRoom))
+        {
+            delete newRoom;
+            return false;
+        }
+    }
+    catch (...)
+    {
+        delete newRoom;
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+**Bước 5 — Trả kết quả.**
+
+```cpp
+        throw;
+    }
+
+    return true;
 }
 ```
 
-### Chức năng
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Thêm một phòng chiếu mới vào hệ thống.
+### updateRoom()
 
-### Bước 1: Kiểm tra quyền
+#### A. Tổng quan
 
-```cpp
-authService.requireAdmin();
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const Room& newValues`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
 ```
 
-Chỉ tài khoản Admin được phép thêm phòng.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Nếu chưa đăng nhập hoặc không có quyền Admin, hàm ném ngoại lệ.
-
-### Bước 2: Thêm phòng
-
-```cpp
-return roomRepo.add(room);
-```
-
-RoomRepository kiểm tra:
-
-- Repository đã load.
-- Dữ liệu Room hợp lệ.
-- Không trùng con trỏ.
-- Không trùng ID.
-
-### Kết quả
-
-- `true`: Thêm phòng thành công.
-- `false`: Repository từ chối thêm.
-- Ném `runtime_error`: Không có quyền Admin.
-
-Khi thêm thành công, Repository quản lý vòng đời đối tượng Room.
-
----
-
-## 7. Hàm updateRoom()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 bool RoomService::updateRoom(const Room& newValues)
-```
-
-### Chức năng
-
-Cập nhật thông tin phòng chiếu, đồng thời kiểm tra phân quyền và các ràng buộc nghiệp vụ.
-
-Đây là hàm có nhiều quy tắc hơn các thao tác CRUD thông thường.
-
-### Bước 1: Kiểm tra quyền Admin
-
-```cpp
-authService.requireAdmin();
-```
-
-Nếu không có quyền Admin, hàm ném ngoại lệ và không thực hiện cập nhật.
-
-### Bước 2: Kiểm tra Repository
-
-```cpp
-if (!roomRepo.isLoaded())
 {
-    return false;
+    authService.requirePermission("ROOM_UPDATE");
+    if (!roomRepo.isLoaded())
+    {
+        return false;
+    }
+    Room* room = roomRepo.findById(newValues.getRoomId());
+    if (room == nullptr)
+    {
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `ROOM_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        return false;
+    }
+    // Khong cho doi trang thai qua ham update
+    if (room->isActive() != newValues.isActive())
+    {
+        return false;
+    }
+    bool sizeChanged = room->getRowCount() != newValues.getRowCount() || room->getColumnCount() != newValues.getColumnCount();
+    // Khong cho doi kich thuoc neu da co suat chieu
+    if (sizeChanged && room->getShowtimeCount() > 0)
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Cập nhật qua Repository.**
+
+```cpp
+    {
+        return false;
+    }
+    return roomRepo.update(newValues);
 }
 ```
 
-Không cho phép cập nhật khi dữ liệu chưa được load.
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
 
-### Bước 3: Tìm phòng hiện tại
+### removeRoom()
 
-```cpp
-Room* room = roomRepo.findById(newValues.getRoomId());
+#### A. Tổng quan
 
-if (room == nullptr)
-{
-    return false;
-}
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& roomId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
 ```
 
-Hàm tìm phòng theo ID và thao tác trên đối tượng đang được quản lý.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Bước 4: Kiểm tra trạng thái active
-
-```cpp
-if (room->isActive() != newValues.isActive())
-{
-    return false;
-}
-```
-
-Không cho phép thay đổi trạng thái hoạt động thông qua `updateRoom()`.
-
-Ví dụ:
-
-- Phòng đang hoạt động, dữ liệu cập nhật vẫn active: Có thể tiếp tục.
-- Phòng đang hoạt động, dữ liệu cập nhật chuyển inactive: Bị từ chối.
-
-Việc thay đổi trạng thái phòng sẽ được xử lý bằng nghiệp vụ riêng nếu cần bổ sung sau này.
-
-### Bước 5: Kiểm tra thay đổi kích thước
-
-```cpp
-bool sizeChanged =
-    room->getRowCount() != newValues.getRowCount() ||
-    room->getColumnCount() != newValues.getColumnCount();
-```
-
-Biến `sizeChanged` cho biết số hàng hoặc số cột của phòng có thay đổi hay không.
-
-### Bước 6: Kiểm tra Showtime
-
-```cpp
-if (sizeChanged && room->getShowtimeCount() > 0)
-{
-    return false;
-}
-```
-
-Nếu phòng đã có suất chiếu, không cho phép thay đổi kích thước phòng.
-
-Quy tắc này tránh làm thay đổi sơ đồ phòng khi các suất chiếu đang liên kết với phòng đó.
-
-### Bước 7: Gọi Repository cập nhật
-
-```cpp
-return roomRepo.update(newValues);
-```
-
-Sau khi vượt qua các kiểm tra nghiệp vụ, RoomService chuyển việc cập nhật cho Repository.
-
-RoomRepository tiếp tục kiểm tra:
-
-- Dữ liệu phòng hợp lệ.
-- Không có ghế nằm ngoài kích thước phòng mới.
-
-### Kết quả
-
-- `true`: Cập nhật thành công.
-- `false`: Không thỏa điều kiện cập nhật.
-- Ném `runtime_error`: Không có quyền Admin.
-
----
-
-## 8. Hàm removeRoom()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 bool RoomService::removeRoom(const string& roomId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("ROOM_DELETE");
     return roomRepo.removeById(roomId);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Repository thực hiện thao tác dữ liệu. Quyền `ROOM_DELETE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Thao tác xóa có thể làm mất đối tượng do Repository sở hữu; các liên kết liên quan cần được Repository xử lý theo đúng ràng buộc của nó.
 
-Xóa một phòng chiếu theo ID.
+### findRoomById()
 
-### Quy trình
+#### A. Tổng quan
 
-1. Kiểm tra quyền Admin.
-2. Gọi RoomRepository để xóa phòng.
-3. Repository kiểm tra phòng có tồn tại hay không.
-4. Repository từ chối xóa nếu phòng còn Seat hoặc Showtime.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& roomId`.
+- **Giá trị trả về:** `const Room*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-### Kết quả
+#### B. Quy trình thực hiện
 
-- `true`: Xóa thành công.
-- `false`: Không tìm thấy phòng hoặc phòng còn liên kết.
-- Ném `runtime_error`: Không có quyền Admin.
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
 
----
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-## 9. Hàm findRoomById()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
-const Room* RoomService::findRoomById(
-    const string& roomId
-)
+const Room* RoomService::findRoomById(const string& roomId)
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.findById(roomId);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `ROOM_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
 
-Tìm phòng chiếu theo ID.
+### getRoomAt()
 
-Yêu cầu người dùng đã đăng nhập.
+#### A. Tổng quan
 
-Cả Admin và Staff đều có thể tra cứu.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `const Room*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-### Vì sao trả về `const Room*`?
+#### B. Quy trình thực hiện
 
-Để bên gọi không thể sửa trực tiếp thông tin Room thông qua con trỏ trả về.
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
 
-Mọi thay đổi phải đi qua các hàm nghiệp vụ được kiểm soát quyền.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Kết quả
-
-- Trả về `const Room*` nếu tìm thấy.
-- Trả về `nullptr` nếu không tìm thấy.
-- Ném ngoại lệ nếu chưa đăng nhập.
-
----
-
-## 10. Hàm getRoomAt()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 const Room* RoomService::getRoomAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.getAt(index);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `ROOM_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
-Lấy phòng theo vị trí trong danh sách.
+### getRoomCount()
 
-Yêu cầu đăng nhập.
+#### A. Tổng quan
 
-Trả về `nullptr` nếu chỉ số không hợp lệ.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
----
+#### B. Quy trình thực hiện
 
-## 11. Hàm getRoomCount()
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 int RoomService::getRoomCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("ROOM_VIEW");
     return roomRepo.count();
 }
 ```
 
-### Chức năng
-
-Lấy tổng số phòng chiếu đang được quản lý trong bộ nhớ.
-
-Không phân biệt phòng active hay inactive.
-
-Yêu cầu đăng nhập.
-
----
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `ROOM_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
 ## 12. Luồng hoạt động
 

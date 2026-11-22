@@ -143,11 +143,12 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
 
-**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; phần hủy vé Backend đã có test PASS, toàn Bước 11 chưa hoàn thành.**
 
-- [ ] Mở rộng `BookingService` cho hủy/hoàn vé, thu hồi điểm và giữ lịch sử; cung cấp truy vấn hóa đơn.
+- [x] `BookingService::cancelTicket()` hủy từng vé, ghi nhận tiền hoàn, thu hồi điểm, giữ Ticket/Invoice lịch sử và lưu TXT; `test_cancel_ticket.cpp` đạt 32 PASS, 0 FAIL ngày 2026-11-22.
+- [ ] Cung cấp truy vấn lịch sử hóa đơn, trạng thái Invoice suy ra và tiền còn lại.
 - [ ] Triển khai `ReportService` cho tiền bán/hoàn, doanh thu thuần, vé bán/hủy và top phim.
-- [ ] Kiểm thử C++ nghiệp vụ hủy, quyền, lịch sử, thống kê và trường hợp biên; bàn giao hợp đồng dữ liệu cho GUI.
+- [ ] Kiểm thử C++ lịch sử, thống kê và tích hợp GUI; bàn giao hợp đồng dữ liệu đầy đủ cho Kiệt. Các test hủy vé riêng đã chạy PASS.
 
 ### Bước 12 – Xây dựng giao diện Qt
 

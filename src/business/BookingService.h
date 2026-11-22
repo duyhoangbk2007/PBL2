@@ -24,8 +24,8 @@ struct BookingItem
 
 struct BookingSummary
 {
-    std::vector<double> ticketPrices;
-    double totalAmount = 0;
+    std::vector<double> ticketPrices; //lưu giá phải trả của 1 vé
+    double totalAmount = 0; // tổng tiền
     int earnedPoints = 0;
 };
 
@@ -69,6 +69,10 @@ public:
                        bool ageConfirmed,
                        bool paymentConfirmed,
                        std::string& invoiceId);
+
+    bool cancelTicket(const std::string& ticketId,
+                      const std::string& reason,
+                      bool refundConfirmed);
 };
 
 #endif

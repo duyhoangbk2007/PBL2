@@ -1,210 +1,39 @@
-# InvoiceRepository
+# InvoiceRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`InvoiceRepository` là lớp thuộc tầng **Data Access**, chịu trách nhiệm quản lý dữ liệu hóa đơn (`Invoice`) của hệ thống bán vé rạp chiếu phim.
+`InvoiceRepository` quản lý `Invoice` qua `Repository<Invoice>` và tham chiếu đến Showtime, User, Member. `repo` sở hữu hóa đơn; các con trỏ liên kết đến Model khác là con trỏ mượn. Nạp các Repository tham chiếu trước Invoice; hủy Invoice trước những Repository đó để destructor tháo liên kết an toàn.
 
-Lớp sử dụng `Repository<Invoice>` để thực hiện các thao tác lưu trữ cơ bản, đồng thời phối hợp với các Repository khác để kiểm tra và thiết lập quan hệ giữa hóa đơn với suất chiếu, nhân viên và thành viên.
+Mỗi bản ghi TXT chứa ID hóa đơn, các ID tham chiếu, thời gian, tổng tiền và điểm. Repository kiểm tra định dạng, tham chiếu và liên kết; việc bán vé, tính giá, phân quyền thuộc Business. `rollbackPending()` chỉ dùng cho hóa đơn mới đang tạo, không dùng xóa lịch sử đã lưu. `load()`/`save()` xử lý riêng một file, không tạo transaction đa file.
 
-**File liên quan:**
+Mã nguồn: `src/data_access/InvoiceRepository.cpp` và `src/data_access/InvoiceRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-- `src/data_access/InvoiceRepository.h`
-- `src/data_access/InvoiceRepository.cpp`
-- `src/data_access/Repository.h`
-- `src/models/Invoice.h`
-- `src/models/Invoice.cpp`
-- `src/data_access/ShowtimeRepository.h`
-- `src/data_access/UserRepository.h`
-- `src/data_access/MemberRepository.h`
-- `tests/test_invoice_ticket_repository.cpp`
+## 2. Chi tiết từng hàm
 
-**Trách nhiệm chính:**
+### InvoiceRepository::InvoiceRepository()
 
-1. Đọc dữ liệu hóa đơn từ file TXT.
-2. Chuyển đổi dữ liệu giữa chuỗi TXT và đối tượng `Invoice`.
-3. Kiểm tra tính hợp lệ của dữ liệu hóa đơn.
-4. Kiểm tra các tham chiếu đến suất chiếu, nhân viên và thành viên.
-5. Thiết lập và tháo các liên kết giữa những đối tượng.
-6. Thêm hóa đơn mới vào bộ nhớ.
-7. Tìm kiếm, truy xuất và lọc hóa đơn.
-8. Ghi dữ liệu hóa đơn xuống file TXT.
-9. Đảm bảo không để lại liên kết sai khi quá trình nạp dữ liệu thất bại.
+#### A. Tổng quan
 
-`InvoiceRepository` không trực tiếp xử lý nghiệp vụ bán vé, tính giá vé, giảm giá hoặc phân quyền thao tác. Những trách nhiệm đó thuộc tầng Business Logic.
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath, ShowtimeRepository& showtimeRepo, UserRepository& userRepo, MemberRepository& memberRepo`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
 
----
+#### B. Quy trình thực hiện
 
-## 2. Các thư viện sử dụng
-
-### 2.1. `<string>`
-
-Cung cấp kiểu dữ liệu `std::string`, dùng để lưu trữ và xử lý chuỗi ký tự.
-
-Ví dụ:
-
-```cpp
-string invoiceId = "INV0001";
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Một số hàm thường dùng:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-| Hàm | Ý nghĩa |
-|---|---|
-| `find()` | Tìm vị trí xuất hiện của chuỗi hoặc ký tự |
-| `substr()` | Lấy một phần của chuỗi |
-| `size()` | Trả về độ dài chuỗi |
-| `empty()` | Kiểm tra chuỗi có rỗng không |
-| `to_string()` | Chuyển số thành chuỗi |
-
-### 2.2. `<vector>`
-
-Cung cấp `std::vector`, một cấu trúc dữ liệu dạng mảng có khả năng thay đổi kích thước.
-
-Ví dụ:
-
-```cpp
-vector<Invoice*> result;
-result.push_back(invoice);
-```
-
-`vector<Invoice*>` lưu các con trỏ đến hóa đơn, không tự tạo bản sao của những đối tượng hóa đơn.
-
-Các hàm quan trọng:
-
-- `push_back(value)`: thêm phần tử vào cuối vector.
-- `size()`: trả về số phần tử.
-- `empty()`: kiểm tra vector rỗng.
-- `operator[]`: truy cập phần tử theo chỉ số.
-
-**Vì sao dùng `vector` để trả kết quả lọc?**
-
-Các hàm như `getByStaff()` có thể trả về nhiều hóa đơn. `vector` giúp lưu danh sách kết quả và trả về thuận tiện mà không phải sao chép các đối tượng `Invoice`.
-
-### 2.3. `<stdexcept>`
-
-Cung cấp các lớp ngoại lệ tiêu chuẩn, chẳng hạn `std::runtime_error`.
-
-Ví dụ:
-
-```cpp
-throw runtime_error("Du lieu Invoice khong hop le");
-```
-
-`throw` dùng để phát sinh ngoại lệ khi chương trình gặp tình huống không thể tiếp tục xử lý bình thường.
-
-Ngoại lệ có thể được bắt bằng `try` và `catch`.
-
-```cpp
-try
-{
-    // Thuc hien thao tac
-}
-catch (const exception&)
-{
-    // Xu ly loi
-}
-```
-
-`const exception&` có nghĩa là bắt ngoại lệ thông qua tham chiếu hằng, tránh sao chép đối tượng ngoại lệ.
-
-### 2.4. `<cmath>`
-
-Cung cấp các hàm toán học.
-
-Trong `InvoiceRepository`, hàm quan trọng là:
-
-```cpp
-isfinite(totalAmount)
-```
-
-Hàm `std::isfinite()` kiểm tra một số thực có phải giá trị hữu hạn hay không.
-
-Ví dụ:
-
-- `100000.0`: hữu hạn.
-- `0.0`: hữu hạn.
-- `NaN`: không hữu hạn.
-- `Infinity`: không hữu hạn.
-
-Việc kiểm tra này giúp tránh lưu các giá trị tiền không hợp lệ.
-
-### 2.5. Các thư viện nội bộ
-
-| File | Mục đích |
-|---|---|
-| `Repository.h` | Cung cấp lớp Repository tổng quát |
-| `Invoice.h` | Định nghĩa Model hóa đơn |
-| `ShowtimeRepository.h` | Truy xuất suất chiếu |
-| `UserRepository.h` | Truy xuất nhân viên |
-| `MemberRepository.h` | Truy xuất thành viên |
-| `Validator.h` | Kiểm tra ID, ngày giờ và định dạng số |
-| `DateTime.h` | Hỗ trợ so sánh thời điểm |
-
----
-
-## 3. Cấu trúc lớp
-
-### 3.1. Thuộc tính
-
-```cpp
-Repository<Invoice> repo;
-
-ShowtimeRepository& showtimeRepo;
-UserRepository& userRepo;
-MemberRepository& memberRepo;
-```
-
-**`Repository<Invoice> repo`**
-
-Đây là đối tượng thuộc lớp template `Repository<T>`, với `T` được thay bằng `Invoice`.
-
-Nhờ đó, `InvoiceRepository` có thể tái sử dụng những chức năng chung như:
-
-- `load()`
-- `save()`
-- `add()`
-- `findById()`
-- `getAt()`
-- `count()`
-- `clear()`
-- `isLoaded()`
-
-**Ba thuộc tính tham chiếu Repository**
-
-Dấu `&` thể hiện tham chiếu đến một đối tượng đã tồn tại.
-
-Ví dụ:
-
-```cpp
-UserRepository& userRepo;
-```
-
-`InvoiceRepository` không tạo bản sao của `UserRepository`, mà sử dụng chính đối tượng được truyền vào constructor.
-
-Điều này giúp các Repository làm việc trên cùng một tập dữ liệu trong bộ nhớ.
-
-**Lưu ý về vòng đời:** Những Repository được tham chiếu phải tồn tại lâu hơn `InvoiceRepository`.
-
-### 3.2. Hàm static
-
-```cpp
-static string getInvoiceId(Invoice* invoice);
-static Invoice* stringToInvoice(const string& line);
-static string invoiceToString(Invoice* invoice);
-static bool isValidInvoice(const Invoice* invoice);
-```
-
-Từ khóa `static` ở đây cho biết hàm thuộc về lớp và không cần truy cập một đối tượng `InvoiceRepository` cụ thể.
-
-Các hàm này chủ yếu xử lý dữ liệu đầu vào, đầu ra và kiểm tra cấu trúc hóa đơn.
-
-Nhờ không phụ thuộc vào trạng thái của một đối tượng Repository cụ thể, chúng phù hợp để truyền làm callback cho `Repository<Invoice>`.
-
----
-
-## 4. Constructor và Destructor
-
-### 4.1. Constructor
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
 InvoiceRepository::InvoiceRepository(const string& filePath,
@@ -219,41 +48,32 @@ InvoiceRepository::InvoiceRepository(const string& filePath,
 }
 ```
 
-Constructor nhận đường dẫn file hóa đơn và ba Repository phụ thuộc.
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-**Giải thích initializer list**
+### InvoiceRepository::~InvoiceRepository()
 
-Phần sau dấu `:` được gọi là *member initializer list*, dùng để khởi tạo các thuộc tính trước khi thân constructor được thực thi.
+#### A. Tổng quan
 
-Ví dụ:
+- **Mục đích:** Tháo liên kết hoặc giải phóng tài nguyên khi hủy Repository.
+- **Tham số:** không có.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các Repository được tham chiếu cần còn sống đến khi destructor tháo liên kết.
 
-```cpp
-userRepo(userRepo)
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tháo liên kết đối tượng
+    |
+    v
+Kết thúc
 ```
 
-- `userRepo` bên trái: thuộc tính của lớp.
-- `userRepo` bên phải: tham số truyền vào constructor.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Với thuộc tính kiểu tham chiếu, việc khởi tạo bằng initializer list là bắt buộc.
-
-**Giải thích callback**
-
-```cpp
-repo(filePath, getInvoiceId, stringToInvoice, invoiceToString)
-```
-
-Bốn tham số lần lượt là:
-
-1. Đường dẫn file TXT.
-2. Hàm lấy ID của một Invoice.
-3. Hàm chuyển dòng TXT thành Invoice.
-4. Hàm chuyển Invoice thành dòng TXT.
-
-`Repository<Invoice>` sẽ gọi những hàm này khi cần, thay vì tự biết cấu trúc riêng của hóa đơn.
-
-Đây là kỹ thuật truyền hàm làm tham số, thường gọi là **callback**.
-
-### 4.2. Destructor
+**Bước 1 — Tháo liên kết đối tượng.**
 
 ```cpp
 InvoiceRepository::~InvoiceRepository()
@@ -262,17 +82,83 @@ InvoiceRepository::~InvoiceRepository()
 }
 ```
 
-Destructor được gọi khi đối tượng `InvoiceRepository` bị hủy.
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo.
 
-Hàm `unlinkAll()` tháo liên kết của các hóa đơn khỏi những đối tượng liên quan trước khi `Repository<Invoice>` giải phóng dữ liệu do nó sở hữu.
+### InvoiceRepository::unlinkAll()
 
-Điều này giúp tránh việc `User` hoặc `Member` tiếp tục giữ con trỏ đến hóa đơn đã bị xóa.
+#### A. Tổng quan
 
----
+- **Mục đích:** Tháo các liên kết đang giữ.
+- **Tham số:** không có.
+- **Giá trị trả về:** `void`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
 
-## 5. Các hàm hỗ trợ chuyển đổi dữ liệu
+#### B. Quy trình thực hiện
 
-### 5.1. `getInvoiceId()`
+```text
+Bắt đầu
+    |
+    v
+Tháo liên kết đối tượng
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tháo liên kết đối tượng.**
+
+```cpp
+void InvoiceRepository::unlinkAll()
+{
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Invoice* invoice = repo.getAt(i);
+        if (invoice != nullptr)
+        {
+            invoice->unlinkReferences();
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+        }
+    }
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### InvoiceRepository::getInvoiceId()
+
+#### A. Tổng quan
+
+- **Mục đích:** Lấy ID của đối tượng làm khóa.
+- **Tham số:** `Invoice* invoice`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 string InvoiceRepository::getInvoiceId(Invoice* invoice)
@@ -281,317 +167,812 @@ string InvoiceRepository::getInvoiceId(Invoice* invoice)
     {
         return "";
     }
-
     return invoice->getInvoiceId();
 }
 ```
 
-**Mục đích:** Lấy mã hóa đơn từ đối tượng `Invoice`.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Nếu con trỏ bằng `nullptr`, hàm trả về chuỗi rỗng để tránh truy cập con trỏ không hợp lệ.
+### InvoiceRepository::isValidInvoice()
 
-Toán tử `->` dùng để truy cập thành viên thông qua con trỏ.
+#### A. Tổng quan
 
-Ví dụ:
+- **Mục đích:** Kiểm tra tính hợp lệ của dữ liệu đầu vào.
+- **Tham số:** `const Invoice* invoice`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
-```cpp
-invoice->getInvoiceId();
-```
-
-Tương đương:
-
-```cpp
-(*invoice).getInvoiceId();
-```
-
-### 5.2. `stringToInvoice()`
-
-**Mục đích:** Chuyển một dòng TXT thành đối tượng `Invoice`.
-
-Định dạng dữ liệu:
+#### B. Quy trình thực hiện
 
 ```text
-invoiceId|showtimeId|staffId|memberId|createdAt|totalAmount
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Kết thúc
 ```
 
-Ví dụ:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-```text
-INV0001|SHW0001|USR0001|MEM0001|2027-01-10T09:00:00|150000
-```
-
-Quy trình:
-
-1. Tách dòng TXT thành sáu trường.
-2. Kiểm tra số lượng trường.
-3. Chuyển trường `totalAmount` thành `double`.
-4. Tạo đối tượng `Invoice`.
-5. Kiểm tra tính hợp lệ của đối tượng.
-6. Trả về con trỏ Invoice nếu hợp lệ.
-
-**Giải thích `size_t`**
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
-size_t start = 0;
-```
-
-`size_t` là kiểu số nguyên không dấu thường được dùng để biểu diễn kích thước hoặc vị trí trong bộ nhớ và các container.
-
-Các hàm như `string::find()` và `string::size()` sử dụng kiểu này.
-
-**Giải thích `string::npos`**
-
-```cpp
-size_t pos = line.find('|', start);
-
-if (pos == string::npos)
+bool InvoiceRepository::isValidInvoice(const Invoice* invoice)
 {
-    // Khong tim thay dau |
+    if (invoice == nullptr)
+    {
+        return false;
+    }
+    if (!Validator::isValidId(invoice->getInvoiceId(), "INV") ||
+        !Validator::isValidId(invoice->getShowtimeId(), "SHW") ||
+        !Validator::isValidId(invoice->getStaffId(), "USR"))
+    {
+        return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+    }
+    if (!invoice->getMemberId().empty() &&
+        !Validator::isValidId(invoice->getMemberId(), "MEM"))
+    {
+        return false;
+    }
+    if (!Validator::isValidDateTime(invoice->getCreatedAt()))
+    {
+        return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+    }
+    double totalAmount = invoice->getTotalAmount();
+    if (!isfinite(totalAmount) || totalAmount < 0)
+    {
+        return false;
+    }
+    return true;
 }
 ```
 
-`string::npos` là giá trị đặc biệt biểu thị việc không tìm thấy vị trí cần tìm.
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-**Giải thích `substr()`**
+### InvoiceRepository::stringToInvoice()
 
-```cpp
-line.substr(start, pos - start)
-```
+#### A. Tổng quan
 
-Hàm lấy chuỗi con bắt đầu từ `start`, với độ dài `pos - start`.
+- **Mục đích:** Chuyển một dòng TXT thành đối tượng Model.
+- **Tham số:** `const string& line`.
+- **Giá trị trả về:** `Invoice*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
 
-**Giải thích `stod()`**
-
-```cpp
-totalAmount = stod(fields[5], &pos);
-```
-
-`std::stod()` chuyển một chuỗi thành số thực kiểu `double`.
-
-Tham số `&pos` nhận số ký tự mà hàm đã xử lý thành công.
-
-Ví dụ, với chuỗi `"150000abc"`, `stod()` có thể đọc được phần `150000` nhưng chưa đọc hết chuỗi.
-
-Vì vậy cần kiểm tra:
-
-```cpp
-if (pos != fields[5].size())
-{
-    throw runtime_error("Sai dinh dang tong tien");
-}
-```
-
-Điều này ngăn các giá trị có phần ký tự thừa được chấp nhận.
-
-**Quản lý bộ nhớ**
-
-Đối tượng được tạo bằng:
-
-```cpp
-Invoice* invoice = new Invoice(...);
-```
-
-Nếu dữ liệu không hợp lệ, phải gọi `delete invoice` trước khi ném ngoại lệ để tránh rò rỉ bộ nhớ.
-
-### 5.3. `invoiceToString()`
-
-**Mục đích:** Chuyển đối tượng `Invoice` thành chuỗi theo đúng định dạng TXT.
-
-Hàm kiểm tra dữ liệu trước khi chuyển đổi.
-
-Sau đó, các trường được ghép bằng ký tự `|`.
-
-```cpp
-to_string(invoice->getTotalAmount())
-```
-
-`std::to_string()` chuyển giá trị số thành chuỗi.
-
-Ví dụ:
-
-```cpp
-to_string(150000.0)
-```
-
-Thường tạo ra:
+#### B. Quy trình thực hiện
 
 ```text
-150000.000000
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Kết thúc
 ```
 
-Định dạng này vẫn biểu diễn giá trị số hợp lệ trong TXT.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
----
-
-## 6. Kiểm tra dữ liệu và tham chiếu
-
-### 6.1. `isValidInvoice()`
-
-Hàm kiểm tra dữ liệu cơ bản của một hóa đơn, không cần truy cập các Repository khác.
-
-Các điều kiện gồm:
-
-| Trường | Điều kiện |
-|---|---|
-| `invoiceId` | ID hợp lệ, tiền tố `INV` |
-| `showtimeId` | ID hợp lệ, tiền tố `SHW` |
-| `staffId` | ID hợp lệ, tiền tố `USR` |
-| `memberId` | Rỗng hoặc ID hợp lệ với tiền tố `MEM` |
-| `createdAt` | Đúng định dạng ngày giờ |
-| `totalAmount` | Số hữu hạn, không âm |
-
-**Phân biệt:** ID đúng định dạng không đồng nghĩa với đối tượng được tham chiếu thực sự tồn tại.
-
-Ví dụ, `SHW9999` có thể đúng định dạng nhưng không có trong dữ liệu suất chiếu.
-
-### 6.2. `isValidReference()`
-
-Hàm kiểm tra các quan hệ giữa Invoice và những đối tượng khác.
-
-Quy trình:
-
-1. Gọi `isValidInvoice()` để kiểm tra dữ liệu cơ bản.
-2. Kiểm tra các Repository phụ thuộc đã load.
-3. Tìm suất chiếu theo `showtimeId`.
-4. Tìm nhân viên theo `staffId`.
-5. Kiểm tra vai trò nhân viên là `STAFF` hoặc `ADMIN`.
-6. Kiểm tra thời điểm tạo hóa đơn trước thời điểm bắt đầu suất chiếu.
-7. Nếu có `memberId`, kiểm tra thành viên tồn tại.
-
-**Vì sao phải tách hai hàm kiểm tra?**
-
-`isValidInvoice()` chỉ phụ thuộc vào dữ liệu của hóa đơn.
-
-`isValidReference()` phụ thuộc vào các đối tượng khác trong hệ thống.
-
-Việc tách riêng giúp code rõ ràng, dễ tái sử dụng và dễ kiểm thử.
-
-**Lưu ý:** Điều kiện `createdAt` phải trước `startAt` là điều kiện đang được áp dụng trong bản triển khai Repository. Cần giữ đồng bộ với quy tắc nghiệp vụ được chốt cho hệ thống.
-
----
-
-## 7. Nạp và lưu dữ liệu
-
-### 7.1. `load()`
-
-Đây là một trong những hàm quan trọng nhất của lớp.
-
-**Mục đích:** Đọc dữ liệu hóa đơn từ TXT và thiết lập các liên kết trong bộ nhớ.
-
-Quá trình gồm ba giai đoạn.
-
-**Giai đoạn 1: Kiểm tra điều kiện ban đầu**
-
-- Không cho phép load lại khi Repository đã load.
-- Yêu cầu `ShowtimeRepository`, `UserRepository` và `MemberRepository` đã load.
-
-**Giai đoạn 2: Đọc và kiểm tra dữ liệu**
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
 
 ```cpp
-repo.load();
-```
-
-`Repository<Invoice>` đọc file và sử dụng callback `stringToInvoice()` để tạo đối tượng.
-
-Sau đó, `InvoiceRepository` duyệt từng hóa đơn để kiểm tra tham chiếu.
-
-**Giai đoạn 3: Liên kết đối tượng**
-
-Với mỗi hóa đơn:
-
-```cpp
-invoice->linkShowtime(showtime);
-invoice->linkSeller(seller);
-invoice->linkMember(member);
-```
-
-Các hàm này thiết lập quan hệ giữa hóa đơn và những đối tượng tương ứng.
-
-**Giải thích rollback**
-
-Rollback có nghĩa là hoàn tác những thay đổi đã thực hiện khi một thao tác thất bại.
-
-Ví dụ:
-
-- Hóa đơn thứ nhất đã liên kết thành công.
-- Hóa đơn thứ hai liên kết thất bại.
-- Không thể giữ trạng thái mà một số hóa đơn đã liên kết, một số chưa.
-
-Khi đó:
-
-```cpp
-unlinkAll();
-repo.clear();
-```
-
-- `unlinkAll()`: tháo các liên kết đã tạo.
-- `repo.clear()`: xóa các hóa đơn đã nạp và đưa Repository về trạng thái chưa load.
-
-**Giải thích `catch (...)`**
-
-```cpp
-catch (...)
+Invoice* InvoiceRepository::stringToInvoice(const string& line)
 {
-    unlinkAll();
-    repo.clear();
-    throw;
+    vector<string> fields;
+    size_t start = 0;
+    while (true)
+    {
+        size_t pos = line.find('|', start);
+        if (pos == string::npos)
+        {
+            fields.push_back(line.substr(start));
+```
+
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 2 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+
+    if (fields.size() != 6)
+    {
+        throw runtime_error("Sai so luong truong Invoice");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 3 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+    }
+    double totalAmount = 0;
+    try
+    {
+        if (!Validator::isValidNumber(fields[5]))
+        {
+            throw runtime_error("Sai dinh dang tong tien");
+        }
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 4 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+        size_t pos = 0;
+        totalAmount = stod(fields[5], &pos);
+        if (pos != fields[5].size())
+        {
+            throw runtime_error("Sai dinh dang tong tien");
+        }
+    }
+    catch (const exception&)
+    {
+        throw runtime_error("Tong tien Invoice khong hop le");
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường. Phép parse đổi chuỗi TXT sang trường có kiểu; dữ liệu không chuyển được phải bị từ chối trước khi tạo đối tượng hợp lệ.
+
+**Bước 5 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+
+    Invoice* invoice = new Invoice(fields[0],
+                                   fields[1],
+                                   fields[2],
+                                   fields[3],
+                                   fields[4],
+                                   totalAmount);
+```
+
+`new` cấp phát Model trên heap. Cho đến khi Repository nhận thành công, nhánh lỗi hoặc caller vẫn phải chịu trách nhiệm giải phóng.
+
+**Bước 6 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+
+    if (!isValidInvoice(invoice))
+    {
+        delete invoice;
+        throw runtime_error("Du lieu Invoice khong hop le");
+    }
+    return invoice;
 }
 ```
 
-`catch (...)` bắt mọi ngoại lệ C++ có thể được xử lý bởi cơ chế exception.
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `delete` giải phóng đối tượng; không được dùng lại con trỏ sau lệnh này. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
 
-`throw;` không có đối số sẽ ném lại ngoại lệ hiện tại, giữ nguyên loại ngoại lệ ban đầu.
+### InvoiceRepository::invoiceToString()
 
-Nhờ vậy, hàm có thể dọn dẹp dữ liệu trước khi chuyển lỗi cho tầng gọi bên ngoài.
+#### A. Tổng quan
 
-### 7.2. `save()`
+- **Mục đích:** Chuyển đối tượng Model thành một dòng TXT.
+- **Tham số:** `Invoice* invoice`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+string InvoiceRepository::invoiceToString(Invoice* invoice)
+{
+    if (!isValidInvoice(invoice))
+    {
+        throw runtime_error("Invoice khong hop le khi ghi file");
+    }
+
+    return invoice->getInvoiceId() + "|" +
+           invoice->getShowtimeId() + "|" +
+           invoice->getStaffId() + "|" +
+           invoice->getMemberId() + "|" +
+           invoice->getCreatedAt() + "|" +
+           to_string(invoice->getTotalAmount());
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### InvoiceRepository::isValidReference()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra các ID tham chiếu còn tồn tại.
+- **Tham số:** `const Invoice* invoice`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+bool InvoiceRepository::isValidReference(const Invoice* invoice)
+{
+    if (!isValidInvoice(invoice))
+    {
+        return false;
+    }
+    if (!showtimeRepo.isLoaded() ||
+        !userRepo.isLoaded() ||
+        !memberRepo.isLoaded())
+    {
+        return false;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+    Showtime* showtime = showtimeRepo.findById(invoice->getShowtimeId());
+    User* seller = userRepo.findById(invoice->getStaffId());
+    if (showtime == nullptr || seller == nullptr)
+    {
+        return false;
+    }
+    if (seller->getRole() != UserRole::STAFF &&
+        seller->getRole() != UserRole::ADMIN)
+    {
+        return false;
+```
+
+Tra User theo ID để kiểm tra nhân viên liên quan có trong dữ liệu đã nạp. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+    if (!DateTime::isBefore(invoice->getCreatedAt(),
+                            showtime->getStartAt()))
+    {
+        return false;
+    }
+    if (!invoice->getMemberId().empty())
+    {
+        Member* member = memberRepo.findById(invoice->getMemberId());
+```
+
+Tra Member theo ID; kết quả rỗng chỉ được chấp nhận nếu nhánh nghiệp vụ cho phép hóa đơn không có thành viên. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Từ chối điều kiện không đạt.**
+
+```cpp
+        if (member == nullptr)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+### InvoiceRepository::load()
+
+#### A. Tổng quan
+
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, ngoại lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Đọc dữ liệu TXT (không đạt: false)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Nối quan hệ giữa các Model (lỗi: throw)
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Từ chối điều kiện không đạt.**
+
+```cpp
+bool InvoiceRepository::load()
+{
+    if (repo.isLoaded() ||
+        !showtimeRepo.isLoaded() ||
+        !userRepo.isLoaded() ||
+        !memberRepo.isLoaded())
+    {
+        return false;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Đọc dữ liệu TXT.**
+
+```cpp
+    }
+    if (!repo.load())
+    {
+        return false;
+    }
+    try
+    {
+        // Giai doan 1: Kiem tra tham chieu
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Invoice* invoice = repo.getAt(i);
+```
+
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+            if (!isValidReference(invoice))
+            {
+                throw runtime_error("Invoice co tham chieu khong hop le");
+            }
+        }
+        // Giai doan 2: Lien ket doi tuong
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Invoice* invoice = repo.getAt(i);
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 4 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+            Showtime* showtime = showtimeRepo.findById(invoice->getShowtimeId());
+            User* seller = userRepo.findById(invoice->getStaffId());
+            Member* member = nullptr;
+
+            if (!invoice->getMemberId().empty())
+            {
+                member = memberRepo.findById(invoice->getMemberId());
+            }
+```
+
+Tra Member theo ID; kết quả rỗng chỉ được chấp nhận nếu nhánh nghiệp vụ cho phép hóa đơn không có thành viên. Tra User theo ID để kiểm tra nhân viên liên quan có trong dữ liệu đã nạp.
+
+**Bước 5 — Nối quan hệ giữa các Model.**
+
+```cpp
+            if (!invoice->linkShowtime(showtime) ||
+                !invoice->linkSeller(seller) ||
+                !invoice->linkMember(member))
+            {
+                throw runtime_error("Khong the lien ket Invoice");
+            }
+        }
+    }
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 6 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+    catch (...)
+    {
+        unlinkAll();
+        repo.clear();
+        throw;
+    }
+    return true;
+}
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+### InvoiceRepository::save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Ghi dữ liệu TXT (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Ghi dữ liệu TXT.**
 
 ```cpp
 bool InvoiceRepository::save()
 {
-    return repo.save();
+    if (!repo.save())
+    {
+        return false;
+    }
+    pendingIds.clear();
+    return true;
+```
+
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-Hàm ủy quyền việc ghi dữ liệu cho `Repository<Invoice>`.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Khi ghi, Repository sử dụng callback `invoiceToString()` để chuyển từng hóa đơn thành chuỗi TXT.
+### InvoiceRepository::add()
 
-`save()` không tự kiểm tra lại toàn bộ quan hệ hóa đơn – vé.
+#### A. Tổng quan
 
----
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `Invoice* invoice`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
-## 8. Thêm hóa đơn
+#### B. Quy trình thực hiện
 
-### `add(Invoice* invoice)`
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Tháo liên kết đối tượng
+    |
+    v
+Tháo liên kết đối tượng (không đạt: false)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
 
-**Mục đích:** Thêm một hóa đơn mới vào Repository.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Các bước:
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
-1. Kiểm tra Repository đã load.
-2. Kiểm tra dữ liệu và tham chiếu hợp lệ.
-3. Kiểm tra không trùng `invoiceId`.
-4. Tìm các đối tượng liên quan.
-5. Liên kết hóa đơn với suất chiếu, nhân viên và thành viên.
-6. Gọi `repo.add(invoice)` để thêm hóa đơn vào bộ nhớ.
-7. Nếu thất bại, tháo những liên kết vừa tạo.
+```cpp
+bool InvoiceRepository::add(Invoice* invoice)
+{
+    if (!repo.isLoaded() || !isValidReference(invoice))
+    {
+        return false;
+    }
 
-**Quy tắc sở hữu con trỏ**
+    if (repo.findById(invoice->getInvoiceId()) != nullptr)
+    {
+        return false;
+```
 
-Khi `repo.add(invoice)` thành công, Repository nhận trách nhiệm quản lý vòng đời đối tượng Invoice.
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Khi `add()` trả về `false`, bên gọi vẫn chịu trách nhiệm giải phóng đối tượng chưa được thêm.
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
 
-Không gọi `delete` một hóa đơn đã được Repository nhận quản lý.
+```cpp
+    }
+    // không thêm trùng
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == invoice)
+        {
+            return false;
+        }
+```
 
-**Lưu ý:** Hàm `add()` dành cho hóa đơn mới chưa được liên kết từ trước. Việc gọi với đối tượng đã có quan hệ khác cần được ngăn chặn hoặc xử lý riêng để tránh làm thay đổi liên kết ngoài ý muốn.
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
----
+**Bước 3 — Từ chối điều kiện không đạt.**
 
-## 9. Các hàm truy vấn
+```cpp
+    }
+    // Khong them Invoice da duoc lien ket
+    if (invoice->getShowtime() != nullptr ||
+        invoice->getSeller() != nullptr ||
+        invoice->getMember() != nullptr)
+    {
+        return false;
+    }
+```
 
-### 9.1. `findById()`
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    Showtime* showtime = showtimeRepo.findById(invoice->getShowtimeId());
+    User* seller = userRepo.findById(invoice->getStaffId());
+    Member* member = nullptr;
+
+    if (!invoice->getMemberId().empty())
+    {
+        member = memberRepo.findById(invoice->getMemberId());
+    }
+```
+
+Tra Member theo ID; kết quả rỗng chỉ được chấp nhận nếu nhánh nghiệp vụ cho phép hóa đơn không có thành viên. Tra User theo ID để kiểm tra nhân viên liên quan có trong dữ liệu đã nạp.
+
+**Bước 5 — Tháo liên kết đối tượng.**
+
+```cpp
+    pendingIds.push_back(invoice->getInvoiceId());
+    try
+    {
+        if (!invoice->linkShowtime(showtime) ||
+            !invoice->linkSeller(seller) ||
+            !invoice->linkMember(member))
+        {
+            invoice->unlinkReferences();
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 6 — Tháo liên kết đối tượng.**
+
+```cpp
+            pendingIds.pop_back();
+            return false;
+        }
+
+        if (!repo.add(invoice))
+        {
+            invoice->unlinkReferences();
+            pendingIds.pop_back();
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 7 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+            return false;
+        }
+    }
+    catch (...)
+    {
+        invoice->unlinkReferences();
+        pendingIds.pop_back();
+        throw;
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 8 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### InvoiceRepository::rollbackPending()
+
+#### A. Tổng quan
+
+- **Mục đích:** Hoàn tác đối tượng mới tạo còn ở trạng thái chờ.
+- **Tham số:** `const string& invoiceId`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra đối tượng chờ hoàn tác (không đạt: false)
+    |
+    v
+Tháo liên kết đối tượng (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra đối tượng chờ hoàn tác.**
+
+```cpp
+bool InvoiceRepository::rollbackPending(const string& invoiceId)
+{
+    if (pendingIds.empty() || pendingIds.back() != invoiceId)
+    {
+        return false;
+    }
+    Invoice* invoice = repo.findById(invoiceId);
+    if (invoice == nullptr || invoice->getTicketCount() != 0)
+    {
+        return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Tháo liên kết đối tượng.**
+
+```cpp
+    }
+    invoice->unlinkReferences();
+    if (!repo.removeById(invoiceId))
+    {
+        return false;
+    }
+    pendingIds.pop_back();
+    return true;
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### InvoiceRepository::findById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& invoiceId`.
+- **Giá trị trả về:** `Invoice*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 Invoice* InvoiceRepository::findById(const string& invoiceId)
@@ -600,14 +981,32 @@ Invoice* InvoiceRepository::findById(const string& invoiceId)
 }
 ```
 
-Tìm hóa đơn theo ID.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Trả về:
+### InvoiceRepository::getAt()
 
-- Con trỏ `Invoice*` nếu tìm thấy.
-- `nullptr` nếu không tìm thấy.
+#### A. Tổng quan
 
-### 9.2. `getAt()`
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `Invoice*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 Invoice* InvoiceRepository::getAt(int index)
@@ -616,11 +1015,32 @@ Invoice* InvoiceRepository::getAt(int index)
 }
 ```
 
-Trả về hóa đơn tại vị trí `index` trong danh sách.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Vị trí bắt đầu từ `0`.
+### InvoiceRepository::count()
 
-### 9.3. `count()`
+#### A. Tổng quan
+
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 int InvoiceRepository::count()
@@ -629,9 +1049,32 @@ int InvoiceRepository::count()
 }
 ```
 
-Trả về số lượng hóa đơn hiện có trong Repository.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-### 9.4. `isLoaded()`
+### InvoiceRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 bool InvoiceRepository::isLoaded()
@@ -640,192 +1083,219 @@ bool InvoiceRepository::isLoaded()
 }
 ```
 
-Kiểm tra trạng thái nạp dữ liệu.
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
 
-Hàm trả về `true` khi Repository đã được nạp thành công.
+### InvoiceRepository::getByShowtime()
 
----
+#### A. Tổng quan
 
-## 10. Các hàm lọc hóa đơn
+- **Mục đích:** Lọc theo suất chiếu.
+- **Tham số:** `const string& showtimeId`.
+- **Giá trị trả về:** `vector<Invoice*>`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
 
-### 10.1. `getByShowtime()`
+#### B. Quy trình thực hiện
 
-Trả về danh sách hóa đơn thuộc một suất chiếu.
-
-Ví dụ:
-
-```cpp
-vector<Invoice*> invoices =
-    invoiceRepo.getByShowtime("SHW0001");
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Hàm duyệt danh sách hóa đơn và so sánh `showtimeId`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### 10.2. `getByStaff()`
-
-Trả về danh sách hóa đơn do một nhân viên bán.
-
-Ví dụ:
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
-vector<Invoice*> invoices =
-    invoiceRepo.getByStaff("USR0001");
-```
-
-Hàm hỗ trợ các chức năng như xem lịch sử bán vé của nhân viên.
-
-### 10.3. `getByMember()`
-
-Trả về danh sách hóa đơn của một thành viên.
-
-Ví dụ:
-
-```cpp
-vector<Invoice*> invoices =
-    invoiceRepo.getByMember("MEM0001");
-```
-
-Nếu `memberId` rỗng hoặc Repository chưa load, hàm trả về vector rỗng.
-
-**Độ phức tạp:** Cả ba hàm đều duyệt qua danh sách hóa đơn nên có độ phức tạp tuyến tính theo số hóa đơn, chưa tính chi phí truy cập từng phần tử của cấu trúc danh sách bên dưới.
-
----
-
-## 11. Quản lý liên kết và bộ nhớ
-
-### 11.1. `unlinkAll()`
-
-```cpp
-void InvoiceRepository::unlinkAll()
+vector<Invoice*> InvoiceRepository::getByShowtime(const string& showtimeId)
 {
+    vector<Invoice*> result;
+
+    if (!repo.isLoaded())
+    {
+        return result;
+    }
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+
     for (int i = 0; i < repo.count(); i++)
     {
         Invoice* invoice = repo.getAt(i);
 
-        if (invoice != nullptr)
+        if (invoice->getShowtimeId() == showtimeId)
         {
-            invoice->unlinkReferences();
+            result.push_back(invoice);
+```
+
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Trả kết quả cho bên gọi.**
+
+```cpp
         }
     }
+
+    return result;
 }
 ```
 
-**Mục đích:** Tháo liên kết của tất cả hóa đơn đang được Repository quản lý.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Hàm này không trực tiếp xóa Invoice mà gọi:
+### InvoiceRepository::getByStaff()
 
-```cpp
-invoice->unlinkReferences();
+#### A. Tổng quan
+
+- **Mục đích:** Lọc theo nhân viên.
+- **Tham số:** `const string& staffId`.
+- **Giá trị trả về:** `vector<Invoice*>`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-`Invoice::unlinkReferences()` chịu trách nhiệm tháo quan hệ với User, Member và Showtime.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### 11.2. Phân biệt unlink và delete
+**Bước 1 — Trả kết quả cho bên gọi.**
 
-**Unlink** là loại bỏ quan hệ giữa các đối tượng.
+```cpp
+vector<Invoice*> InvoiceRepository::getByStaff(const string& staffId)
+{
+    vector<Invoice*> result;
 
-**Delete** là giải phóng vùng nhớ của đối tượng được tạo bằng `new`.
+    if (!repo.isLoaded())
+    {
+        return result;
+    }
+```
 
-Hai thao tác này khác nhau.
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
 
-Ví dụ, một nhân viên có thể giữ con trỏ đến hóa đơn trong danh sách lịch sử bán vé.
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
 
-Nếu hóa đơn bị xóa nhưng con trỏ vẫn nằm trong danh sách của nhân viên, con trỏ đó trở thành **dangling pointer** (con trỏ treo).
+```cpp
 
-Truy cập con trỏ treo có thể dẫn đến hành vi không xác định.
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Invoice* invoice = repo.getAt(i);
 
-Vì vậy, phải tháo liên kết trước khi giải phóng hóa đơn.
+        if (invoice->getStaffId() == staffId)
+        {
+            result.push_back(invoice);
+```
 
-### 11.3. Thứ tự hủy Repository
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-`InvoiceRepository` phụ thuộc vào `ShowtimeRepository`, `UserRepository` và `MemberRepository`.
+**Bước 3 — Trả kết quả cho bên gọi.**
 
-Ngoài ra, `TicketRepository` có thể giữ con trỏ đến Invoice.
+```cpp
+        }
+    }
 
-Do đó, thứ tự hủy phải bảo đảm:
+    return result;
+}
+```
 
-- Các liên kết từ Ticket đến Invoice đã được xử lý trước khi Invoice bị xóa.
-- Các Repository được Invoice tham chiếu vẫn còn tồn tại khi `InvoiceRepository` thực hiện destructor.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
----
+### InvoiceRepository::getByMember()
 
-## 12. Thứ tự load dữ liệu
+#### A. Tổng quan
 
-Đối với phần quản lý hóa đơn và vé, các quan hệ phụ thuộc cần được thiết lập theo thứ tự.
+- **Mục đích:** Lọc theo thành viên.
+- **Tham số:** `const string& memberId`.
+- **Giá trị trả về:** `vector<Invoice*>`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
 
-Một thứ tự phù hợp là:
+#### B. Quy trình thực hiện
 
-1. `MovieRepository`
-2. `RoomRepository`
-3. `SeatRepository`
-4. `ShowtimeRepository`
-5. `UserRepository`
-6. `MemberRepository`
-7. `InvoiceRepository`
-8. `TicketRepository`
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
 
-Trong đó, các Repository độc lập có thể được nạp theo thứ tự khác, miễn là mọi phụ thuộc cần thiết đã được nạp trước khi liên kết.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Quan trọng:** `InvoiceRepository` phải được load trước `TicketRepository`, vì vé cần tham chiếu đến hóa đơn đã tồn tại.
+**Bước 1 — Trả kết quả cho bên gọi.**
 
-Sau khi cả hai Repository được nạp, hệ thống cần kiểm tra các quy tắc liên quan đến dữ liệu tổng hợp như số vé trong hóa đơn và tổng tiền hóa đơn.
+```cpp
+vector<Invoice*> InvoiceRepository::getByMember(const string& memberId)
+{
+    vector<Invoice*> result;
 
----
+    if (!repo.isLoaded() || memberId.empty())
+    {
+        return result;
+    }
+```
 
-## 13. Quy tắc nghiệp vụ liên quan
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
 
-Theo định dạng dữ liệu hóa đơn và vé của dự án:
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
 
-- Mỗi hóa đơn thuộc một suất chiếu.
-- Mỗi hóa đơn có một người bán là Staff hoặc Admin.
-- Thành viên có thể có hoặc không.
-- Mỗi hóa đơn phải có ít nhất một vé.
-- Các vé thuộc cùng hóa đơn phải có cùng `showtimeId` với hóa đơn.
-- `totalAmount` phải bằng tổng `paidAmount` ban đầu của các vé, kể cả vé đã hủy.
-- Khi so sánh số thực `double`, cần xét đến sai số tính toán.
+```cpp
 
-Một số quy tắc trên cần được kiểm tra sau khi `TicketRepository` đã load, vì tại thời điểm `InvoiceRepository::load()`, danh sách vé có thể chưa tồn tại trong bộ nhớ.
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Invoice* invoice = repo.getAt(i);
 
-Không nên từ chối hóa đơn chỉ vì chưa có vé ở giai đoạn đang nạp riêng dữ liệu hóa đơn.
+        if (invoice->getMemberId() == memberId)
+        {
+            result.push_back(invoice);
+```
 
----
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-## 14. Kiểm thử
+**Bước 3 — Trả kết quả cho bên gọi.**
 
-**File test:**
+```cpp
+        }
+    }
 
-`tests/test_invoice_ticket_repository.cpp`
+    return result;
+}
+```
 
-Các nội dung cần kiểm tra gồm:
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-- Load file rỗng và file hợp lệ.
-- Không cho phép load sai thứ tự phụ thuộc.
-- Thêm hóa đơn hợp lệ.
-- Từ chối hóa đơn trùng ID.
-- Từ chối dữ liệu sai định dạng.
-- Từ chối tham chiếu không tồn tại.
-- Kiểm tra liên kết đến User, Member và Showtime.
-- Kiểm tra rollback khi load thất bại.
-- Kiểm tra các hàm truy vấn và lọc.
-- Kiểm tra save và reload.
-- Kiểm tra tương tác với `TicketRepository`.
 
-**Kết quả hiện tại:** Theo kết quả chạy test được báo cáo, các test của InvoiceRepository và TicketRepository đã pass. Chưa ghi số lượng cụ thể vì chưa có bảng tổng kết Passed/Failed trong tài liệu này.
-
----
-
-## 15. Tổng kết
-
-`InvoiceRepository` là lớp quản lý dữ liệu hóa đơn, kết hợp khả năng lưu trữ tổng quát của `Repository<Invoice>` với những quy tắc kiểm tra tham chiếu riêng của hóa đơn.
-
-Các điểm quan trọng nhất cần nắm:
-
-1. **Template:** `Repository<Invoice>` tái sử dụng logic lưu trữ chung.
-2. **Callback:** Cho phép Repository tổng quát xử lý ID và định dạng dữ liệu của Invoice.
-3. **Reference:** Các Repository liên quan được truyền bằng tham chiếu để dùng chung dữ liệu.
-4. **Link/Unlink:** Quản lý quan hệ giữa các đối tượng, tránh con trỏ treo.
-5. **Rollback:** Hoàn tác trạng thái khi nạp hoặc liên kết thất bại.
-6. **Exception:** Báo lỗi và bảo đảm dọn dẹp khi có ngoại lệ.
-7. **Ownership:** Repository quản lý vòng đời những Invoice đã được thêm thành công.
-
-Việc hiểu rõ các cơ chế này sẽ giúp triển khai `TicketRepository` và các Service nghiệp vụ bán vé an toàn, đồng bộ hơn.

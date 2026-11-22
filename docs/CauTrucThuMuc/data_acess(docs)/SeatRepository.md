@@ -1,470 +1,533 @@
-# SeatRepository – Quản lý dữ liệu ghế ngồi
+# SeatRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`SeatRepository` là lớp thuộc tầng Data Access, chịu trách nhiệm quản lý dữ liệu ghế ngồi trong các phòng chiếu.
+`SeatRepository` chứa `Repository<Seat>` sở hữu ghế và giữ `RoomRepository&` không sở hữu để tra phòng, nối/tháo liên kết. Khóa ghế là cặp `(roomId, seatId)`, vị trí `(roomId, row, column)` không được trùng; một ghế đôi vẫn là một Seat.
 
-Lớp sử dụng `Repository<Seat>` để tái sử dụng các chức năng quản lý danh sách đối tượng, đọc/ghi file TXT, tìm kiếm và giải phóng bộ nhớ.
+TXT dùng `roomId|seatId|row|column|seatType`. `load()` cần Room đã nạp; khi nối lỗi phải gỡ các liên kết đã tạo theo code. Trạng thái đã bán không nằm trong Seat mà do Ticket theo suất chiếu quyết định. Con trỏ trả về từ tra cứu là con trỏ mượn; Repository không phân quyền.
 
-Khác với `MovieRepository` và `RoomRepository`, `SeatRepository` cần sử dụng thêm `RoomRepository` để xác định phòng sở hữu mỗi ghế và thiết lập liên kết giữa Seat và Room.
+Mã nguồn: `src/data_access/SeatRepository.cpp` và `src/data_access/SeatRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-Các chức năng chính:
+## 2. Chi tiết từng hàm
 
-- Đọc và ghi dữ liệu ghế từ file TXT.
-- Kiểm tra tính hợp lệ của Seat.
-- Xác định ghế bằng khóa ghép `roomId|seatId`.
-- Thêm ghế và liên kết với phòng.
-- Cập nhật loại ghế.
-- Xóa ghế và tháo liên kết với phòng.
-- Kiểm tra trùng vị trí ghế.
-- Khôi phục trạng thái khi liên kết thất bại.
+### SeatRepository::SeatRepository()
 
-**File liên quan:**
+#### A. Tổng quan
 
-- `src/data_access/SeatRepository.h`
-- `src/data_access/SeatRepository.cpp`
-- `src/data_access/RoomRepository.h`
-- `src/data_access/Repository.h`
-- `src/models/Seat.h`
-- `src/models/Room.h`
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath, RoomRepository& roomRepo`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
 
----
+#### B. Quy trình thực hiện
 
-## 2. Cấu trúc lớp
-
-### 2.1. Thuộc tính
-
-```cpp
-private:
-    Repository<Seat> repo;
-    RoomRepository& roomRepo;
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-**`Repository<Seat> repo`**
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Quản lý danh sách đối tượng `Seat*`, thực hiện đọc/ghi file và quản lý bộ nhớ của các Seat đã thêm thành công.
-
-**`RoomRepository& roomRepo`**
-
-Tham chiếu đến Repository quản lý phòng chiếu.
-
-Được sử dụng để:
-
-- Kiểm tra phòng có tồn tại hay không.
-- Tìm Room tương ứng với mỗi Seat.
-- Thiết lập liên kết giữa Seat và Room.
-
-`SeatRepository` không sở hữu `RoomRepository`.
-
-Vì vậy, `RoomRepository` phải tồn tại lâu hơn `SeatRepository`.
-
-### 2.2. Các hàm private
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
-static string getSeatKey(Seat* seat);
-static Seat* stringToSeat(const string& line);
-static string seatToString(Seat* seat);
-static bool isValidSeat(const Seat* seat);
-```
-
-Các hàm hỗ trợ Repository chung lấy khóa, chuyển đổi dữ liệu và kiểm tra tính hợp lệ.
-
----
-
-## 3. Constructor
-
-```cpp
-SeatRepository::SeatRepository(
-    const string& filePath,
-    RoomRepository& roomRepo
-)
-    : repo(filePath, getSeatKey, stringToSeat, seatToString),
-      roomRepo(roomRepo)
+SeatRepository::SeatRepository(const string& filePath, RoomRepository& roomRepo)
+    : repo(filePath, getSeatKey, stringToSeat, seatToString), roomRepo(roomRepo)
 {}
 ```
 
-### Chức năng
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-Khởi tạo `Repository<Seat>` và nhận tham chiếu đến `RoomRepository`.
+### SeatRepository::~SeatRepository()
 
-Ví dụ:
+#### A. Tổng quan
 
-```cpp
-RoomRepository roomRepo("data/rooms.txt");
-SeatRepository seatRepo("data/seats.txt", roomRepo);
+- **Mục đích:** Tháo liên kết hoặc giải phóng tài nguyên khi hủy Repository.
+- **Tham số:** không có.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các Repository được tham chiếu cần còn sống đến khi destructor tháo liên kết.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tháo liên kết đối tượng
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Thứ tự khởi tạo quan trọng vì Seat phụ thuộc vào Room.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Khi nạp dữ liệu, cần load Room trước Seat:
+**Bước 1 — Tháo liên kết đối tượng.**
 
 ```cpp
-roomRepo.load();
-seatRepo.load();
+SeatRepository::~SeatRepository()
+{
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Seat* seat = repo.getAt(i);
+        if (seat != nullptr && seat->getRoom() != nullptr)
+        {
+            seat->getRoom()->unlinkSeat(seat);
 ```
 
-Constructor chưa tự động load dữ liệu hoặc liên kết các ghế.
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
----
-
-## 4. Hàm getSeatKey()
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
-string SeatRepository::getSeatKey(Seat* seat)
+        }
+    }
+}
+```
+
+Destructor chạy khi Repository hết vòng đời; việc tháo liên kết hoặc `clear()` giữ các đối tượng khác không trỏ đến vùng nhớ đã giải phóng.
+
+### SeatRepository::getSeatKey()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tạo khóa ghép phòng và ghế.
+- **Tham số:** `Seat* seat`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+string SeatRepository::getSeatKey(Seat* seat) //(roomId + seatId)
 {
     if (seat == nullptr)
     {
         return "";
     }
-
     return seat->getRoomId() + "|" + seat->getSeatId();
 }
 ```
 
-### Chức năng
+Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
 
-Tạo khóa định danh duy nhất cho một Seat.
+### SeatRepository::isValidSeat()
 
-Khác với Movie và Room, `seatId` chỉ cần duy nhất trong phạm vi một phòng.
+#### A. Tổng quan
 
-Ví dụ:
+- **Mục đích:** Kiểm tra tính hợp lệ của dữ liệu đầu vào.
+- **Tham số:** `const Seat* seat`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
-| Room ID | Seat ID | Khóa |
-|---|---|---|
-| ROM0001 | A1 | ROM0001\|A1 |
-| ROM0001 | A2 | ROM0001\|A2 |
-| ROM0002 | A1 | ROM0002\|A1 |
+#### B. Quy trình thực hiện
 
-Hai phòng khác nhau được phép có cùng `seatId`.
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
 
-Tuy nhiên, hai ghế trong cùng phòng không được trùng `seatId`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-`Repository<Seat>` sử dụng khóa ghép này để kiểm tra trùng và tìm kiếm.
-
----
-
-## 5. Hàm isValidSeat()
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 bool SeatRepository::isValidSeat(const Seat* seat)
+{
+    if (seat == nullptr)
+    {
+        return false;
+    }
+    if (!Validator::isValidId(seat->getRoomId(), "ROM"))
+    {
+        return false;
 ```
 
-### Chức năng
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Kiểm tra dữ liệu cơ bản của một Seat.
-
-### Bước 1: Kiểm tra con trỏ
+**Bước 2 — Từ chối điều kiện không đạt.**
 
 ```cpp
-if (seat == nullptr)
-{
-    return false;
+    }
+    if (seat->getSeatId().empty() || seat->getSeatId().find('|') != string::npos)
+    {
+        return false;
+    }
+    if (seat->getRow() <= 0 || seat->getColumn() <= 0)
+    {
+        return false;
+```
+
+Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+    }
+    SeatType type = seat->getSeatType();
+    if (type != SeatType::STANDARD &&
+        type != SeatType::VIP &&
+        type != SeatType::COUPLE)
+    {
+        return false;
+    }
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Xác nhận xử lý thành công.**
+
+```cpp
+    return true;
 }
 ```
 
-### Bước 2: Kiểm tra Room ID
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-```cpp
-if (!Validator::isValidId(seat->getRoomId(), "ROM"))
-{
-    return false;
-}
+### SeatRepository::stringToSeat()
+
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển một dòng TXT thành đối tượng Model.
+- **Tham số:** `const string& line`.
+- **Giá trị trả về:** `Seat*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (lỗi: throw)
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Mã phòng phải đúng định dạng `ROMxxxx`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Bước 3: Kiểm tra Seat ID
-
-```cpp
-if (seat->getSeatId().empty() ||
-    seat->getSeatId().find('|') != string::npos)
-{
-    return false;
-}
-```
-
-Seat ID không được rỗng hoặc chứa ký tự `|`.
-
-Lý do không cho chứa `|` là vì ký tự này được dùng làm dấu phân cách trong file TXT và khóa ghép.
-
-### Bước 4: Kiểm tra vị trí
-
-```cpp
-if (seat->getRow() <= 0 || seat->getColumn() <= 0)
-{
-    return false;
-}
-```
-
-Số hàng và số cột phải lớn hơn 0.
-
-### Bước 5: Kiểm tra loại ghế
-
-```cpp
-SeatType type = seat->getSeatType();
-
-if (type != SeatType::STANDARD &&
-    type != SeatType::VIP &&
-    type != SeatType::COUPLE)
-{
-    return false;
-}
-```
-
-Chỉ chấp nhận ba loại ghế:
-
-- `STANDARD`: Ghế thường.
-- `VIP`: Ghế VIP.
-- `COUPLE`: Ghế đôi.
-
-### Kết quả
-
-Trả về `true` nếu dữ liệu hợp lệ.
-
-**Lưu ý:** `isValidSeat()` chưa kiểm tra phòng có tồn tại, vị trí có nằm trong kích thước phòng hoặc có trùng với ghế khác hay không.
-
-Những điều kiện đó được kiểm tra khi liên kết Seat với Room.
-
----
-
-## 6. Hàm stringToSeat()
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
 
 ```cpp
 Seat* SeatRepository::stringToSeat(const string& line)
+{
+    vector<string> fields;
+    size_t start = 0;
+    while (true)
+    {
+        size_t pos = line.find('|', start);
+        if (pos == string::npos)
+        {
+            fields.push_back(line.substr(start));
 ```
 
-### Chức năng
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-Chuyển một dòng TXT thành đối tượng Seat.
+**Bước 2 — Kiểm tra điều kiện trước khi tiếp tục.**
 
-Định dạng:
+```cpp
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+
+    if (fields.size() != 5)
+    {
+        throw runtime_error("Sai so luong truong Seat");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    int row;
+    int column;
+    try
+    {
+        size_t pos1 = 0;
+        size_t pos2 = 0;
+
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 4 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+        row = stoi(fields[2], &pos1);
+        column = stoi(fields[3], &pos2);
+
+        if (pos1 != fields[2].length() ||
+            pos2 != fields[3].length())
+        {
+            throw runtime_error("Sai dinh dang so");
+        }
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường. Phép parse đổi chuỗi TXT sang trường có kiểu; dữ liệu không chuyển được phải bị từ chối trước khi tạo đối tượng hợp lệ.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    }
+    catch (const exception&)
+    {
+        throw runtime_error("Hang hoac cot Seat khong hop le");
+    }
+
+    SeatType seatType;
+
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 6 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    if (fields[4] == "STANDARD")
+    {
+        seatType = SeatType::STANDARD;
+    }
+    else if (fields[4] == "VIP")
+    {
+        seatType = SeatType::VIP;
+    }
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 7 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    else if (fields[4] == "COUPLE")
+    {
+        seatType = SeatType::COUPLE;
+    }
+    else
+    {
+        throw runtime_error("Loai ghe khong hop le");
+    }
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 8 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+
+    Seat* seat = new Seat(
+        fields[0],
+        fields[1],
+        row,
+        column,
+        seatType
+    );
+```
+
+`new` cấp phát Model trên heap. Cho đến khi Repository nhận thành công, nhánh lỗi hoặc caller vẫn phải chịu trách nhiệm giải phóng.
+
+**Bước 9 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+
+    if (!isValidSeat(seat))
+    {
+        delete seat;
+        throw runtime_error("Du lieu Seat khong hop le");
+    }
+
+    return seat;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `delete` giải phóng đối tượng; không được dùng lại con trỏ sau lệnh này. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 10 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### SeatRepository::seatToString()
+
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển đối tượng Model thành một dòng TXT.
+- **Tham số:** `Seat* seat`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
 
 ```text
-roomId|seatId|row|column|seatType
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Trả kết quả cho bên gọi (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Ví dụ:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-```text
-ROM0001|A1|1|1|STANDARD
-ROM0001|A2|1|2|VIP
-ROM0002|B1|2|1|COUPLE
-```
-
-### Bước 1: Tách dữ liệu
-
-Sử dụng `vector<string>` và dấu `|` để tách các trường.
-
-Dữ liệu phải có đúng 5 trường.
-
-```cpp
-if (fields.size() != 5)
-{
-    throw runtime_error("Sai so luong truong Seat");
-}
-```
-
-### Bước 2: Chuyển đổi hàng và cột
-
-```cpp
-row = stoi(fields[2], &pos1);
-column = stoi(fields[3], &pos2);
-```
-
-Kiểm tra toàn bộ chuỗi đã được chuyển thành số nguyên.
-
-Nếu dữ liệu như `"1abc"` hoặc `"abc"`, hàm ném ngoại lệ.
-
-### Bước 3: Chuyển đổi loại ghế
-
-```cpp
-if (fields[4] == "STANDARD")
-{
-    seatType = SeatType::STANDARD;
-}
-else if (fields[4] == "VIP")
-{
-    seatType = SeatType::VIP;
-}
-else if (fields[4] == "COUPLE")
-{
-    seatType = SeatType::COUPLE;
-}
-else
-{
-    throw runtime_error("Loai ghe khong hop le");
-}
-```
-
-### Bước 4: Tạo Seat
-
-```cpp
-Seat* seat = new Seat(
-    fields[0],
-    fields[1],
-    row,
-    column,
-    seatType
-);
-```
-
-### Bước 5: Kiểm tra đối tượng
-
-```cpp
-if (!isValidSeat(seat))
-{
-    delete seat;
-    throw runtime_error("Du lieu Seat khong hop le");
-}
-```
-
-Nếu dữ liệu sai, đối tượng được giải phóng trước khi ném ngoại lệ.
-
-### Kết quả
-
-Trả về `Seat*` nếu chuyển đổi thành công.
-
-Hàm này chưa liên kết Seat với Room. Việc liên kết được thực hiện trong `load()`.
-
----
-
-## 7. Hàm seatToString()
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 string SeatRepository::seatToString(Seat* seat)
-```
-
-### Chức năng
-
-Chuyển đối tượng Seat thành một dòng dữ liệu TXT.
-
-Đầu tiên, kiểm tra `isValidSeat()`.
-
-Sau đó chuyển `SeatType` thành chuỗi tương ứng.
-
-Ví dụ:
-
-```text
-ROM0001|A1|1|1|STANDARD
-```
-
-Hàm không ghi file trực tiếp.
-
----
-
-## 8. Hàm load()
-
-```cpp
-bool SeatRepository::load()
-```
-
-### Chức năng
-
-Nạp danh sách Seat từ file TXT, sau đó liên kết từng ghế với Room tương ứng.
-
-Đây là một trong những hàm quan trọng nhất của SeatRepository.
-
-### Bước 1: Kiểm tra điều kiện load
-
-```cpp
-if (repo.isLoaded() || !roomRepo.isLoaded())
 {
-    return false;
-}
-```
-
-Không cho phép load nếu:
-
-- SeatRepository đã load.
-- RoomRepository chưa load.
-
-### Bước 2: Nạp dữ liệu Seat
-
-```cpp
-if (!repo.load())
-{
-    return false;
-}
-```
-
-Repository chung đọc dữ liệu và tạo các đối tượng Seat.
-
-### Bước 3: Duyệt từng ghế
-
-```cpp
-for (int i = 0; i < repo.count(); i++)
-{
-    Seat* seat = repo.getAt(i);
-    Room* room = roomRepo.findById(seat->getRoomId());
-```
-
-Mỗi Seat được xác định phòng tương ứng thông qua `roomId`.
-
-### Bước 4: Liên kết Seat với Room
-
-```cpp
-if (room == nullptr || !seat->linkRoom(room))
-```
-
-Việc liên kết thất bại nếu:
-
-- Không tìm thấy phòng.
-- Ghế nằm ngoài kích thước phòng.
-- Ghế trùng Seat ID trong phòng.
-- Ghế trùng vị trí hàng/cột.
-- Ghế không đáp ứng điều kiện liên kết của Model.
-
-### Bước 5: Rollback khi thất bại
-
-```cpp
-for (int j = 0; j < i; j++)
-{
-    Seat* linkedSeat = repo.getAt(j);
-
-    if (linkedSeat->getRoom() != nullptr)
+    if (!isValidSeat(seat))
     {
-        linkedSeat->getRoom()->unlinkSeat(linkedSeat);
+        throw runtime_error("Seat khong hop le khi ghi file");
     }
-}
-
-repo.clear();
-return false;
+    string type;
+    switch (seat->getSeatType())
+    {
+        case SeatType::STANDARD:
+            type = "STANDARD";
 ```
 
-### Vì sao phải rollback?
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
 
-Giả sử file có ba ghế:
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+            break;
+
+        case SeatType::VIP:
+            type = "VIP";
+            break;
+
+        case SeatType::COUPLE:
+            type = "COUPLE";
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 3 — Trả kết quả cho bên gọi.**
+
+```cpp
+            break;
+        default:
+            throw runtime_error("Loai ghe khong hop le");
+    }
+    return seat->getRoomId() + "|" +
+           seat->getSeatId() + "|" +
+           to_string(seat->getRow()) + "|" +
+           to_string(seat->getColumn()) + "|" +
+           type;
+```
+
+Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 4 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### SeatRepository::save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
 
 ```text
-ROM0001|A1|1|1|STANDARD
-ROM0001|A2|1|2|VIP
-ROM9999|A3|1|3|STANDARD
+Bắt đầu
+    |
+    v
+Ghi dữ liệu TXT
+    |
+    v
+Kết thúc
 ```
 
-Hai ghế đầu liên kết thành công.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Ghế thứ ba thất bại vì phòng `ROM9999` không tồn tại.
-
-Nếu chỉ trả về `false`, hai ghế đầu vẫn nằm trong danh sách liên kết của Room, khiến trạng thái dữ liệu không nhất quán.
-
-Vì vậy, hàm:
-
-1. Tháo liên kết của những ghế đã liên kết thành công.
-2. Xóa danh sách Seat vừa load.
-3. Đưa SeatRepository về trạng thái chưa load.
-4. Trả về `false`.
-
-Cách xử lý này bảo đảm không giữ lại một phần dữ liệu sau khi liên kết thất bại.
-
-### Kết quả
-
-- `true`: Tất cả Seat được load và liên kết thành công.
-- `false`: Không thể load hoặc liên kết thất bại.
-- Có thể ném ngoại lệ khi file TXT sai định dạng.
-
----
-
-## 9. Hàm save()
+**Bước 1 — Ghi dữ liệu TXT.**
 
 ```cpp
 bool SeatRepository::save()
@@ -473,335 +536,614 @@ bool SeatRepository::save()
 }
 ```
 
-Lưu toàn bộ dữ liệu Seat xuống file TXT thông qua Repository chung.
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật.
 
-Không lưu trực tiếp danh sách liên kết của Room vì thông tin `roomId` đã được lưu trong từng Seat.
+### SeatRepository::load()
 
-Khi load lại, liên kết được khôi phục từ `roomId`.
+#### A. Tổng quan
 
----
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, nhánh trả `false`.
 
-## 10. Hàm add()
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (không đạt: false)
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại (không đạt: false)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Đọc dữ liệu TXT.**
+
+```cpp
+bool SeatRepository::load()
+{
+    if (repo.isLoaded() || !roomRepo.isLoaded())
+    {
+        return false;
+    }
+    if (!repo.load())
+    {
+        return false;
+```
+
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+    }
+    // Buoc 1: Kiem tra toan bo du lieu truoc khi lien ket
+    for (int i = 0; i < repo.count(); i++)
+    {
+        Seat* seat = repo.getAt(i);
+        Room* room = roomRepo.findById(seat->getRoomId());
+        if (room == nullptr ||
+            seat->getRoom() != nullptr ||
+            seat->getRow() > room->getRowCount() ||
+            seat->getColumn() > room->getColumnCount())
+        {
+            repo.clear();
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Tra Room bằng `roomId` để bảo đảm đối tượng liên kết còn tồn tại; `nullptr` nghĩa là tham chiếu sai và không thể nối Seat/Showtime vào phòng. Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ.
+
+**Bước 3 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+            return false;
+        }
+        // kiểm tra trùng ghế với những ghế có trong phòng
+        for (int j = 0; j < room->getSeatCount(); j++)
+        {
+            Seat* current = room->getSeatAt(j);
+            if (current == nullptr ||
+                current->getSeatId() == seat->getSeatId() ||
+                (current->getRow() == seat->getRow() &&
+                 current->getColumn() == seat->getColumn()))
+            {
+                repo.clear();
+                return false;
+            }
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
+
+**Bước 4 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+        }
+
+        // Kiem tra trung giua cac Seat vua load
+        for (int j = 0; j < i; j++)
+        {
+            Seat* other = repo.getAt(j);
+            if (other->getRoomId() != seat->getRoomId())
+            {
+                continue;
+            }
+```
+
+Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 5 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+            if (other->getSeatId() == seat->getSeatId() ||
+                (other->getRow() == seat->getRow() &&
+                 other->getColumn() == seat->getColumn()))
+            {
+                repo.clear();
+                return false;
+            }
+        }
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
+
+**Bước 6 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+    // Buoc 2: Lien ket Seat voi Room
+    try
+    {
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Seat* seat = repo.getAt(i);
+            Room* room = roomRepo.findById(seat->getRoomId());
+```
+
+Tra Room bằng `roomId` để bảo đảm đối tượng liên kết còn tồn tại; `nullptr` nghĩa là tham chiếu sai và không thể nối Seat/Showtime vào phòng. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 7 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+            if (!seat->linkRoom(room))
+            {
+                // Thao tat ca lien ket da tao
+                for (int j = 0; j < repo.count(); j++)
+                {
+                    Seat* current = repo.getAt(j);
+                    if (current->getRoom() != nullptr)
+                    {
+                        current->getRoom()->unlinkSeat(current);
+                    }
+                }
+                repo.clear();
+                return false;
+            }
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 8 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+        }
+    }
+    catch (...)
+    {
+        // rollback
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Seat* seat = repo.getAt(i);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 9 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+            if (seat->getRoom() != nullptr)
+            {
+                seat->getRoom()->unlinkSeat(seat);
+            }
+        }
+        repo.clear();
+        throw;
+    }
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ. Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo.
+
+**Bước 10 — Xác nhận xử lý thành công.**
+
+```cpp
+
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### SeatRepository::add()
+
+#### A. Tổng quan
+
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `Seat* seat`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Nối quan hệ giữa các Model (không đạt: false)
+    |
+    v
+Tháo liên kết đối tượng (không đạt: false)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 bool SeatRepository::add(Seat* seat)
+{
+    if (!repo.isLoaded() ||
+        !roomRepo.isLoaded() ||
+        !isValidSeat(seat))
+    {
+        return false;
+    }
 ```
 
-### Chức năng
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Thêm Seat mới vào Repository và liên kết với Room.
-
-### Bước 1: Kiểm tra điều kiện ban đầu
+**Bước 2 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
-if (!repo.isLoaded() ||
-    !roomRepo.isLoaded() ||
-    !isValidSeat(seat))
-{
-    return false;
+    Room* room = roomRepo.findById(seat->getRoomId());
+    if (room == nullptr)
+    {
+        return false;
+    }
+    // Khong them lai con tro da duoc quan ly
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == seat)
+        {
+            return false;
+```
+
+Tra Room bằng `roomId` để bảo đảm đối tượng liên kết còn tồn tại; `nullptr` nghĩa là tham chiếu sai và không thể nối Seat/Showtime vào phòng. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Nối quan hệ giữa các Model.**
+
+```cpp
+        }
+    }
+    if (seat->getRoom() != nullptr)
+    {
+        return false;
+    }
+    // Lien ket Seat voi Room
+    if (!seat->linkRoom(room))
+    {
+        return false;
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Tháo liên kết đối tượng.**
+
+```cpp
+    }
+    try
+    {
+        if (!repo.add(seat))
+        {
+            room->unlinkSeat(seat);
+            return false;
+        }
+```
+
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    }
+    catch (...)
+    {
+        room->unlinkSeat(seat);
+        throw;
+    }
+    return true;
 }
 ```
 
-### Bước 2: Tìm phòng
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
 
-```cpp
-Room* room = roomRepo.findById(seat->getRoomId());
+### SeatRepository::update()
 
-if (room == nullptr)
-{
-    return false;
-}
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật đối tượng đang quản lý.
+- **Tham số:** `const Seat& newValues`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-### Bước 3: Kiểm tra trùng con trỏ
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Duyệt danh sách để bảo đảm cùng một con trỏ Seat chưa được thêm trước đó.
-
-### Bước 4: Kiểm tra ghế đã liên kết hay chưa
-
-```cpp
-if (seat->getRoom() != nullptr)
-{
-    return false;
-}
-```
-
-Không thêm Seat đã liên kết với Room.
-
-### Bước 5: Liên kết ghế
-
-```cpp
-if (!seat->linkRoom(room))
-{
-    return false;
-}
-```
-
-Model Room kiểm tra vị trí, ID và các điều kiện liên kết.
-
-### Bước 6: Thêm vào Repository
-
-```cpp
-if (!repo.add(seat))
-{
-    room->unlinkSeat(seat);
-    return false;
-}
-```
-
-Nếu thêm vào Repository thất bại sau khi liên kết thành công, hàm tháo liên kết để khôi phục trạng thái ban đầu.
-
-### Kết quả
-
-- `true`: Ghế được thêm và liên kết thành công.
-- `false`: Không đáp ứng điều kiện.
-
-Nếu thêm thành công, Repository sở hữu con trỏ Seat.
-
-Nếu thêm thất bại, bên gọi vẫn sở hữu con trỏ.
-
----
-
-## 11. Hàm update()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 bool SeatRepository::update(const Seat& newValues)
+{
+    if (!repo.isLoaded() || !isValidSeat(&newValues))
+    {
+        return false;
+    }
+    Seat* seat = findById(newValues.getRoomId(), newValues.getSeatId());
+    if (seat == nullptr)
+    {
+        return false;
 ```
 
-### Chức năng
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
 
-Cập nhật loại ghế của một Seat đã tồn tại.
-
-### Bước 1: Kiểm tra Repository và dữ liệu
+**Bước 2 — Từ chối điều kiện không đạt.**
 
 ```cpp
-if (!repo.isLoaded() || !isValidSeat(&newValues))
-{
-    return false;
+    }
+    // không được thay đổi vị trí ghế
+    if (seat->getRow() != newValues.getRow() || seat->getColumn() != newValues.getColumn())
+    {
+        return false;
+    }
+    seat->setSeatType(newValues.getSeatType());
+    return true;
+```
+
+Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-### Bước 2: Tìm Seat
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-```cpp
-Seat* seat = findById(
-    newValues.getRoomId(),
-    newValues.getSeatId()
-);
-```
+### SeatRepository::removeById()
 
-### Bước 3: Không cho thay đổi vị trí
+#### A. Tổng quan
 
-```cpp
-if (seat->getRow() != newValues.getRow() ||
-    seat->getColumn() != newValues.getColumn())
-{
-    return false;
-}
-```
+- **Mục đích:** Xóa đối tượng theo khóa sau khi kiểm tra ràng buộc.
+- **Tham số:** `const string& roomId, const string& seatId`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, nhánh trả `false`.
 
-Không cho phép thay đổi hàng hoặc cột qua hàm update.
-
-Mã phòng và mã ghế cũng không được thay đổi vì chúng được dùng làm khóa tìm kiếm.
-
-### Bước 4: Cập nhật loại ghế
-
-```cpp
-seat->setSeatType(newValues.getSeatType());
-return true;
-```
-
-### Kết quả
-
-Hàm hiện tại chỉ cập nhật `SeatType`.
-
-Không tạo Seat mới hoặc thay đổi vị trí ghế.
-
----
-
-## 12. Hàm removeById()
-
-```cpp
-bool SeatRepository::removeById(
-    const string& roomId,
-    const string& seatId
-)
-```
-
-### Chức năng
-
-Xóa một Seat theo khóa ghép `roomId|seatId`.
-
-### Bước 1: Kiểm tra Repository
-
-```cpp
-if (!repo.isLoaded())
-{
-    return false;
-}
-```
-
-### Bước 2: Tìm Seat
-
-```cpp
-Seat* seat = findById(roomId, seatId);
-
-if (seat == nullptr)
-{
-    return false;
-}
-```
-
-### Bước 3: Lấy Room liên kết
-
-```cpp
-Room* room = seat->getRoom();
-
-if (room == nullptr)
-{
-    return false;
-}
-```
-
-### Bước 4: Tháo liên kết
-
-```cpp
-if (!room->unlinkSeat(seat))
-{
-    return false;
-}
-```
-
-Phải tháo liên kết trước khi xóa đối tượng Seat.
-
-Nếu không, Room có thể giữ con trỏ đến vùng nhớ đã được giải phóng.
-
-### Bước 5: Xóa Seat
-
-```cpp
-return repo.removeById(roomId + "|" + seatId);
-```
-
-Repository chung xóa phần tử và giải phóng đối tượng Seat.
-
----
-
-## 13. Các hàm truy xuất
-
-### 13.1. findById()
-
-```cpp
-Seat* findById(
-    const string& roomId,
-    const string& seatId
-);
-```
-
-Tìm ghế bằng khóa ghép.
-
-```cpp
-return repo.findById(roomId + "|" + seatId);
-```
-
-### 13.2. getAt()
-
-```cpp
-Seat* getAt(int index);
-```
-
-Trả về Seat theo vị trí trong danh sách.
-
-### 13.3. count()
-
-```cpp
-int count();
-```
-
-Trả về tổng số ghế của toàn bộ các phòng đang được quản lý.
-
-Không phải số ghế của một Room cụ thể.
-
-### 13.4. isLoaded()
-
-```cpp
-bool isLoaded();
-```
-
-Trả về trạng thái đã load của SeatRepository.
-
----
-
-## 14. Quản lý bộ nhớ và vòng đời đối tượng
-
-`Repository<Seat>` sở hữu các đối tượng Seat được thêm thành công.
-
-`Room` chỉ giữ con trỏ liên kết đến Seat, không sở hữu bộ nhớ của Seat.
+#### B. Quy trình thực hiện
 
 ```text
-SeatRepository
-      |
-      v
-Repository<Seat>
-      |
-      v
-     Seat
-      ^
-      |
-     Room
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Tháo liên kết đối tượng (không đạt: false)
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Vì vậy, trước khi giải phóng Seat, cần tháo liên kết khỏi Room.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Hàm `removeById()` đã thực hiện quy tắc này.
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
-**Lưu ý về destructor:** Trong phiên bản `SeatRepository.h` trên GitHub được đối chiếu khi viết tài liệu, destructor riêng chưa xuất hiện. Nếu đã bổ sung destructor ở máy cục bộ, cần đồng bộ phần tài liệu này sau khi push.
+```cpp
+bool SeatRepository::removeById(const string& roomId, const string& seatId)
+{
+    if (!repo.isLoaded())
+    {
+        return false;
+    }
+    Seat* seat = findById(roomId, seatId);
+    if (seat == nullptr)
+    {
+        return false;
+```
 
-Destructor riêng được đề xuất có nhiệm vụ tháo các liên kết Room–Seat trước khi `Repository<Seat>` giải phóng các Seat.
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
----
+**Bước 2 — Tháo liên kết đối tượng.**
 
-## 15. Các ràng buộc nghiệp vụ chưa tích hợp
+```cpp
+    }
+    Room* room = seat->getRoom();
+    if (room == nullptr)
+    {
+        return false;
+    }
+    // Thao lien ket truoc khi xoa Seat
+    if (!room->unlinkSeat(seat))
+    {
+        return false;
+```
 
-Khi hệ thống có Ticket và Showtime, cần xem xét bổ sung:
+Liên kết được đổi theo thứ tự trong code; nếu bước sau thất bại, phần đã nối phải được tháo trước khi xóa đối tượng để tránh con trỏ treo. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-- Không xóa ghế đã được vé tham chiếu.
-- Không thay đổi loại ghế nếu ảnh hưởng đến dữ liệu vé hoặc giá vé đã bán.
-- Không thay đổi sơ đồ ghế khi đã có suất chiếu và vé chịu ảnh hưởng.
+**Bước 3 — Trả kết quả cho bên gọi.**
 
-Những điều kiện này chưa được triển khai trong `SeatRepository` hiện tại.
+```cpp
+    }
+    // Xoa Seat khoi Repository va giai phong bo nho
+    return repo.removeById(roomId + "|" + seatId);
+}
+```
 
-Không được coi chúng là những chức năng đã hoàn thành.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
----
+### SeatRepository::findById()
 
-## 16. Kiểm thử
+#### A. Tổng quan
 
-File:
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& roomId, const string& seatId`.
+- **Giá trị trả về:** `Seat*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
 
 ```text
-tests/test_seat_repository.cpp
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Kết thúc
 ```
 
-Các nhóm kiểm thử:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-- Thêm, sửa, xóa, tìm kiếm Seat.
-- Load và save.
-- Kiểm tra Room ID và Seat ID.
-- Kiểm tra loại ghế.
-- Không cho trùng khóa ghép.
-- Không cho trùng vị trí trong cùng Room.
-- Không cho ghế nằm ngoài kích thước phòng.
-- Không load Seat trước Room.
-- Rollback khi liên kết thất bại.
-- Kiểm tra file TXT không hợp lệ.
-- Kiểm tra tháo liên kết khi xóa.
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
----
+```cpp
+Seat* SeatRepository::findById(const string& roomId, const string& seatId)
+{
+    return repo.findById(roomId + "|" + seatId);
+}
+```
 
-## 17. Kết luận
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-`SeatRepository` quản lý dữ liệu Seat và bảo đảm liên kết với Room trong các thao tác load, add và remove.
+### SeatRepository::getAt()
 
-Điểm khác biệt quan trọng so với các Repository khác là sử dụng khóa ghép và cần xử lý đồng bộ giữa danh sách Seat và các liên kết trong Room.
+#### A. Tổng quan
 
-Các nghiệp vụ liên quan đến vé và suất chiếu sẽ được bổ sung trong những bước tích hợp tiếp theo.
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `Seat*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+Seat* SeatRepository::getAt(int index)
+{
+    return repo.getAt(index);
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### SeatRepository::count()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+int SeatRepository::count()
+{
+    return repo.count();
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### SeatRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+bool SeatRepository::isLoaded()
+{
+    return repo.isLoaded();
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+

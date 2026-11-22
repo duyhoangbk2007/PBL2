@@ -1,73 +1,39 @@
-# RoomRepository – Quản lý dữ liệu phòng chiếu
+# RoomRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`RoomRepository` là lớp thuộc tầng Data Access, chịu trách nhiệm quản lý dữ liệu phòng chiếu trong hệ thống quản lý rạp phim.
+`RoomRepository` chứa `Repository<Room>` sở hữu các `Room*` và kiểm tra dữ liệu riêng của phòng. TXT mỗi dòng lưu ID, tên, kích thước và trạng thái. Mã phòng là khóa ổn định; việc sửa kích thước hoặc xóa phải xét các liên kết và ràng buộc được kiểm tra trong code.
 
-Lớp sử dụng `Repository<Room>` để tái sử dụng các chức năng chung như đọc file, ghi file, thêm, xóa, tìm kiếm và quản lý bộ nhớ.
+Repository không phân quyền; `RoomService` xử lý quyền và nghiệp vụ tầng Business. Con trỏ Seat/Showtime liên kết với Room không thuộc quyền sở hữu của Room; không giải phóng chúng qua Room.
 
-Ngoài ra, `RoomRepository` bổ sung các quy tắc riêng của phòng chiếu, chẳng hạn kiểm tra mã phòng, tên phòng, số hàng, số cột và điều kiện thay đổi kích thước hoặc xóa phòng.
+Mã nguồn: `src/data_access/RoomRepository.cpp` và `src/data_access/RoomRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-Các chức năng chính:
+## 2. Chi tiết từng hàm
 
-- Đọc và ghi dữ liệu phòng chiếu từ file TXT.
-- Kiểm tra tính hợp lệ của dữ liệu Room.
-- Chuyển đổi giữa chuỗi TXT và đối tượng Room.
-- Thêm phòng chiếu mới.
-- Cập nhật thông tin phòng chiếu.
-- Xóa phòng khi đáp ứng điều kiện.
-- Tìm kiếm và truy xuất danh sách phòng chiếu.
+### RoomRepository::RoomRepository()
 
-**Phân chia trách nhiệm:**
+#### A. Tổng quan
 
-- `Repository<Room>`: Quản lý danh sách đối tượng, đọc/ghi file và giải phóng bộ nhớ.
-- `RoomRepository`: Kiểm tra dữ liệu và các ràng buộc trực tiếp của Room.
-- `RoomService`: Kiểm tra phân quyền và các quy tắc nghiệp vụ ở tầng Business.
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
 
-**File liên quan:**
+#### B. Quy trình thực hiện
 
-- `src/data_access/RoomRepository.h`
-- `src/data_access/RoomRepository.cpp`
-- `src/data_access/Repository.h`
-- `src/models/Room.h`
-- `src/models/Room.cpp`
-- `src/utils/Validator.h`
-
----
-
-## 2. Cấu trúc lớp RoomRepository
-
-### 2.1. Thuộc tính
-
-```cpp
-private:
-    Repository<Room> repo;
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-`repo` là đối tượng của lớp `Repository<T>` chung, với kiểu dữ liệu cụ thể là `Room`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Đối tượng này quản lý danh sách `Room*` trong bộ nhớ.
-
-Khi một Room được thêm thành công, `Repository<Room>` sở hữu con trỏ đó và chịu trách nhiệm giải phóng bộ nhớ khi xóa hoặc hủy Repository.
-
-`RoomRepository` không sử dụng kế thừa từ `Repository<Room>` mà sử dụng một đối tượng thành viên để tái sử dụng các chức năng chung.
-
-### 2.2. Các hàm private
-
-```cpp
-static string getRoomId(Room* room);
-static Room* stringToRoom(const string& line);
-static string roomToString(Room* room);
-static bool isValidRoom(const Room* room);
-```
-
-Các hàm này hỗ trợ lấy khóa định danh, chuyển đổi dữ liệu và kiểm tra tính hợp lệ của Room.
-
-Chúng được khai báo `static` vì không cần truy cập trực tiếp vào thuộc tính `repo` của đối tượng RoomRepository.
-
----
-
-## 3. Constructor – Khởi tạo RoomRepository
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
 RoomRepository::RoomRepository(const string& filePath)
@@ -75,28 +41,32 @@ RoomRepository::RoomRepository(const string& filePath)
 {}
 ```
 
-**Chức năng:** Khởi tạo `Repository<Room>` và cung cấp các hàm xử lý dữ liệu Room.
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-Constructor truyền bốn tham số:
+### RoomRepository::getRoomId()
 
-- `filePath`: Đường dẫn file dữ liệu phòng chiếu.
-- `getRoomId`: Hàm lấy mã phòng.
-- `stringToRoom`: Hàm chuyển một dòng TXT thành đối tượng Room.
-- `roomToString`: Hàm chuyển Room thành chuỗi TXT.
+#### A. Tổng quan
 
-Ví dụ:
+- **Mục đích:** Lấy ID của đối tượng làm khóa.
+- **Tham số:** `Room* room`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
 
-```cpp
-RoomRepository roomRepo("data/rooms.txt");
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Constructor chỉ khởi tạo Repository, chưa đọc dữ liệu từ file.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Muốn sử dụng dữ liệu cần gọi `load()`.
-
----
-
-## 4. Hàm getRoomId()
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 string RoomRepository::getRoomId(Room* room)
@@ -109,248 +79,354 @@ string RoomRepository::getRoomId(Room* room)
 }
 ```
 
-**Chức năng:** Lấy mã định danh của một phòng chiếu.
+Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
 
-Nếu con trỏ Room bằng `nullptr`, hàm trả về chuỗi rỗng.
+### RoomRepository::isValidRoom()
 
-Ngược lại, hàm gọi `getRoomId()` của Model.
+#### A. Tổng quan
 
-Hàm được truyền cho `Repository<Room>` để Repository chung có thể tìm kiếm và kiểm tra trùng ID mà không cần biết cấu trúc cụ thể của Room.
+- **Mục đích:** Kiểm tra tính hợp lệ của dữ liệu đầu vào.
+- **Tham số:** `const Room* room`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
----
+#### B. Quy trình thực hiện
 
-## 5. Hàm isValidRoom()
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 bool RoomRepository::isValidRoom(const Room* room)
+{
+    if (room == nullptr)
+    {
+        return false;
+    }
+    if (!Validator::isValidId(room->getRoomId(), "ROM"))
+    {
+        return false;
 ```
 
-### Chức năng
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Kiểm tra tính hợp lệ của một đối tượng Room trước khi thêm, cập nhật hoặc ghi dữ liệu.
-
-### Bước 1: Kiểm tra con trỏ
+**Bước 2 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
-if (room == nullptr)
-{
-    return false;
+    }
+    if (!Validator::isValidText(room->getName()))
+    {
+        return false;
+    }
+    if (room->getRowCount() <= 0)
+    {
+        return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+    }
+    if (room->getColumnCount() <= 0)
+    {
+        return false;
+    }
+    return true;
 }
 ```
 
-Không thể kiểm tra dữ liệu nếu đối tượng không tồn tại.
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-### Bước 2: Kiểm tra mã phòng
+### RoomRepository::stringToRoom()
 
-```cpp
-if (!Validator::isValidId(room->getRoomId(), "ROM"))
-{
-    return false;
-}
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển một dòng TXT thành đối tượng Model.
+- **Tham số:** `const string& line`.
+- **Giá trị trả về:** `Room*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Mã phòng phải đúng định dạng ID của loại Room.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Ví dụ:
-
-- `ROM0001`: Hợp lệ.
-- `ROM0123`: Hợp lệ.
-- `MOV0001`: Không hợp lệ.
-- `ROM0000`: Không hợp lệ.
-
-Việc kiểm tra định dạng được sử dụng lại từ lớp `Validator`.
-
-### Bước 3: Kiểm tra tên phòng
-
-```cpp
-if (!Validator::isValidText(room->getName()))
-{
-    return false;
-}
-```
-
-Tên phòng phải là văn bản hợp lệ theo quy tắc của `Validator`.
-
-### Bước 4: Kiểm tra số hàng
-
-```cpp
-if (room->getRowCount() <= 0)
-{
-    return false;
-}
-```
-
-Số hàng phải lớn hơn 0.
-
-### Bước 5: Kiểm tra số cột
-
-```cpp
-if (room->getColumnCount() <= 0)
-{
-    return false;
-}
-```
-
-Số cột phải lớn hơn 0.
-
-### Kết quả
-
-Trả về `true` nếu tất cả điều kiện hợp lệ.
-
-Ngược lại trả về `false`.
-
-**Lưu ý:** Hàm không kiểm tra trùng ID với những Room khác. Việc kiểm tra trùng ID do `Repository<Room>` thực hiện.
-
----
-
-## 6. Hàm stringToRoom()
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
 
 ```cpp
 Room* RoomRepository::stringToRoom(const string& line)
+{
+    vector<string> fields;
+    size_t start = 0;
+    while (true)
+    {
+        size_t pos = line.find('|', start);
+        if (pos == string::npos)
+        {
+            fields.push_back(line.substr(start));
 ```
 
-### Chức năng
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-Chuyển một dòng dữ liệu TXT thành đối tượng Room.
+**Bước 2 — Kiểm tra điều kiện trước khi tiếp tục.**
 
-Định dạng:
+```cpp
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+    if (fields.size() != 5)
+    {
+        throw runtime_error("Sai so luong truong Room");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    int rowCount;
+    int columnCount;
+    try
+    {
+        size_t pos1 = 0;
+        size_t pos2 = 0;
+
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 4 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+        rowCount = stoi(fields[2], &pos1);
+        columnCount = stoi(fields[3], &pos2);
+
+        if (pos1 != fields[2].length() || pos2 != fields[3].length())
+        {
+            throw runtime_error("Sai dinh dang so");
+        }
+    }
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường. Phép parse đổi chuỗi TXT sang trường có kiểu; dữ liệu không chuyển được phải bị từ chối trước khi tạo đối tượng hợp lệ.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    catch (const exception&)
+    {
+        throw runtime_error("So hang hoac so cot khong hop le");
+    }
+    // Kiem tra trang thai
+    if (fields[4] != "0" && fields[4] != "1")
+    {
+        throw runtime_error("Trang thai Room khong hop le");
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 6 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    bool active = (fields[4] == "1");
+
+    // Tao doi tuong Room
+    Room* room = new Room(
+        fields[0],
+        fields[1],
+        rowCount,
+        columnCount,
+        active
+    );
+```
+
+`new` cấp phát Model trên heap. Cho đến khi Repository nhận thành công, nhánh lỗi hoặc caller vẫn phải chịu trách nhiệm giải phóng.
+
+**Bước 7 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+
+    // Kiem tra du lieu Room
+    if (!isValidRoom(room))
+    {
+        delete room;
+        throw runtime_error("Du lieu Room khong hop le");
+    }
+    return room;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `delete` giải phóng đối tượng; không được dùng lại con trỏ sau lệnh này. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 8 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### RoomRepository::roomToString()
+
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển đối tượng Model thành một dòng TXT.
+- **Tham số:** `Room* room`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
 
 ```text
-roomId|name|rowCount|columnCount|active
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Ví dụ:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-```text
-ROM0001|Phong 1|8|12|1
-```
-
-### Bước 1: Tách chuỗi
-
-Hàm sử dụng `vector<string>` để lưu các trường dữ liệu được phân tách bằng dấu `|`.
-
-```cpp
-vector<string> fields;
-size_t start = 0;
-```
-
-Sau khi tách, dữ liệu phải có đúng 5 trường.
-
-```cpp
-if (fields.size() != 5)
-{
-    throw runtime_error("Sai so luong truong Room");
-}
-```
-
-### Bước 2: Chuyển đổi số hàng và số cột
-
-```cpp
-rowCount = stoi(fields[2], &pos1);
-columnCount = stoi(fields[3], &pos2);
-```
-
-`stoi()` chuyển chuỗi thành số nguyên.
-
-Hai biến `pos1` và `pos2` được sử dụng để kiểm tra toàn bộ chuỗi đã được chuyển đổi hay chưa.
-
-Ví dụ:
-
-- `"8"`: Hợp lệ.
-- `"12"`: Hợp lệ.
-- `"8abc"`: Không hợp lệ.
-- `"abc"`: Không hợp lệ.
-
-Nếu chuyển đổi thất bại, hàm ném `runtime_error`.
-
-### Bước 3: Kiểm tra trạng thái
-
-```cpp
-if (fields[4] != "0" && fields[4] != "1")
-{
-    throw runtime_error("Trang thai Room khong hop le");
-}
-```
-
-Quy ước:
-
-- `1`: Phòng đang hoạt động.
-- `0`: Phòng ngừng hoạt động.
-
-### Bước 4: Tạo đối tượng Room
-
-```cpp
-Room* room = new Room(
-    fields[0],
-    fields[1],
-    rowCount,
-    columnCount,
-    active
-);
-```
-
-### Bước 5: Kiểm tra dữ liệu
-
-```cpp
-if (!isValidRoom(room))
-{
-    delete room;
-    throw runtime_error("Du lieu Room khong hop le");
-}
-```
-
-Nếu dữ liệu không hợp lệ, đối tượng tạm được giải phóng trước khi ném ngoại lệ.
-
-### Kết quả
-
-Trả về `Room*` nếu chuyển đổi thành công.
-
-Ném `runtime_error` nếu dòng dữ liệu không hợp lệ.
-
----
-
-## 7. Hàm roomToString()
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 string RoomRepository::roomToString(Room* room)
+{
+    if (!isValidRoom(room))
+    {
+        throw runtime_error("Room khong hop le khi ghi file");
+    }
+    return room->getRoomId() + "|" +
+           room->getName() + "|" +
+           to_string(room->getRowCount()) + "|" +
+           to_string(room->getColumnCount()) + "|" +
+           (room->isActive() ? "1" : "0");
 ```
 
-### Chức năng
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
 
-Chuyển một đối tượng Room thành chuỗi để ghi xuống file TXT.
-
-Trước tiên, hàm gọi `isValidRoom()`.
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
-if (!isValidRoom(room))
-{
-    throw runtime_error("Room khong hop le khi ghi file");
 }
 ```
 
-Sau đó ghép các trường:
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-```cpp
-return room->getRoomId() + "|" +
-       room->getName() + "|" +
-       to_string(room->getRowCount()) + "|" +
-       to_string(room->getColumnCount()) + "|" +
-       (room->isActive() ? "1" : "0");
-```
+### RoomRepository::save()
 
-Ví dụ kết quả:
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
 
 ```text
-ROM0001|Phong 1|8|12|1
+Bắt đầu
+    |
+    v
+Ghi dữ liệu TXT
+    |
+    v
+Kết thúc
 ```
 
-Hàm không trực tiếp mở hoặc ghi file.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Việc ghi file được thực hiện bởi `Repository<Room>` thông qua `FileIO`.
+**Bước 1 — Ghi dữ liệu TXT.**
 
----
+```cpp
+bool RoomRepository::save()
+{
+    return repo.save();
+}
+```
 
-## 8. Hàm load()
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật.
+
+### RoomRepository::load()
+
+#### A. Tổng quan
+
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (không đạt: false)
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Đọc dữ liệu TXT.**
 
 ```cpp
 bool RoomRepository::load()
@@ -363,325 +439,358 @@ bool RoomRepository::load()
 }
 ```
 
-### Chức năng
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Nạp dữ liệu phòng chiếu từ file TXT vào bộ nhớ.
+### RoomRepository::add()
 
-### Quy trình
+#### A. Tổng quan
 
-1. Kiểm tra Repository đã được load hay chưa.
-2. Nếu đã load, trả về `false`.
-3. Nếu chưa load, gọi `repo.load()`.
-4. Repository chung đọc file và sử dụng `stringToRoom()` để tạo đối tượng.
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `Room* room`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, dữ liệu hợp lệ, nhánh trả `false`.
 
-### Kết quả
+#### B. Quy trình thực hiện
 
-- `true`: Nạp dữ liệu thành công.
-- `false`: Không thể load hoặc Repository đã được load.
-- Có thể ném ngoại lệ nếu dữ liệu TXT không hợp lệ.
-
-Việc không cho load nhiều lần giúp tránh thay thế những Room đang được các đối tượng khác liên kết.
-
----
-
-## 9. Hàm save()
-
-```cpp
-bool RoomRepository::save()
-{
-    return repo.save();
-}
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-**Chức năng:** Lưu danh sách phòng chiếu trong bộ nhớ xuống file TXT.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-`Repository<Room>` gọi `roomToString()` để chuyển từng đối tượng thành chuỗi, sau đó thực hiện ghi file.
-
-`RoomRepository` không tự thực hiện thao tác I/O.
-
----
-
-## 10. Hàm add()
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 bool RoomRepository::add(Room* room)
-```
-
-### Chức năng
-
-Thêm một phòng chiếu mới vào Repository.
-
-### Bước 1: Kiểm tra trạng thái và dữ liệu
-
-```cpp
-if (!repo.isLoaded() || !isValidRoom(room))
 {
-    return false;
-}
-```
-
-Không cho phép thêm nếu Repository chưa load hoặc dữ liệu không hợp lệ.
-
-### Bước 2: Kiểm tra trùng con trỏ
-
-```cpp
-for (int i = 0; i < repo.count(); i++)
-{
-    if (repo.getAt(i) == room)
+    if (!repo.isLoaded() || !isValidRoom(room))
     {
         return false;
     }
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == room)
+        {
+            return false;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Trả kết quả cho bên gọi.**
+
+```cpp
+        }
+    }
+    return repo.add(room);
 }
 ```
 
-Không cho phép thêm cùng một con trỏ Room nhiều lần.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Quy tắc này giúp tránh một đối tượng bị quản lý và giải phóng nhiều lần.
+### RoomRepository::update()
 
-### Bước 3: Thêm vào Repository chung
+#### A. Tổng quan
 
-```cpp
-return repo.add(room);
+- **Mục đích:** Cập nhật đối tượng đang quản lý.
+- **Tham số:** `const Room& newValues`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
 ```
 
-`Repository<Room>` tiếp tục kiểm tra trùng ID và thực hiện thêm.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Kết quả
-
-- `true`: Thêm thành công.
-- `false`: Không đáp ứng điều kiện thêm.
-
-**Quản lý bộ nhớ:** Nếu thêm thành công, Repository sở hữu con trỏ Room. Nếu thêm thất bại, bên gọi vẫn chịu trách nhiệm quản lý con trỏ.
-
----
-
-## 11. Hàm update()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 bool RoomRepository::update(const Room& newValues)
-```
-
-### Chức năng
-
-Cập nhật thông tin của một phòng chiếu đã tồn tại.
-
-### Bước 1: Kiểm tra dữ liệu
-
-```cpp
-if (!repo.isLoaded() || !isValidRoom(&newValues))
 {
-    return false;
-}
-```
-
-### Bước 2: Tìm phòng hiện tại
-
-```cpp
-Room* room = repo.findById(newValues.getRoomId());
-
-if (room == nullptr)
-{
-    return false;
-}
-```
-
-Không tạo Room mới khi cập nhật.
-
-### Bước 3: Kiểm tra các ghế đang liên kết
-
-```cpp
-for (int i = 0; i < room->getSeatCount(); i++)
-{
-    Seat* seat = room->getSeatAt(i);
-
-    if (seat == nullptr)
+    if (!repo.isLoaded() || !isValidRoom(&newValues))
     {
         return false;
     }
+    Room* room = repo.findById(newValues.getRoomId());
 
-    if (seat->getRow() > newValues.getRowCount() ||
-        seat->getColumn() > newValues.getColumnCount())
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. Cặp `roomId` và `seatId` xác định đúng ghế trong phòng; chỉ dùng `seatId` sẽ không đủ để phân biệt ghế ở các phòng khác nhau.
+
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    if (room == nullptr)
     {
         return false;
     }
+    // Khong cho thu nho phong neu co ghe nam ngoai kich thuoc moi
+    for (int i = 0; i < room->getSeatCount(); i++)
+    {
+        Seat* seat = room->getSeatAt(i);
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+        if (seat == nullptr)
+        {
+            return false;
+        }
+        if (seat->getRow() > newValues.getRowCount() || seat->getColumn() > newValues.getColumnCount())
+        {
+            return false;
+        }
+```
+
+Hàng và cột được so với kích thước phòng và các ghế khác để tránh vị trí ngoài sơ đồ hoặc trùng chỗ. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+    room->setName(newValues.getName());
+    room->setRowCount(newValues.getRowCount());
+    room->setColumnCount(newValues.getColumnCount());
+    room->setActive(newValues.isActive());
+    return true;
 }
 ```
 
-Nếu kích thước mới khiến bất kỳ ghế hiện tại nào nằm ngoài phạm vi phòng, hàm từ chối cập nhật.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Ví dụ:
+### RoomRepository::removeById()
 
-Phòng hiện tại có 8 hàng, 12 cột và một ghế tại hàng 8, cột 10.
+#### A. Tổng quan
 
-- Đổi thành 8 hàng, 10 cột: Có thể hợp lệ.
-- Đổi thành 7 hàng, 12 cột: Không hợp lệ vì ghế ở hàng 8.
+- **Mục đích:** Xóa đối tượng theo khóa sau khi kiểm tra ràng buộc.
+- **Tham số:** `const string& roomId`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, nhánh trả `false`.
 
-### Bước 4: Cập nhật thuộc tính
+#### B. Quy trình thực hiện
 
-```cpp
-room->setName(newValues.getName());
-room->setRowCount(newValues.getRowCount());
-room->setColumnCount(newValues.getColumnCount());
-room->setActive(newValues.isActive());
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Repository cập nhật trực tiếp đối tượng đang được quản lý, không thay thế con trỏ Room.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Kết quả
-
-Trả về `true` nếu cập nhật thành công, ngược lại `false`.
-
-**Lưu ý:** `RoomRepository::update()` cho phép thay đổi trạng thái `active`. Tuy nhiên, `RoomService::updateRoom()` có quy tắc riêng không cho thay đổi trạng thái qua thao tác cập nhật thông thường.
-
----
-
-## 12. Hàm removeById()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 bool RoomRepository::removeById(const string& roomId)
+{
+    if (!repo.isLoaded())
+    {
+        return false;
+    }
+    Room* room = repo.findById(roomId);
+
 ```
 
-### Chức năng
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Xóa một phòng chiếu theo ID.
-
-### Bước 1: Kiểm tra Repository
+**Bước 2 — Từ chối điều kiện không đạt.**
 
 ```cpp
-if (!repo.isLoaded())
-{
-    return false;
+    if (room == nullptr)
+    {
+        return false;
+    }
+    // Khong xoa phong khi con ghe hoac suat chieu
+    if (room->getSeatCount() > 0 ||
+        room->getShowtimeCount() > 0)
+    {
+        return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Trả kết quả cho bên gọi.**
+
+```cpp
+    }
+    return repo.removeById(roomId);
 }
 ```
 
-### Bước 2: Tìm phòng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-```cpp
-Room* room = repo.findById(roomId);
+### RoomRepository::findById()
 
-if (room == nullptr)
-{
-    return false;
-}
-```
+#### A. Tổng quan
 
-### Bước 3: Kiểm tra liên kết
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& roomId`.
+- **Giá trị trả về:** `Room*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
 
-```cpp
-if (room->getSeatCount() > 0 ||
-    room->getShowtimeCount() > 0)
-{
-    return false;
-}
-```
-
-Không cho phép xóa Room khi:
-
-- Phòng vẫn chứa Seat.
-- Phòng vẫn liên kết với Showtime.
-
-Điều này tránh việc các đối tượng khác giữ con trỏ đến Room đã bị giải phóng.
-
-### Bước 4: Xóa phòng
-
-```cpp
-return repo.removeById(roomId);
-```
-
-Repository chung xóa phần tử khỏi danh sách và giải phóng đối tượng Room.
-
----
-
-## 13. Các hàm truy xuất
-
-### 13.1. findById()
-
-```cpp
-Room* findById(const string& roomId);
-```
-
-Tìm Room theo mã phòng.
-
-Trả về `nullptr` nếu không tìm thấy.
-
-### 13.2. getAt()
-
-```cpp
-Room* getAt(int index);
-```
-
-Lấy Room theo vị trí trong danh sách.
-
-Trả về `nullptr` nếu chỉ số không hợp lệ.
-
-### 13.3. count()
-
-```cpp
-int count();
-```
-
-Trả về tổng số Room đang được quản lý trong bộ nhớ.
-
-### 13.4. isLoaded()
-
-```cpp
-bool isLoaded();
-```
-
-Cho biết dữ liệu Repository đã được load thành công hay chưa.
-
----
-
-## 14. Quan hệ với Seat và Showtime
-
-Room có thể liên kết với nhiều Seat và Showtime.
-
-Các đối tượng Seat và Showtime không thuộc quyền sở hữu bộ nhớ của Room.
+#### B. Quy trình thực hiện
 
 ```text
-RoomRepository
-      |
-      v
-Repository<Room>
-      |
-      v
-     Room
-    /    \
-   v      v
- Seat*  Showtime*
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Kết thúc
 ```
 
-Room chỉ lưu các con trỏ liên kết.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Vì vậy, khi xóa hoặc giải phóng Seat/Showtime, cần bảo đảm những liên kết tương ứng được tháo bỏ.
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
----
+```cpp
+Room* RoomRepository::findById(const string& roomId)
+{
+    return repo.findById(roomId);
+}
+```
 
-## 15. Kiểm thử
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-File:
+### RoomRepository::getAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `Room*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
 
 ```text
-tests/test_room_repository.cpp
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Các nhóm kiểm thử cần bao gồm:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-- Load và save dữ liệu Room.
-- Thêm phòng hợp lệ và không hợp lệ.
-- Kiểm tra trùng ID, trùng con trỏ.
-- Cập nhật thông tin phòng.
-- Không cho thu nhỏ phòng làm ghế nằm ngoài kích thước.
-- Không cho xóa phòng còn Seat hoặc Showtime.
-- Kiểm tra file TXT sai định dạng.
-- Kiểm tra các hàm truy xuất.
+**Bước 1 — Trả kết quả cho bên gọi.**
 
----
+```cpp
+Room* RoomRepository::getAt(int index)
+{
+    return repo.getAt(index);
+}
+```
 
-## 16. Kết luận
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-`RoomRepository` đã cung cấp các thao tác dữ liệu cơ bản cho Room và kiểm tra các ràng buộc trực tiếp với Seat, Showtime.
+### RoomRepository::count()
 
-Những quy tắc liên quan đến phân quyền, thay đổi trạng thái phòng và giới hạn thay đổi kích thước khi đã có suất chiếu được xử lý ở `RoomService`.
+#### A. Tổng quan
 
-Các ràng buộc sâu hơn liên quan đến lịch chiếu và vé sẽ được tiếp tục hoàn thiện khi tích hợp các module tương ứng.
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+int RoomRepository::count()
+{
+    return repo.count();
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### RoomRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+bool RoomRepository::isLoaded()
+{
+    return repo.isLoaded();
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+

@@ -1,43 +1,460 @@
-# PricingRepository — Data Access bảng giá (Bước 09)
+# PricingRepository — mã nguồn và quy tắc dữ liệu
 
-## 1. Mục đích và cấu trúc
+## 1. Tổng quan
 
-`PricingRepository` ở `src/data_access/PricingRepository.h/.cpp` quản lý **một** đối tượng `Pricing`, không có ID và không dùng `Repository<T>`. Lớp giữ `string filePath`, `Pricing pricing`, `bool loaded`; đọc/ghi TXT bằng `FileIO`. Repository không kiểm tra quyền, không tính giảm giá hoặc điểm. Đường dẫn file do caller truyền vào constructor; ứng dụng dự kiến dùng `data/pricing.txt`.
+`PricingRepository` giữ **một** đối tượng `Pricing`, đường dẫn TXT và cờ `loaded`; lớp không dùng `Repository<T>`. File có năm dòng `KEY|VALUE`: `STANDARD`, `VIP`, `COUPLE`, `STUDENT_DISCOUNT`, `MEMBER_DISCOUNT`. Giá phải lớn hơn 0, tỷ lệ trong `[0,100]`, mọi số phải hữu hạn.
 
-## 2. Định dạng TXT
+`load()` kiểm tra đủ năm khóa rồi mới thay cấu hình RAM; nạp lỗi giữ cấu hình đã có. `update()` ghi file trước khi gán cấu hình mới trong RAM; nếu ghi dở, code không bảo đảm file đích còn nguyên. `save()` ghi cấu hình hiện tại. Repository không kiểm tra quyền, tính ưu đãi hay cộng điểm; `getPricing()` trả con trỏ mượn.
 
-File có đúng năm dòng `KEY|VALUE`, không có schema hoặc tiêu đề:
+Mã nguồn: `src/data_access/PricingRepository.cpp` và `src/data_access/PricingRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
+
+## 2. Chi tiết từng hàm
+
+### PricingRepository::PricingRepository()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
+
+#### B. Quy trình thực hiện
 
 ```text
-STANDARD|70000
-VIP|100000
-COUPLE|160000
-STUDENT_DISCOUNT|10
-MEMBER_DISCOUNT|5
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Ba giá dùng VND; hai tỷ lệ là phần trăm (`10` nghĩa là 10%). `load()` chấp nhận mọi thứ tự dòng nếu đủ đúng năm khóa, mỗi khóa xuất hiện một lần. Mỗi dòng phải có đúng một dấu `|`, khóa và giá trị không rỗng. `Validator::isValidNumber()` yêu cầu chuỗi số thập phân có chữ số, có thể có một dấu `.` và dấu `-` đầu chuỗi; `stod()` chuyển giá trị, sau đó code loại số không hữu hạn. Giá ghế phải `> 0`; tỷ lệ giảm phải trong `[0,100]` theo `Pricing::isValid()`. `save()` và `update()` ghi đúng thứ tự ví dụ trên bằng `std::to_string()`, nên giá trị có thể hiện sáu chữ số thập phân.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-## 3. API hiện có
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
-| Hàm | Hành vi |
-| --- | --- |
-| `PricingRepository(const string& filePath)` | Lưu đường dẫn, khởi tạo `loaded = false`; chưa đọc hoặc tạo file. |
-| `load()` | Đọc đủ năm dòng, kiểm tra khóa/dữ liệu rồi mới gán `pricing` và đặt `loaded = true`; trả `false` nếu không đọc được hoặc dữ liệu sai, giữ nguyên cấu hình và trạng thái nạp trước đó. |
-| `save()` | Trả `false` nếu chưa load hoặc `pricing.isValid()` sai; nếu hợp lệ, ghi toàn bộ năm dòng và trả kết quả từ `FileIO::writeLines()`. |
-| `update(const Pricing& newPricing)` | Trả `false` nếu chưa load hoặc giá trị không hợp lệ; ghi toàn bộ cấu hình mới xuống file trước, chỉ gán vào RAM nếu ghi trả `true`. |
-| `getPricing() const` | Trả `const Pricing*` trỏ vào đối tượng nội bộ khi đã load; chưa load trả `nullptr`. |
-| `isLoaded() const` | Trả trạng thái `loaded`. |
+```cpp
+PricingRepository::PricingRepository(const string& filePath)
+    : filePath(filePath), loaded(false)
+{
+}
+```
 
-`update()` đã ghi file khi thành công; không cần gọi `save()` để ghi lại cùng thay đổi. `save()` dùng cho cấu hình đang nạp. Repository không tự tạo file mặc định khi thiếu: `load()` trả `false`. Con trỏ từ `getPricing()` là con trỏ mượn, không được `delete` hoặc giữ lâu qua cập nhật.
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-## 4. Lỗi và giới hạn cần biết
+### PricingRepository::load()
 
-- Khóa lạ/trùng/thiếu, số dòng khác 5, dòng sai trường, số sai định dạng, không hữu hạn hoặc ngoài giới hạn đều làm `load()` trả `false`. Code hiện tại **không ném lỗi kèm file/dòng** cho các trường hợp này.
-- `load()` chỉ thay `pricing` và `loaded` sau khi đọc và kiểm tra toàn bộ file thành công. Nếu reload lỗi sau lần nạp hợp lệ, `isLoaded()` vẫn là `true` và `getPricing()` vẫn trả cấu hình cũ; nếu chưa từng nạp thành công, trạng thái vẫn chưa load.
-- `save()` và `update()` trả `false` khi ghi thất bại. `update()` giữ nguyên cấu hình trong RAM nếu `FileIO::writeLines()` trả `false`, nhưng code không dùng file tạm/thay thế nguyên tử và không bảo đảm file đích còn nguyên nếu ghi dở.
-- `Pricing::isValid()` kiểm tra `std::isfinite()` cho cả năm thuộc tính. Vì `save()` và `update()` đều gọi hàm này, đường cập nhật trực tiếp qua Repository cũng từ chối `NaN`/vô cực; `load()` còn kiểm tra số hữu hạn sau khi parse.
+#### A. Tổng quan
 
-## 5. Kiểm thử
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, dữ liệu hợp lệ, nhánh trả `false`.
 
-`tests/test_pricing.cpp` kiểm tra Model, Repository và Service trong cùng một chương trình. Lần biên dịch/chạy C++17 ngày 2026-11-20 đạt **69 PASS, 0 FAIL**, thoát mã 0. Phần Repository đã thử nạp file chuẩn, cập nhật/lưu/nạp lại, thiếu khóa, số sai, khóa trùng và giữ cấu hình cũ khi reload lỗi; kết quả 69 là **toàn bài test**, không phải số ca riêng của Repository. Test chưa có ca trực tiếp cho `NaN`/vô cực hoặc lỗi ghi file dở và chưa chứng minh cơ chế báo file/dòng.
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Đọc dữ liệu TXT.**
+
+```cpp
+bool PricingRepository::load()
+{
+    vector<string> lines;
+    if (!FileIO::readLines(filePath, lines))
+    {
+        return false;
+    }
+    if (lines.size() != 5)
+    {
+        return false;
+```
+
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    double values[5] = {};
+    bool found[5] = {};
+    const string keys[5] = {
+        "STANDARD",
+        "VIP",
+        "COUPLE",
+        "STUDENT_DISCOUNT",
+        "MEMBER_DISCOUNT"
+    };
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 3 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    for (const string& line : lines)
+    {
+        size_t pos = line.find('|');
+        // Kiem tra dinh dang KEY|VALUE
+        if (pos == string::npos ||
+            pos == 0 ||
+            pos == line.size() - 1 ||
+            line.find('|', pos + 1) != string::npos)
+        {
+            return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 4 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+        }
+        string key = line.substr(0, pos);
+        string value = line.substr(pos + 1);
+        int index = -1;
+        for (int i = 0; i < 5; i++)
+        {
+            if (key == keys[i])
+            {
+                index = i;
+                break;
+            }
+```
+
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 5 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+        }
+        // Kiem tra khoa khong ton tai hoac bi trung
+        if (index == -1 || found[index])
+        {
+            return false;
+        }
+        if (!Validator::isValidNumber(value))
+        {
+            return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 6 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+        }
+        try
+        {
+            values[index] = stod(value); //string to double
+        }
+        catch (...)
+        {
+            return false;
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Phép parse đổi chuỗi TXT sang trường có kiểu; dữ liệu không chuyển được phải bị từ chối trước khi tạo đối tượng hợp lệ.
+
+**Bước 7 — Từ chối điều kiện không đạt.**
+
+```cpp
+        }
+
+        if (!std::isfinite(values[index])) //kiểm tra có hữu hạn hay k
+        {
+            return false;
+        }
+
+        found[index] = true;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 8 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    }
+
+    // Kiem tra du 5 khoa
+    for (int i = 0; i < 5; i++)
+    {
+        if (!found[i])
+        {
+            return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 9 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+        }
+    }
+
+    Pricing temp(
+        values[0],
+        values[1],
+        values[2],
+        values[3],
+        values[4]
+    );
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 10 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+
+    if (!temp.isValid())
+    {
+        return false;
+    }
+    // Chi cap nhat khi toan bo du lieu hop le
+    pricing = temp;
+    loaded = true;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 11 — Xác nhận xử lý thành công.**
+
+```cpp
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### PricingRepository::save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Ghi dữ liệu TXT
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+bool PricingRepository::save()
+{
+    if (!loaded || !pricing.isValid())
+    {
+        return false;
+    }
+    vector<string> lines = {
+        "STANDARD|" + to_string(pricing.getStandardPrice()),
+        "VIP|" + to_string(pricing.getVipPrice()),
+        "COUPLE|" + to_string(pricing.getCouplePrice()),
+        "STUDENT_DISCOUNT|" + to_string(pricing.getStudentDiscount()),
+        "MEMBER_DISCOUNT|" + to_string(pricing.getMemberDiscount())
+    };
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Ghi dữ liệu TXT.**
+
+```cpp
+    return FileIO::writeLines(filePath, lines);
+}
+```
+
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật.
+
+### PricingRepository::update()
+
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật đối tượng đang quản lý.
+- **Tham số:** `const Pricing& newPricing`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Ghi dữ liệu TXT (không đạt: false)
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+bool PricingRepository::update(const Pricing& newPricing)
+{
+    if (!loaded || !newPricing.isValid())
+    {
+        return false;
+    }
+    // Luu cau hinh moi xuong file truoc
+    vector<string> lines = {
+        "STANDARD|" + to_string(newPricing.getStandardPrice()),
+        "VIP|" + to_string(newPricing.getVipPrice()),
+        "COUPLE|" + to_string(newPricing.getCouplePrice()),
+        "STUDENT_DISCOUNT|" + to_string(newPricing.getStudentDiscount()),
+        "MEMBER_DISCOUNT|" + to_string(newPricing.getMemberDiscount())
+    };
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Ghi dữ liệu TXT.**
+
+```cpp
+    if (!FileIO::writeLines(filePath, lines))
+    {
+        return false;
+    }
+    // Chi cap nhat bo nho khi ghi thanh cong
+    pricing = newPricing;
+    return true;
+}
+```
+
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+### PricingRepository::getPricing()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả cấu hình giá hiện tại.
+- **Tham số:** không có.
+- **Giá trị trả về:** `const Pricing*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+const Pricing* PricingRepository::getPricing() const
+{
+    if (!loaded)
+    {
+        return nullptr;
+    }
+    return &pricing;
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+### PricingRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+bool PricingRepository::isLoaded() const
+{
+    return loaded;
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+

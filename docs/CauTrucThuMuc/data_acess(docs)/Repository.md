@@ -1,232 +1,73 @@
-## 2. Lớp `Repository<T>` dùng chung
+# Repository<T> — mã nguồn và quy tắc dữ liệu
 
-**File:** `src/data_access/Repository.h`
+## 1. Tổng quan
 
-`Repository<T>` là một lớp template được xây dựng nhằm tái sử dụng những chức năng giống nhau giữa các loại Repository.
+`Repository<T>` là template dùng chung, định nghĩa ngay trong `src/data_access/Repository.h` để trình biên dịch nhìn thấy mã khi tạo `Repository<Movie>`, `Repository<Room>` hoặc kiểu khác. Các Repository cụ thể **chứa** một `Repository<T>` và cung cấp ba callback `getId`, `parse`, `serialize` để xử lý Model và TXT riêng.
 
-Ví dụ, `MovieRepository`, `RoomRepository` và `ShowtimeRepository` đều cần đọc file, lưu file, tìm kiếm theo ID và quản lý danh sách đối tượng.
+`items` là `DoublyLinkedList<T*>`; Repository sở hữu con trỏ thêm thành công và giải phóng qua `clear()`/destructor. Caller sở hữu con trỏ nếu `add()` thất bại. `loaded` bảo vệ thao tác cần dữ liệu đã nạp. `load()` dùng danh sách tạm để tránh thay dữ liệu đang dùng khi parse lỗi; `save()` tuần tự hóa rồi ghi một file. Callback là con trỏ hàm; `T*` là con trỏ tới Model, không phải bản sao.
 
-Thay vì viết lại các chức năng này nhiều lần, ta sử dụng `Repository<T>`.
+Mã nguồn: `src/data_access/Repository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-```cpp
-Repository<Movie>
-Repository<Room>
-Repository<Showtime>
-```
+## 2. Chi tiết từng hàm
 
-Trong đó `T` là kiểu Model mà Repository quản lý.
+### Repository<T>::Repository()
 
-### 2.1. Vì sao sử dụng template?
+#### A. Tổng quan
 
-Vì mỗi loại Model có kiểu dữ liệu khác nhau, nhưng cách quản lý danh sách và thao tác file có nhiều điểm chung.
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath, string (*getId)(T*), T* (*parse)(const string&), string (*serialize)(T*)`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Callback và đường dẫn được giữ để dùng khi nạp/lưu; chưa đọc file.
 
-Template cho phép viết một lớp chung và sử dụng lại với nhiều kiểu Model mà không cần sao chép code.
-
-### 2.2. Vì sao dùng composition thay vì kế thừa?
-
-Thiết kế dự kiến của dự án là các Repository cụ thể **chứa một đối tượng `Repository<T>`** thay vì kế thừa từ nó.
-
-Ví dụ:
-
-```cpp
-class MovieRepository
-{
-private:
-    Repository<Movie> repo;
-};
-```
-
-Khi cần tìm phim theo ID, `MovieRepository` có thể gọi:
-
-```cpp
-repo.findById(movieId);
-```
-
-Cách này giúp:
-
-- Tái sử dụng các hàm chung.
-- Tách chức năng quản lý dữ liệu khỏi chức năng đặc thù của từng Model.
-- Giảm việc viết lại `load()`, `save()`, `findById()`, ...
-- Giữ code đơn giản, dễ đọc và dễ bảo trì.
-
-**Lưu ý:** Đây là kiến trúc dự kiến. Phiên bản `MovieRepository` hiện có trên nhánh Bước 04 chưa được chuyển sang sử dụng `Repository<Movie>` theo cách này.
-
----
-
-## 3. Các thuộc tính của `Repository<T>`
-
-```cpp
-private:
-    string filePath;
-    DoublyLinkedList<T*> items;
-    bool loaded;
-
-    string (*getId)(T*);
-    T* (*parse)(const string&);
-    string (*serialize)(T*);
-```
-
-### 3.1. `filePath`
-
-```cpp
-string filePath;
-```
-
-Lưu đường dẫn đến file TXT mà Repository quản lý.
-
-Ví dụ:
+#### B. Quy trình thực hiện
 
 ```text
-data/movies.txt
+Bắt đầu
+    |
+    v
+Đọc và parse TXT
+    |
+    v
+Kết thúc
 ```
 
-Mỗi đối tượng Repository được khởi tạo với một đường dẫn file cụ thể.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### 3.2. `items`
+**Bước 1 — Đọc và parse TXT.**
 
 ```cpp
-DoublyLinkedList<T*> items;
-```
-
-Danh sách liên kết đôi chứa các con trỏ đến đối tượng Model đang được quản lý trong RAM.
-
-Ví dụ với `Repository<Movie>`:
-
-```text
-items
-  |
-  +-- Movie*
-  +-- Movie*
-  +-- Movie*
-```
-
-Sử dụng `T*` giúp Repository quản lý các đối tượng thông qua con trỏ.
-
-**Quan trọng:** Trong thiết kế hiện tại, Repository sở hữu các đối tượng được lưu trong `items` và chịu trách nhiệm giải phóng chúng.
-
-### 3.3. `loaded`
-
-```cpp
-bool loaded;
-```
-
-Đánh dấu Repository đã nạp dữ liệu thành công hay chưa.
-
-- `false`: Chưa nạp thành công hoặc đã gọi `clear()`.
-- `true`: Đã nạp dữ liệu thành công bằng `load()`.
-
-Giá trị ban đầu là `false`.
-
-Thuộc tính này giúp `save()` tránh ghi file khi Repository chưa nạp dữ liệu.
-
-### 3.4. `getId`
-
-```cpp
-string (*getId)(T*);
-```
-
-Con trỏ hàm nhận một đối tượng `T*` và trả về ID của đối tượng đó.
-
-Repository không thể tự biết mỗi Model sử dụng tên hàm lấy ID nào.
-
-Ví dụ:
-
-```cpp
-string getMovieId(Movie* movie)
-{
-    return movie->getMovieId();
-}
-```
-
-Khi sử dụng `Repository<Movie>`, ta truyền hàm này vào constructor.
-
-Nhờ vậy, Repository có thể tìm kiếm và kiểm tra trùng ID mà không cần biết chi tiết của lớp `Movie`.
-
-### 3.5. `parse`
-
-```cpp
-T* (*parse)(const string&);
-```
-
-Con trỏ hàm dùng để chuyển một dòng TXT thành một đối tượng Model.
-
-Ví dụ:
-
-```text
-MOV0001|Avatar|Sci-Fi|162|13|2026-01-01|2026-12-31|1
-```
-
-Sau khi `parse()` thành công, ta nhận được một đối tượng `Movie*` chứa các trường tương ứng.
-
-Hàm `parse()` do Repository cụ thể cung cấp vì mỗi Model có cấu trúc dữ liệu khác nhau.
-
-### 3.6. `serialize`
-
-```cpp
-string (*serialize)(T*);
-```
-
-Con trỏ hàm dùng để chuyển một đối tượng Model thành chuỗi TXT.
-
-Đây là thao tác ngược lại với `parse()`.
-
-Ví dụ:
-
-```text
-Movie*
-   |
-   | serialize()
-   v
-MOV0001|Avatar|Sci-Fi|162|13|2026-01-01|2026-12-31|1
-```
-
-`Repository<T>` chỉ gọi hàm được truyền vào, không tự quyết định thứ tự hoặc định dạng các trường.
-
----
-
-## 4. Constructor
-
-```cpp
-Repository(
-    const string& filePath,
-    string (*getId)(T*),
-    T* (*parse)(const string&),
-    string (*serialize)(T*)
-);
-```
-
-### Chức năng
-
-Khởi tạo Repository với các thông tin cần thiết.
-
-Constructor nhận bốn tham số:
-
-1. `filePath`: Đường dẫn file TXT.
-2. `getId`: Hàm lấy ID từ đối tượng Model.
-3. `parse`: Hàm chuyển dòng TXT thành Model.
-4. `serialize`: Hàm chuyển Model thành dòng TXT.
-
-### Cách hoạt động
-
-```cpp
-: filePath(filePath),
-  loaded(false),
-  getId(getId),
-  parse(parse),
-  serialize(serialize)
+Repository<T>::Repository(const string& filePath, string (*getId)(T*), T* (*parse)(const string&), string (*serialize)(T*))
+    : filePath(filePath), loaded(false), getId(getId), parse(parse), serialize(serialize)
 {
 }
 ```
 
-Constructor gán các tham số cho thuộc tính tương ứng và đặt `loaded = false`.
+Đọc TXT và dùng callback `parse` để tạo Model; dữ liệu lỗi phải đi theo nhánh xử lý lỗi trước khi thay danh sách đang dùng. Callback `serialize` tạo dòng TXT từ Model trước khi `FileIO` ghi file; kết quả ghi quyết định thao tác lưu thành công hay thất bại. Callback `getId` lấy khóa của Model để kiểm tra trùng hoặc tìm kiếm mà không cần biết kiểu `T` cụ thể.
 
-Constructor **không tự đọc file**.
+### Repository<T>::~Repository()
 
-Muốn nạp dữ liệu, cần gọi `load()`.
+#### A. Tổng quan
 
----
+- **Mục đích:** Tháo liên kết hoặc giải phóng tài nguyên khi hủy Repository.
+- **Tham số:** không có.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Destructor gọi clear() để giải phóng các T* do Repository sở hữu.
 
-## 5. Destructor — `~Repository()`
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Giải phóng dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Giải phóng dữ liệu.**
 
 ```cpp
 Repository<T>::~Repository()
@@ -235,542 +76,612 @@ Repository<T>::~Repository()
 }
 ```
 
-### Chức năng
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp.
 
-Giải phóng dữ liệu khi đối tượng Repository bị hủy.
+### Repository<T>::clear()
 
-Destructor gọi `clear()` để xóa các đối tượng Model đang được quản lý trong RAM.
+#### A. Tổng quan
 
-Điều này giúp hạn chế rò rỉ bộ nhớ.
+- **Mục đích:** Giải phóng toàn bộ đối tượng và đặt lại trạng thái.
+- **Tham số:** không có.
+- **Giá trị trả về:** `void`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
 
-**Lưu ý về quyền sở hữu:** Không được tự ý `delete` một đối tượng đang thuộc quyền quản lý của Repository. Quy tắc sử dụng là cấm sao chép Repository theo giá trị; code hiện chưa vô hiệu hóa copy constructor/copy assignment nên compiler chưa chặn thao tác này. Bản sao có thể cùng sở hữu node và con trỏ, gây giải phóng lặp.
-
----
-
-## 6. Hàm `clear()`
-
-```cpp
-void clear();
-```
-
-### Chức năng
-
-Xóa toàn bộ đối tượng Model trong Repository và giải phóng bộ nhớ.
-
-### Cách hoạt động
-
-Hàm thực hiện vòng lặp khi danh sách vẫn còn phần tử:
-
-```cpp
-while (items.nodeCount() > 0)
-{
-    ListNode<T*>* node = items.getAt(0);
-    delete node->data;
-    items.popFront();
-}
-loaded = false;
-```
-
-Giải thích:
-
-1. `items.nodeCount() > 0`: Kiểm tra danh sách còn phần tử.
-2. `items.getAt(0)`: Lấy node đầu tiên.
-3. `delete node->data`: Giải phóng đối tượng Model.
-4. `items.popFront()`: Xóa node đầu tiên khỏi danh sách.
-5. Lặp lại đến khi danh sách rỗng.
-6. Đặt `loaded = false`.
-
-### Vì sao phải đặt `loaded = false`?
-
-Vì sau khi `clear()`, Repository không còn dữ liệu đã được nạp.
-
-Nếu giữ `loaded = true`, chương trình có thể gọi `save()` và ghi danh sách rỗng xuống file, làm mất dữ liệu cũ.
-
----
-
-## 7. Hàm `count()`
-
-```cpp
-int count();
-```
-
-### Chức năng
-
-Trả về số lượng đối tượng hiện có trong Repository.
-
-### Cách hoạt động
-
-```cpp
-return items.nodeCount();
-```
-
-Hàm sử dụng `nodeCount()` của `DoublyLinkedList`.
-
-Ví dụ:
-
-```cpp
-int total = repo.count();
-```
-
-Nếu danh sách có 5 đối tượng thì kết quả là `5`.
-
----
-
-## 8. Hàm `getAt(int index)`
-
-```cpp
-T* getAt(int index);
-```
-
-### Chức năng
-
-Lấy con trỏ đến đối tượng Model tại vị trí `index`.
-
-### Cách hoạt động
-
-```cpp
-ListNode<T*>* node = items.getAt(index);
-
-if (node == nullptr)
-{
-    return nullptr;
-}
-
-return node->data;
-```
-
-Giải thích:
-
-1. Tìm node tại vị trí `index`.
-2. Nếu không tìm thấy node, trả về `nullptr`.
-3. Nếu tìm thấy, trả về con trỏ Model được lưu trong node.
-
-Ví dụ:
-
-```cpp
-Movie* movie = repo.getAt(0);
-```
-
-Kết quả là con trỏ đến phim đầu tiên, nếu vị trí đó tồn tại.
-
-**Lưu ý:** Hàm trả về con trỏ trực tiếp, không tạo bản sao. Việc thay đổi đối tượng qua con trỏ sẽ thay đổi dữ liệu đang được Repository quản lý.
-
----
-
-## 9. Hàm `isLoaded()`
-
-```cpp
-bool isLoaded();
-```
-
-### Chức năng
-
-Kiểm tra Repository đã nạp dữ liệu thành công hay chưa.
-
-### Cách hoạt động
-
-```cpp
-return loaded;
-```
-
-Ví dụ:
-
-```cpp
-if (!repo.isLoaded())
-{
-    repo.load();
-}
-```
-
-Hàm chỉ kiểm tra trạng thái `loaded`, không kiểm tra file trên ổ đĩa.
-
----
-
-## 10. Hàm `findById(const string& id)`
-
-```cpp
-T* findById(const string& id);
-```
-
-### Chức năng
-
-Tìm một đối tượng Model dựa trên ID.
-
-### Cách hoạt động
-
-Hàm duyệt qua từng đối tượng trong danh sách:
-
-```cpp
-for (int i = 0; i < count(); i++)
-{
-    T* item = getAt(i);
-
-    if (getId(item) == id)
-    {
-        return item;
-    }
-}
-
-return nullptr;
-```
-
-Giải thích:
-
-1. Duyệt danh sách từ phần tử đầu tiên.
-2. Lấy đối tượng tại vị trí hiện tại.
-3. Gọi `getId(item)` để lấy ID.
-4. So sánh với ID cần tìm.
-5. Nếu trùng, trả về con trỏ đối tượng.
-6. Nếu duyệt hết mà không tìm thấy, trả về `nullptr`.
-
-Ví dụ:
-
-```cpp
-Movie* movie = repo.findById("MOV0001");
-```
-
-### Độ phức tạp
-
-Hàm sử dụng tìm kiếm tuyến tính và gọi `getAt(i)` ở mỗi vòng lặp. Do đó, hiệu năng thực tế còn phụ thuộc cách `DoublyLinkedList::getAt()` được triển khai; với danh sách liên kết phải duyệt đến vị trí `i`, tổng chi phí có thể là `O(n²)`.
-
----
-
-## 11. Hàm `add(T* item)`
-
-```cpp
-bool add(T* item);
-```
-
-### Chức năng
-
-Thêm một đối tượng Model vào danh sách đang quản lý.
-
-### Cách hoạt động
-
-**Bước 1:** Kiểm tra con trỏ có hợp lệ không.
-
-```cpp
-if (item == nullptr)
-{
-    return false;
-}
-```
-
-**Bước 2:** Lấy ID của đối tượng.
-
-```cpp
-string id = getId(item);
-```
-
-**Bước 3:** Không cho phép ID rỗng.
-
-```cpp
-if (id.empty())
-{
-    return false;
-}
-```
-
-**Bước 4:** Kiểm tra ID đã tồn tại hay chưa.
-
-```cpp
-if (findById(id) != nullptr)
-{
-    return false;
-}
-```
-
-**Bước 5:** Thêm đối tượng vào cuối danh sách.
-
-```cpp
-items.pushBack(item);
-return true;
-```
-
-### Giá trị trả về
-
-- `true`: Thêm thành công.
-- `false`: Con trỏ null, ID rỗng hoặc ID đã tồn tại.
-
-### Lưu ý
-
-- `add()` chỉ thêm dữ liệu trong RAM, **không tự ghi xuống file**.
-- Phiên bản hiện tại chưa kiểm tra `loaded` trong `add()`.
-- Repository không kiểm tra các quy tắc riêng của Model như thời lượng phim hoặc ngày phát hành.
-- Khi thêm thành công, Repository nhận quyền sở hữu con trỏ và sẽ giải phóng đối tượng khi cần.
-- Khi trả về `false`, hàm không giải phóng con trỏ được truyền vào.
-
----
-
-## 12. Hàm `load()`
-
-```cpp
-bool load();
-```
-
-### Chức năng
-
-Đọc dữ liệu từ file TXT, chuyển thành các đối tượng Model và đưa vào danh sách trong RAM.
-
-Đây là một trong những hàm quan trọng nhất của Repository.
-
-### Bước 1: Đọc dữ liệu từ file
-
-```cpp
-vector<string> lines;
-
-if (!FileIO::readLines(filePath, lines))
-{
-    return false;
-}
-```
-
-`FileIO::readLines()` đọc các dòng dữ liệu từ file vào `vector<string>`.
-
-Nếu không đọc được file, hàm trả về `false`.
-
-### Bước 2: Tạo danh sách tạm
-
-```cpp
-DoublyLinkedList<T*> tempItems;
-```
-
-Danh sách tạm được sử dụng để tránh làm mất dữ liệu cũ nếu quá trình đọc hoặc chuyển đổi gặp lỗi.
-
-Ví dụ:
+#### B. Quy trình thực hiện
 
 ```text
-items (dữ liệu cũ)
-  |
-  +-- Movie A
-  +-- Movie B
-
-tempItems (đang đọc dữ liệu mới)
-  |
-  +-- Movie C
-  +-- Movie D
+Bắt đầu
+    |
+    v
+Giải phóng dữ liệu
+    |
+    v
+Chuẩn bị dữ liệu
+    |
+    v
+Kết thúc
 ```
 
-Trong quá trình đọc, `items` vẫn được giữ nguyên.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Bước 3: Chuyển từng dòng thành Model
-
-```cpp
-T* item = parse(lines[i]);
-```
-
-Hàm gọi `parse()` được truyền vào constructor.
-
-Nếu `parse()` trả về `nullptr`, Repository ném ngoại lệ vì dữ liệu không hợp lệ.
-
-### Bước 4: Kiểm tra ID
-
-Repository kiểm tra:
-
-- ID không được rỗng.
-- ID không được trùng với các đối tượng đã đọc vào danh sách tạm.
-
-Nếu ID không hợp lệ, đối tượng vừa tạo được giải phóng và quá trình nạp dữ liệu bị hủy.
-
-### Bước 5: Thêm vào danh sách tạm
+**Bước 1 — Giải phóng dữ liệu.**
 
 ```cpp
-tempItems.pushBack(item);
-```
-
-Đối tượng hợp lệ được thêm vào danh sách tạm.
-
-### Bước 6: Xử lý khi có lỗi
-
-Nếu xảy ra ngoại lệ, hàm giải phóng các đối tượng trong `tempItems`, sau đó ném lại ngoại lệ.
-
-Danh sách `items` cũ chưa bị xóa.
-
-### Bước 7: Thay thế dữ liệu cũ
-
-Chỉ khi toàn bộ quá trình đọc và kiểm tra thành công, Repository mới gọi:
-
-```cpp
-clear();
-```
-
-Sau đó chuyển các con trỏ từ `tempItems` sang `items`.
-
-Cuối cùng:
-
-```cpp
-loaded = true;
-return true;
-```
-
-### Kết quả
-
-- Đọc thành công: Dữ liệu mới thay thế dữ liệu cũ, `loaded = true`.
-- `FileIO::readLines()` thất bại: Trả về `false`, giữ nguyên dữ liệu cũ.
-- Parse hoặc kiểm tra ID thất bại: Giải phóng danh sách tạm và ném ngoại lệ.
-
-**Lưu ý kỹ thuật:** Cơ chế danh sách tạm được thiết kế để bảo vệ dữ liệu cũ khi đọc lỗi. Tuy nhiên, quá trình chuyển dữ liệu từ danh sách tạm sang danh sách chính chưa có cơ chế rollback riêng nếu thao tác thêm node phát sinh lỗi.
-
----
-
-## 13. Hàm `save()`
-
-```cpp
-bool save();
-```
-
-### Chức năng
-
-Chuyển toàn bộ đối tượng Model trong RAM thành các dòng TXT và ghi xuống file.
-
-### Bước 1: Kiểm tra trạng thái
-
-```cpp
-if (!loaded)
+void Repository<T>::clear()
 {
+    while (items.nodeCount() > 0)
+    {
+        T* item = items.getAt(0)->data;
+        items.popFront(); //xóa khỏi danh sách
+        delete item; //giải phóng đối tượng
+    }
+```
+
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 2 — Chuẩn bị dữ liệu.**
+
+```cpp
+    loaded = false;
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::count()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả.**
+
+```cpp
+int Repository<T>::count()
+{
+    return items.nodeCount();
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::getAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `T*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Chuẩn bị dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả.**
+
+```cpp
+T* Repository<T>::getAt(int index)
+{
+    ListNode<T*>* node = items.getAt(index);
+    if (node == nullptr)
+    {
+        return nullptr;
+    }
+    return node->data;
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+**Bước 2 — Chuẩn bị dữ liệu.**
+
+```cpp
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả.**
+
+```cpp
+bool Repository<T>::isLoaded()
+{
+    return loaded;
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::findById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& id`.
+- **Giá trị trả về:** `T*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt danh sách
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Duyệt danh sách.**
+
+```cpp
+T* Repository<T>::findById(const string& id)
+{
+    for (int i = 0; i < count(); i++)
+    {
+        T* item = getAt(i);
+        if (getId(item) == id)
+        {
+            return item;
+```
+
+Callback `getId` lấy khóa của Model để kiểm tra trùng hoặc tìm kiếm mà không cần biết kiểu `T` cụ thể. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 2 — Trả kết quả.**
+
+```cpp
+        }
+    }
+    return nullptr;
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::add()
+
+#### A. Tổng quan
+
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `T* item`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt danh sách (không đạt: false)
+    |
+    v
+Từ chối điều kiện sai (không đạt: false)
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Duyệt danh sách.**
+
+```cpp
+bool Repository<T>::add(T* item)
+{
+    if (!loaded || item == nullptr)
+    {
+        return false;
+    }
+    // kiểm tra trùng 
+    for (int i = 0; i < count(); i++)
+    {
+        if (getAt(i) == item)
+        {
+            return false;
+```
+
+`false` kết thúc sớm; các cập nhật phía sau không diễn ra. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 2 — Từ chối điều kiện sai.**
+
+```cpp
+        }
+    }
+    string id = getId(item);
+    if (id.empty())
+    {
+        return false;
+    }
+    if (findById(id) != nullptr)
+    {
+        return false;
+```
+
+Callback `getId` lấy khóa của Model để kiểm tra trùng hoặc tìm kiếm mà không cần biết kiểu `T` cụ thể. `false` kết thúc sớm; các cập nhật phía sau không diễn ra.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+    }
+    items.pushBack(item);
+    return true;
+}
+```
+
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
+
+### Repository<T>::removeById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Xóa đối tượng theo khóa sau khi kiểm tra ràng buộc.
+- **Tham số:** `const string& id`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt danh sách (không đạt: false)
+    |
+    v
+Giải phóng dữ liệu (không đạt: false)
+    |
+    v
+Chuẩn bị dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Duyệt danh sách.**
+
+```cpp
+bool Repository<T>::removeById(const string& id)
+{
+    if (!loaded)
+    {
+        return false;
+    }
+    for (int i = 0; i < count(); i++)
+    {
+        T* item = getAt(i);
+```
+
+`false` kết thúc sớm; các cập nhật phía sau không diễn ra. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 2 — Giải phóng dữ liệu.**
+
+```cpp
+        if (getId(item) == id)
+        {
+            items.erase(i);
+            delete item;
+            return true;
+        }
+    }
     return false;
+```
+
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp. Callback `getId` lấy khóa của Model để kiểm tra trùng hoặc tìm kiếm mà không cần biết kiểu `T` cụ thể. `false` kết thúc sớm; các cập nhật phía sau không diễn ra.
+
+**Bước 3 — Chuẩn bị dữ liệu.**
+
+```cpp
 }
 ```
 
-Nếu Repository chưa nạp dữ liệu thành công, hàm không cho phép ghi file.
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
 
-### Bước 2: Tạo danh sách dòng TXT
+### Repository<T>::load()
 
-```cpp
-vector<string> lines;
+#### A. Tổng quan
+
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, ngoại lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Đọc và parse TXT (không đạt: false)
+    |
+    v
+Xử lý lỗi (lỗi: throw)
+    |
+    v
+Xử lý lỗi (lỗi: throw)
+    |
+    v
+Xử lý lỗi
+    |
+    v
+Giải phóng dữ liệu
+    |
+    v
+Chuẩn bị dữ liệu
+    |
+    v
+Kết thúc
 ```
 
-### Bước 3: Chuyển Model thành chuỗi
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Đọc và parse TXT.**
 
 ```cpp
-for (int i = 0; i < count(); i++)
+bool Repository<T>::load()
 {
-    T* item = getAt(i);
-    string line = serialize(item);
-    lines.push_back(line);
+    if (loaded)
+    {
+        return false;
+    }
+    vector<string> lines;
+    if (!FileIO::readLines(filePath, lines))
+    {
+        return false;
+```
+
+Đọc TXT và dùng callback `parse` để tạo Model; dữ liệu lỗi phải đi theo nhánh xử lý lỗi trước khi thay danh sách đang dùng. `false` kết thúc sớm; các cập nhật phía sau không diễn ra.
+
+**Bước 2 — Xử lý lỗi.**
+
+```cpp
+    }
+    DoublyLinkedList<T*> tempItems;
+    try
+    {
+        for (int i = 0; i < (int)lines.size(); i++)
+        {
+            T* item = nullptr;
+            try
+            {
+                item = parse(lines[i]);
+                if (item == nullptr)
+                {
+                    throw runtime_error("Du lieu khong hop le");
+                }
+                string id = getId(item);
+                if (id.empty())
+                {
+                    throw runtime_error("ID rong");
+                }
+                // Kiem tra ID trung trong danh sach tam
+                for (int j = 0; j < tempItems.nodeCount(); j++)
+                {
+                    T* current = tempItems.getAt(j)->data;
+                    if (getId(current) == id)
+                    {
+                        throw runtime_error("Trung ID");
+```
+
+Đọc TXT và dùng callback `parse` để tạo Model; dữ liệu lỗi phải đi theo nhánh xử lý lỗi trước khi thay danh sách đang dùng. Callback `getId` lấy khóa của Model để kiểm tra trùng hoặc tìm kiếm mà không cần biết kiểu `T` cụ thể. Ngoại lệ chuyển lỗi cho caller sau khi dọn tài nguyên ở nhánh tương ứng.
+
+**Bước 3 — Xử lý lỗi.**
+
+```cpp
+                    }
+                }
+                tempItems.pushBack(item);
+                // Tu day tempItems quan ly item
+                item = nullptr;
+            }
+            catch (const exception& e)
+            {
+                // giải phóng đối tượng bị lỗi
+                delete item;
+                throw runtime_error(
+                    "Loi doc file " + filePath +
+                    " tai dong " + to_string(i + 1) +
+                    ": " + e.what()
+                );
+            }
+```
+
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp. Ngoại lệ chuyển lỗi cho caller sau khi dọn tài nguyên ở nhánh tương ứng.
+
+**Bước 4 — Xử lý lỗi.**
+
+```cpp
+            catch (...)
+            {
+                delete item;
+                throw;
+            }
+        }
+    }
+    catch (...)
+    {
+        // Giải phóng các đối tượng còn lại
+        while (tempItems.nodeCount() > 0)
+        {
+            T* item = tempItems.getAt(0)->data;
+```
+
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 5 — Giải phóng dữ liệu.**
+
+```cpp
+            tempItems.popFront();
+            delete item;
+        }
+        throw;
+    }
+    items.swap(tempItems);
+    loaded = true;
+    return true;
+```
+
+Dữ liệu do Repository sở hữu được giải phóng hoặc đặt lại; con trỏ đã xóa không được dùng tiếp.
+
+**Bước 6 — Chuẩn bị dữ liệu.**
+
+```cpp
 }
 ```
 
-Hàm duyệt toàn bộ danh sách, gọi `serialize()` cho từng đối tượng và đưa kết quả vào `lines`.
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
 
-### Bước 4: Ghi dữ liệu xuống file
+### Repository<T>::save()
 
-```cpp
-return FileIO::writeLines(filePath, lines);
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt danh sách (không đạt: false)
+    |
+    v
+Tuần tự hóa và ghi TXT
+    |
+    v
+Kết thúc
 ```
 
-`FileIO` chịu trách nhiệm thực hiện thao tác ghi file.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Giá trị trả về
-
-- `true`: `FileIO::writeLines()` báo ghi thành công.
-- `false`: Repository chưa load hoặc `FileIO::writeLines()` báo thất bại.
-
-Nếu `serialize()` ném ngoại lệ, `save()` hiện không bắt ngoại lệ đó.
-
-### Lưu ý
-
-`save()` ghi toàn bộ danh sách hiện tại, không chỉ ghi các đối tượng vừa được thêm hoặc sửa.
-
-Vì vậy, trước khi lưu cần bảo đảm dữ liệu trong RAM hợp lệ.
-
----
-
-## 14. Cách sử dụng `Repository<T>` trong Repository cụ thể
-
-Mỗi Repository cụ thể cần cung cấp ba hàm để `Repository<T>` có thể làm việc với Model tương ứng.
-
-| Hàm | Trách nhiệm |
-|---|---|
-| `getId` | Lấy ID của Model |
-| `parse` | Chuyển chuỗi TXT thành Model |
-| `serialize` | Chuyển Model thành chuỗi TXT |
-
-Ví dụ minh họa với `Movie`:
+**Bước 1 — Duyệt danh sách.**
 
 ```cpp
-string getMovieId(Movie* movie)
+bool Repository<T>::save()
 {
-    return movie->getMovieId();
+    if (!loaded)
+    {
+        return false;
+    }
+    vector<string> lines;
+    for (int i = 0; i < count(); i++)
+    {
+        T* item = getAt(i);
+```
+
+`false` kết thúc sớm; các cập nhật phía sau không diễn ra. Vòng lặp xử lý từng con trỏ; điều kiện bên trong quyết định giữ, bỏ qua hoặc dừng.
+
+**Bước 2 — Tuần tự hóa và ghi TXT.**
+
+```cpp
+        string line = serialize(item);
+        lines.push_back(line);
+    }
+    return FileIO::writeLines(filePath, lines);
 }
 ```
 
-Sau khi đã xây dựng đầy đủ các hàm chuyển đổi tương thích với chữ ký yêu cầu, có thể khởi tạo:
+Callback `serialize` tạo dòng TXT từ Model trước khi `FileIO` ghi file; kết quả ghi quyết định thao tác lưu thành công hay thất bại.
 
-```cpp
-Repository<Movie> repo(
-    "data/movies.txt",
-    getMovieId,
-    parseMovie,
-    serializeMovie
-);
+### Repository<T>::getFilePath()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả đường dẫn TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `const string&`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
 ```
 
-Trong đó `parseMovie` và `serializeMovie` là các hàm cần được triển khai riêng.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Ví dụ sử dụng:
+**Bước 1 — Trả kết quả.**
 
 ```cpp
-repo.load();
-
-Movie* movie = repo.findById("MOV0001");
-
-int total = repo.count();
-
-repo.save();
+const string& Repository<T>::getFilePath() const
+{
+    return filePath;
+}
 ```
 
-**Quan trọng:** Đây là ví dụ minh họa cách tích hợp, không phải khẳng định `parseMovie` và `serializeMovie` đã tồn tại trong code hiện tại.
+Giá trị trong đoạn này được chuẩn bị hoặc trả về theo nhánh code; chỉ lời gọi cập nhật/ghi mới thay đổi danh sách hoặc TXT.
 
----
 
-## 15. Những nguyên tắc cần nhớ
-
-### 15.1. Repository quản lý bộ nhớ
-
-Các đối tượng được thêm thành công vào Repository sẽ do Repository quản lý và giải phóng.
-
-Không tự ý xóa các con trỏ mà Repository đang sở hữu.
-
-### 15.2. `load()` và `save()` là hai thao tác riêng biệt
-
-- `load()` đọc dữ liệu từ file vào RAM.
-- `save()` ghi dữ liệu từ RAM xuống file.
-- `add()` chỉ thay đổi dữ liệu trong RAM.
-
-Không phải cứ thêm một đối tượng là file TXT được cập nhật ngay.
-
-### 15.3. Repository chung không xử lý mọi quy tắc nghiệp vụ
-
-`Repository<T>` chỉ kiểm tra các điều kiện chung như con trỏ null, ID rỗng và ID trùng.
-
-Các điều kiện đặc thù của Model phải được xử lý ở lớp phù hợp.
-
-Các quy tắc nghiệp vụ liên quan đến nhiều Model hoặc quyền người dùng thuộc Service.
-
-### 15.4. Không tự ý thay đổi định dạng TXT
-
-Hàm `parse()` và `serialize()` phải thống nhất với định dạng dữ liệu được quy định trong `docs/TongQuan/data_format.md`.
-
-### 15.5. Không sao chép Repository tùy ý
-
-Do Repository đang sở hữu các con trỏ thô (`T*`) và destructor giải phóng chúng, việc sao chép mặc định có nguy cơ dẫn đến lỗi bộ nhớ.
-
-Không sao chép Repository theo giá trị khi chưa có cơ chế sao chép và quyền sở hữu an toàn được thống nhất.
-
----
-
-## 16. Tổng kết các hàm
-
-| Hàm | Chức năng | Giá trị trả về |
-|---|---|---|
-| `Repository(...)` | Khởi tạo Repository | Không có |
-| `~Repository()` | Giải phóng dữ liệu | Không có |
-| `clear()` | Xóa toàn bộ dữ liệu trong RAM | `void` |
-| `count()` | Đếm số đối tượng | `int` |
-| `getAt(index)` | Lấy đối tượng theo vị trí | `T*` hoặc `nullptr` |
-| `isLoaded()` | Kiểm tra trạng thái load | `bool` |
-| `findById(id)` | Tìm đối tượng theo ID | `T*` hoặc `nullptr` |
-| `add(item)` | Thêm đối tượng vào RAM | `bool` |
-| `load()` | Đọc file và nạp Model vào RAM | `bool`, có thể ném ngoại lệ |
-| `save()` | Ghi Model từ RAM xuống file | `bool`, có thể ném ngoại lệ |

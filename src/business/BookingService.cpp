@@ -5,6 +5,7 @@
 #include "../models/Invoice.h"
 #include "../utils/DateTime.h"
 #include "../utils/IdGenerator.h"
+#include "../utils/Validator.h"
 
 #include <limits>
 #include <cmath>
@@ -380,6 +381,99 @@ void BookingService::rollbackBooking(const vector<string>& addedTicketIds,
     {
         throw runtime_error("Khong the rollback Invoice trong RAM");
     }
+}
+
+bool BookingService::cancelTicket(const string& ticketId, const string& reason, bool refundConfirmed)
+{
+    const User& admin = authService.requireAdmin();
+    authService.requirePermission("TICKET_CANCEL");
+    if (storageFailed)
+    {
+        throw runtime_error("Giao dich truoc ghi TXT loi; can kiem tra du lieu truoc khi huy tiep");
+    }
+    if (!showtimeRepo.isLoaded() || !seatRepo.isLoaded() ||
+        !ticketRepo.isLoaded() || !invoiceRepo.isLoaded() ||
+        !memberRepo.isLoaded())
+    {
+        return false;
+    }
+    if (!refundConfirmed || !Validator::isValidText(reason))
+    {
+        return false;
+    }
+    Ticket* ticket = ticketRepo.findById(ticketId);
+    if (ticket == nullptr || ticket->getStatus() != TicketStatus::SOLD)
+    {
+        return false;
+    }
+    Invoice* invoice = ticket->getInvoice();
+    const Showtime* showtime = ticket->getShowtime();
+    if (invoice == nullptr || showtime == nullptr || ticket->getSeat() == nullptr ||
+        invoiceRepo.findById(ticket->getInvoiceId()) != invoice ||
+        showtimeRepo.findById(ticket->getShowtimeId()) != showtime ||
+        invoice->getShowtimeId() != ticket->getShowtimeId())
+    {
+        return false;
+    }
+    bool linkedToInvoice = false;
+    for (int i = 0; i < invoice->getTicketCount(); i++)
+    {
+        if (invoice->getTicketAt(i) == ticket)
+        {
+            linkedToInvoice = true;
+            break;
+        }
+    }
+    if (!linkedToInvoice)
+    {
+        return false;
+    }
+
+    const string cancelledAt = DateTime::getCurrentDateTime();
+    if (!DateTime::isBefore(cancelledAt, showtime->getStartAt()) ||
+        DateTime::isBefore(cancelledAt, invoice->getCreatedAt()))
+    {
+        return false;
+    }
+
+    Member* member = nullptr;
+    if (!invoice->getMemberId().empty())
+    {
+        member = memberRepo.findById(invoice->getMemberId());
+        if (member == nullptr || invoice->getMember() != member ||
+            member->getPoints() < ticket->getPointsEarned())
+        {
+            return false;
+        }
+    }
+    else if (invoice->getMember() != nullptr)
+    {
+        return false;
+    }
+    // ghi lại thông tin hủy trên vé
+    ticket->markCancelled(cancelledAt, admin.getUserId(), reason);
+    if (member != nullptr)
+    {
+        member->setPoints(member->getPoints() - ticket->getPointsEarned());
+    }
+
+    try
+    {
+        if (!ticketRepo.save())
+        {
+            throw runtime_error("Khong the ghi file Ticket khi huy ve");
+        }
+        if (member != nullptr && !memberRepo.save())
+        {
+            throw runtime_error("Khong the ghi file Member sau khi huy ve; Ticket co the da duoc luu");
+        }
+    }
+    catch (...)
+    {
+        storageFailed = true;
+        throw;
+    }
+    return true;
 }
 
 

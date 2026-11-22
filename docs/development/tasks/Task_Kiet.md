@@ -63,14 +63,15 @@ Theo [phân công chính](../PhanCongCongViec.md), Kiệt phụ trách toàn b�
 
 Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị và hợp đồng Service được phối hợp khi triển khai GUI. Bước 06 hiện có `ShowtimeService` và `test_showtime_service.cpp` đạt 89/89, nhưng hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`. Ở Bước 08, `MemberRepository` đạt **63 PASS, 0 FAIL** và `MemberService` đạt **69 PASS, 0 FAIL** cho phạm vi hiện có; Kiệt dùng [Business–UI Contract](../../Business_UI_Contract.md#8-memberservice--quản-lý-thành-viên) khi tích hợp giao diện. Các kết quả Backend này không đánh dấu hoàn thành task GUI của Kiệt.
 
-`PricingService` ở Bước 09 đã có bộ kiểm thử chung đạt **63 PASS, 0 FAIL** cho Model/Repository/Service. Luồng bán vé và ghi điểm thành viên chưa tích hợp; các task GUI vẫn để mở.
+`PricingService` ở Bước 09 đã có bộ kiểm thử chung đạt **63 PASS, 0 FAIL** cho Model/Repository/Service ở lần ghi nhận trước. Backend hiện đã có luồng bán vé, cộng điểm và hủy từng vé với test riêng PASS; tích hợp các luồng đó vào GUI vẫn là task mở.
 
 ### Bước 12 – Xây dựng giao diện Qt
 
-**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: đang thực hiện theo trao đổi từ Kiệt; phần bán vé chờ chốt API Business.**
+**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: đang thực hiện theo trao đổi từ Kiệt.** Backend đã có `BookingService::createBooking()` và `cancelTicket()` với test riêng PASS; mức độ tích hợp hai API vào GUI chưa được xác nhận trên nhánh này.
 
 - [ ] Xây dựng `MainWindow`, dashboard Admin/Staff, `LoginView`, `MovieManagementView`, `RoomManagementView`, `ShowtimeManagementView`, `StaffManagementView`, `MemberManagementView`, `BookingView`, `SeatMapView`, `InvoiceHistoryView` và `ReportView` theo phạm vi chức năng đã thống nhất.
 - [ ] Tích hợp các View với Service do Hoàng cung cấp; GUI chỉ hiển thị và nhận thao tác, không xử lý quyền hoặc quy tắc nghiệp vụ thay Backend.
+- [ ] Với hủy vé, GUI cho Admin nhập lý do, xác nhận đã hoàn tiền, gọi `cancelTicket()` và làm mới vé/sơ đồ ghế; không sửa Ticket/Member hoặc ghi TXT trực tiếp. Xử lý ngoại lệ ghi file bằng thông báo cần kiểm tra dữ liệu, không tự thử lại.
 - [ ] Cấu hình và kiểm tra build GUI Qt, trạng thái màn hình và thông báo lỗi.
 
 ### Bước 13 – Kiểm thử tích hợp và sửa lỗi

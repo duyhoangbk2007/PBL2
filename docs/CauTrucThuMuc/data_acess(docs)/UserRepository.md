@@ -1,90 +1,127 @@
-# UserRepository – Quản lý dữ liệu tài khoản
+# UserRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`UserRepository` là lớp thuộc tầng Data Access, chịu trách nhiệm quản lý dữ liệu tài khoản người dùng trong hệ thống quản lý rạp chiếu phim.
+`UserRepository` chứa `Repository<User>` sở hữu User và hai `unordered_map` tra theo ID/username. Bản đồ chỉ giữ con trỏ mượn; cần cập nhật chỉ mục khi nạp, thêm hoặc đổi username. TXT lưu một tài khoản mỗi dòng theo định dạng được parse trong `stringToUser()`.
 
-Lớp này sử dụng một đối tượng `Repository<User>` để quản lý danh sách tài khoản, đọc dữ liệu từ file TXT và ghi dữ liệu xuống file.
+Repository kiểm tra ID, văn bản, vai trò, tính duy nhất của username và dữ liệu cập nhật. Đăng nhập, đăng xuất, quyền thao tác thuộc `AuthService`. Khi cập nhật, ID tài khoản giữ nguyên; con trỏ trả về từ tra cứu không được caller giải phóng.
 
-Ngoài ra, `UserRepository` sử dụng hai `unordered_map` để hỗ trợ tìm kiếm tài khoản nhanh theo ID và username.
+Mã nguồn: `src/data_access/UserRepository.cpp` và `src/data_access/UserRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-Các chức năng chính:
+## 2. Chi tiết từng hàm
 
-- Đọc và ghi dữ liệu tài khoản.
-- Kiểm tra tính hợp lệ của dữ liệu User.
-- Tìm kiếm tài khoản theo ID hoặc username.
-- Thêm tài khoản mới.
-- Cập nhật thông tin tài khoản.
-- Kiểm tra username trùng lặp.
-- Quản lý hai bảng chỉ mục tìm kiếm.
+### UserRepository::isValidUser()
 
-`UserRepository` không chịu trách nhiệm đăng nhập, đăng xuất hay phân quyền. Những nghiệp vụ này thuộc về `AuthService`.
+#### A. Tổng quan
 
----
+- **Mục đích:** Kiểm tra tính hợp lệ của dữ liệu đầu vào.
+- **Tham số:** `const User* user`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
-## 2. Cấu trúc lớp UserRepository
+#### B. Quy trình thực hiện
 
-### 2.1. Thuộc tính
-
-```cpp
-private:
-    Repository<User> repo;
-
-    unordered_map<string, User*> usersById;
-    unordered_map<string, User*> usersByUsername;
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
 ```
 
-**`Repository<User> repo`**
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Đây là đối tượng thuộc lớp `Repository<T>` chung, với kiểu dữ liệu cụ thể là `User`.
-
-Nó chịu trách nhiệm:
-
-- Quản lý danh sách các con trỏ `User*`.
-- Sở hữu và giải phóng bộ nhớ của các User.
-- Đọc dữ liệu từ file.
-- Ghi dữ liệu xuống file.
-- Cung cấp các thao tác cơ bản như `add()`, `getAt()`, `count()`.
-
-**`usersById`**
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
-unordered_map<string, User*> usersById;
+bool UserRepository::isValidUser(const User* user)
+{
+    if (user == nullptr)
+    {
+        return false;
+    }
+    if (!Validator::isValidId(user->getUserId(), "USR"))
+    {
+        return false;
 ```
 
-Là bảng băm sử dụng `userId` làm khóa và con trỏ `User*` làm giá trị.
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Ví dụ:
+**Bước 2 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
-usersById["USR0001"] = user1;
-usersById["USR0002"] = user2;
+    }
+    if (!Validator::isValidText(user->getUsername()) ||
+        !Validator::isValidText(user->getPassword()) ||
+        !Validator::isValidText(user->getFullName()))
+    {
+        return false;
+    }
+    const string& username = user->getUsername();
 ```
 
-Giúp tìm kiếm tài khoản theo ID với độ phức tạp trung bình O(1).
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-**`usersByUsername`**
+**Bước 3 — Từ chối điều kiện không đạt.**
 
 ```cpp
-unordered_map<string, User*> usersByUsername;
+    if (username.front() == ' ' || username.back() == ' ')
+    {
+        return false;
+    }
+    if (user->getRole() != UserRole::ADMIN &&
+        user->getRole() != UserRole::STAFF)
+    {
+        return false;
 ```
 
-Là bảng băm sử dụng username làm khóa.
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Ví dụ:
+**Bước 4 — Xác nhận xử lý thành công.**
 
 ```cpp
-usersByUsername["admin"] = user1;
-usersByUsername["hoang"] = user2;
+    }
+    return true;
+}
 ```
 
-Bảng này hỗ trợ tìm kiếm tài khoản khi đăng nhập và kiểm tra username trùng lặp.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-**Lưu ý:** Hai map không tạo ra hoặc sở hữu đối tượng User. Chúng chỉ lưu các con trỏ đến đối tượng do `Repository<User>` quản lý.
+### UserRepository::UserRepository()
 
----
+#### A. Tổng quan
 
-## 3. Constructor – Khởi tạo UserRepository
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
 UserRepository::UserRepository(const string& filePath)
@@ -93,40 +130,32 @@ UserRepository::UserRepository(const string& filePath)
 }
 ```
 
-### Chức năng
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-Khởi tạo đối tượng `UserRepository` và truyền các hàm xử lý dữ liệu User cho `Repository<User>`.
+### UserRepository::getUserId()
 
-### Giải thích
+#### A. Tổng quan
 
-Constructor nhận một tham số `filePath`, là đường dẫn đến file lưu dữ liệu tài khoản.
+- **Mục đích:** Lấy ID của đối tượng làm khóa.
+- **Tham số:** `User* user`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
 
-Danh sách khởi tạo:
+#### B. Quy trình thực hiện
 
-```cpp
-: repo(filePath, getUserId, stringToUser, userToString)
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-gọi constructor của `Repository<User>` với bốn tham số:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-1. `filePath`: Đường dẫn file dữ liệu.
-2. `getUserId`: Hàm lấy ID của User.
-3. `stringToUser`: Hàm chuyển một dòng TXT thành đối tượng User.
-4. `userToString`: Hàm chuyển đối tượng User thành chuỗi TXT.
-
-Nhờ cơ chế truyền con trỏ hàm, `Repository<T>` không cần biết cấu trúc bên trong của User.
-
-Ví dụ:
-
-```cpp
-UserRepository userRepo("data/users.txt");
-```
-
-Sau khi khởi tạo, dữ liệu chưa được đọc. Cần gọi `load()` trước khi sử dụng.
-
----
-
-## 4. Hàm getUserId()
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 string UserRepository::getUserId(User* user)
@@ -135,566 +164,508 @@ string UserRepository::getUserId(User* user)
     {
         return "";
     }
-
     return user->getUserId();
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Lấy mã định danh của đối tượng User.
+### UserRepository::stringToUser()
 
-### Giải thích
+#### A. Tổng quan
 
-Hàm nhận một con trỏ `User*`.
+- **Mục đích:** Chuyển một dòng TXT thành đối tượng Model.
+- **Tham số:** `const string& line`.
+- **Giá trị trả về:** `User*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
 
-Nếu con trỏ bằng `nullptr`, hàm trả về chuỗi rỗng để tránh truy cập con trỏ không hợp lệ.
+#### B. Quy trình thực hiện
 
-Nếu User tồn tại, hàm gọi:
-
-```cpp
-user->getUserId();
+```text
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Kết thúc
 ```
 
-để lấy ID.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Tại sao cần hàm này?
-
-`Repository<T>` là lớp tổng quát nên không thể trực tiếp gọi `getUserId()`, vì mỗi Model có thể sử dụng tên hàm lấy ID khác nhau.
-
-Ví dụ:
-
-- Movie sử dụng `getMovieId()`.
-- User sử dụng `getUserId()`.
-- Room sử dụng `getRoomId()`.
-
-Do đó, mỗi Repository cụ thể cung cấp một hàm lấy ID cho Repository chung.
-
----
-
-## 5. Hàm isValidUser()
-
-```cpp
-bool UserRepository::isValidUser(const User* user)
-```
-
-### Chức năng
-
-Kiểm tra dữ liệu của một đối tượng User có hợp lệ hay không.
-
-### Các bước xử lý
-
-**Bước 1: Kiểm tra con trỏ**
-
-```cpp
-if (user == nullptr)
-{
-    return false;
-}
-```
-
-Không thể kiểm tra dữ liệu nếu đối tượng không tồn tại.
-
-**Bước 2: Kiểm tra ID**
-
-```cpp
-if (!isValidUserId(user->getUserId()))
-{
-    return false;
-}
-```
-
-ID phải có dạng `USRxxxx`, gồm tiền tố `USR` và bốn chữ số, khác `USR0000`.
-
-Ví dụ:
-
-- `USR0001`: Hợp lệ.
-- `USR0123`: Hợp lệ.
-- `MOV0001`: Không hợp lệ.
-- `USR0000`: Không hợp lệ.
-
-**Bước 3: Kiểm tra dữ liệu chuỗi**
-
-```cpp
-if (!Validator::isValidText(user->getUsername()) ||
-    !Validator::isValidText(user->getPassword()) ||
-    !Validator::isValidText(user->getFullName()))
-{
-    return false;
-}
-```
-
-Sử dụng `Validator` chung để kiểm tra các trường văn bản theo quy tắc của dự án.
-
-**Bước 4: Kiểm tra username**
-
-```cpp
-const string& username = user->getUsername();
-
-if (username.front() == ' ' || username.back() == ' ')
-{
-    return false;
-}
-```
-
-Không cho phép username bắt đầu hoặc kết thúc bằng dấu cách.
-
-**Bước 5: Kiểm tra role**
-
-```cpp
-if (user->getRole() != UserRole::ADMIN &&
-    user->getRole() != UserRole::STAFF)
-{
-    return false;
-}
-```
-
-Chỉ chấp nhận hai loại tài khoản:
-
-- `ADMIN`: Quản trị viên.
-- `STAFF`: Nhân viên.
-
-Nếu tất cả điều kiện đều hợp lệ, hàm trả về `true`.
-
-### Lưu ý
-
-`isValidUser()` chỉ kiểm tra tính hợp lệ của một User.
-
-Hàm không kiểm tra username có trùng với tài khoản khác hay không. Việc này được xử lý bằng `usersByUsername` trong `load()`, `add()` và `update()`.
-
----
-
-## 6. Hàm stringToUser()
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
 
 ```cpp
 User* UserRepository::stringToUser(const string& line)
+{
+    vector<string> fields;
+    size_t start = 0;
+    while (true)
+    {
+        size_t pos = line.find('|', start);
+        if (pos == string::npos)
+        {
+            fields.push_back(line.substr(start));
 ```
 
-### Chức năng
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-Chuyển một dòng dữ liệu trong file TXT thành một đối tượng User.
+**Bước 2 — Kiểm tra điều kiện trước khi tiếp tục.**
 
-Ví dụ:
+```cpp
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+
+    if (fields.size() != 6)
+    {
+        throw runtime_error("Sai so luong truong User");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 3 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    }
+
+    if (fields[4] != "ADMIN" && fields[4] != "STAFF")
+    {
+        throw runtime_error("Role User khong hop le");
+    }
+    UserRole role;
+    if (fields[4] == "ADMIN")
+    {
+        role = UserRole::ADMIN; // kiểu enum
+    }
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 4 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    else
+    {
+        role = UserRole::STAFF;
+    }
+
+    if (fields[5] != "0" && fields[5] != "1")
+    {
+        throw runtime_error("Trang thai User khong hop le");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 5 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+
+    bool active = (fields[5] == "1");
+
+    User* user = new User(
+        fields[0],
+        fields[1],
+        fields[2],
+        fields[3],
+        role,
+        active
+    );
+```
+
+`new` cấp phát Model trên heap. Cho đến khi Repository nhận thành công, nhánh lỗi hoặc caller vẫn phải chịu trách nhiệm giải phóng.
+
+**Bước 6 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+
+    if (!isValidUser(user))
+    {
+        delete user;
+        throw runtime_error("Du lieu User khong hop le");
+    }
+    return user;
+}
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `delete` giải phóng đối tượng; không được dùng lại con trỏ sau lệnh này. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+### UserRepository::userToString()
+
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển đối tượng Model thành một dòng TXT.
+- **Tham số:** `User* user`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
 
 ```text
-USR0001|admin|123456|Nguyen Van A|ADMIN|1
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-### Các bước xử lý
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Bước 1: Tách chuỗi**
-
-```cpp
-vector<string> fields;
-size_t start = 0;
-```
-
-Sử dụng vòng lặp và `line.find('|', start)` để xác định vị trí dấu phân cách.
-
-Mỗi phần dữ liệu được đưa vào `fields`.
-
-Kết quả:
-
-```cpp
-fields[0] = "USR0001";
-fields[1] = "admin";
-fields[2] = "123456";
-fields[3] = "Nguyen Van A";
-fields[4] = "ADMIN";
-fields[5] = "1";
-```
-
-**Bước 2: Kiểm tra số trường**
-
-```cpp
-if (fields.size() != 6)
-{
-    throw runtime_error("Sai so luong truong User");
-}
-```
-
-Một User phải có đúng 6 trường.
-
-Nếu số trường không hợp lệ, hàm ném ngoại lệ.
-
-**Bước 3: Chuyển role**
-
-Trong file TXT, role là chuỗi `"ADMIN"` hoặc `"STAFF"`.
-
-Trong Model, role có kiểu `UserRole`.
-
-Vì vậy, cần chuyển từ chuỗi sang enum.
-
-**Bước 4: Chuyển trạng thái active**
-
-```cpp
-bool active = (fields[5] == "1");
-```
-
-Trong file:
-
-- `"1"` tương ứng `true`.
-- `"0"` tương ứng `false`.
-
-Trước đó, hàm phải kiểm tra trường active chỉ nhận `"0"` hoặc `"1"`.
-
-**Bước 5: Tạo đối tượng User**
-
-```cpp
-User* user = new User(
-    fields[0],
-    fields[1],
-    fields[2],
-    fields[3],
-    role,
-    active
-);
-```
-
-Đối tượng được cấp phát động bằng `new`.
-
-**Bước 6: Kiểm tra dữ liệu**
-
-```cpp
-if (!isValidUser(user))
-{
-    delete user;
-    throw runtime_error("Du lieu User khong hop le");
-}
-```
-
-Nếu dữ liệu không hợp lệ, phải giải phóng đối tượng vừa tạo để tránh rò rỉ bộ nhớ.
-
-Nếu hợp lệ, trả về `User*`.
-
-### Kết quả
-
-Hàm trả về con trỏ đến đối tượng User đã được tạo.
-
-Khi được gọi từ `Repository<User>::load()`, đối tượng này sẽ được Repository chung tiếp nhận và quản lý.
-
----
-
-## 7. Hàm userToString()
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
 ```cpp
 string UserRepository::userToString(User* user)
+{
+    if (!isValidUser(user))
+    {
+        throw runtime_error("User khong hop le khi ghi file");
+    }
+    string role;
+    if (user->getRole() == UserRole::ADMIN)
+    {
+        role = "ADMIN";
 ```
 
-### Chức năng
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
 
-Chuyển một đối tượng User thành một dòng dữ liệu TXT.
-
-Đây là thao tác ngược lại của `stringToUser()`.
-
-### Các bước xử lý
-
-**Bước 1: Kiểm tra User**
+**Bước 2 — Trả kết quả cho bên gọi.**
 
 ```cpp
-if (!isValidUser(user))
-{
-    throw runtime_error("User khong hop le khi ghi file");
+    }
+    else
+    {
+        role = "STAFF";
+    }
+    return user->getUserId() + "|" +
+           user->getUsername() + "|" +
+           user->getPassword() + "|" +
+           user->getFullName() + "|" +
+           role + "|" +
+           (user->isActive() ? "1" : "0");
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-Không cho phép ghi dữ liệu không hợp lệ.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-**Bước 2: Chuyển role thành chuỗi**
+### UserRepository::load()
 
-```cpp
-string role;
+#### A. Tổng quan
 
-if (user->getRole() == UserRole::ADMIN)
-{
-    role = "ADMIN";
-}
-else
-{
-    role = "STAFF";
-}
-```
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, ngoại lệ.
 
-**Bước 3: Ghép các trường**
-
-```cpp
-return user->getUserId() + "|" +
-       user->getUsername() + "|" +
-       user->getPassword() + "|" +
-       user->getFullName() + "|" +
-       role + "|" +
-       (user->isActive() ? "1" : "0");
-```
-
-### Kết quả
-
-Ví dụ:
+#### B. Quy trình thực hiện
 
 ```text
-USR0001|admin|123456|Nguyen Van A|ADMIN|1
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (lỗi: throw)
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại
+    |
+    v
+Kết thúc
 ```
 
-Chuỗi này được `Repository<User>::save()` sử dụng để ghi xuống file.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
----
-
-## 8. Hàm load()
+**Bước 1 — Đọc dữ liệu TXT.**
 
 ```cpp
 bool UserRepository::load()
-```
-
-### Chức năng
-
-Đọc dữ liệu tài khoản từ file TXT và xây dựng hai bảng chỉ mục tìm kiếm.
-
-Đây là một trong những hàm quan trọng nhất của UserRepository.
-
-### Các bước xử lý
-
-**Bước 1: Kiểm tra trạng thái**
-
-```cpp
-if (repo.isLoaded())
 {
-    return false;
-}
+    if (repo.isLoaded()) // không load lại khi đã có dữ liệu
+    {
+        throw runtime_error("Du lieu User da duoc nap: " + repo.getFilePath());
+    }
+    if (!repo.load())
+    {
+        throw runtime_error("Khong the nap file User: " + repo.getFilePath());
 ```
 
-Nếu dữ liệu đã được load, không thực hiện load lại.
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
 
-Việc này giúp tránh thay thế các đối tượng User đang được các thành phần khác sử dụng.
-
-**Bước 2: Đọc dữ liệu**
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
 
 ```cpp
-if (!repo.load())
-{
-    return false;
-}
-```
-
-Gọi `Repository<User>::load()`.
-
-Repository chung sẽ:
-
-1. Đọc file TXT.
-2. Chuyển từng dòng thành User bằng `stringToUser()`.
-3. Kiểm tra ID trùng.
-4. Lưu các User vào danh sách liên kết.
-5. Đánh dấu trạng thái đã load khi thành công.
-
-**Bước 3: Xóa chỉ mục cũ**
-
-```cpp
-usersById.clear();
-usersByUsername.clear();
-```
-
-Đảm bảo hai map không chứa dữ liệu chỉ mục từ lần xử lý trước.
-
-**Bước 4: Duyệt danh sách User**
-
-```cpp
-for (int i = 0; i < repo.count(); i++)
-{
-    User* user = repo.getAt(i);
-}
-```
-
-Lấy từng User từ Repository chung.
-
-**Bước 5: Kiểm tra trùng lặp**
-
-```cpp
-if (usersById.find(user->getUserId()) != usersById.end() ||
-    usersByUsername.find(user->getUsername()) != usersByUsername.end())
-{
-    throw runtime_error("Trung ID hoac username");
-}
-```
-
-Nếu ID hoặc username đã tồn tại trong map, dữ liệu không hợp lệ.
-
-Lưu ý: `Repository<T>` đã kiểm tra trùng ID, nhưng UserRepository vẫn cần kiểm tra trùng username.
-
-**Bước 6: Xây dựng chỉ mục**
-
-```cpp
-usersById[user->getUserId()] = user;
-usersByUsername[user->getUsername()] = user;
-```
-
-Hai map cùng lưu con trỏ đến User do Repository chung quản lý.
-
-**Bước 7: Xử lý lỗi**
-
-```cpp
-catch (...)
-{
+    }
+    // Xoa chi muc cu
     usersById.clear();
     usersByUsername.clear();
-    repo.clear();
-    throw;
+    // Dua du lieu User vao hai map
+    try
+    {
+        for (int i = 0; i < repo.count(); i++)
+        {
+            User* user = repo.getAt(i);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+            // Kiem tra trung ID va username
+            if (usersById.find(user->getUserId()) != usersById.end() ||
+                usersByUsername.find(user->getUsername()) != usersByUsername.end())
+            {
+                throw runtime_error(
+                    "Trung ID hoac username trong file " + repo.getFilePath() + " tai dong " + to_string(i + 1));            
+            }
+
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 4 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+            usersById[user->getUserId()] = user;
+            usersByUsername[user->getUsername()] = user;
+        }
+    }
+    catch (...)
+    {
+        usersById.clear();
+        usersByUsername.clear();
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 5 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+        repo.clear();
+        throw;
+    }
+    return true;
 }
 ```
 
-Nếu phát sinh lỗi trong quá trình xây dựng chỉ mục:
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ.
 
-1. Xóa hai map.
-2. Xóa dữ liệu vừa load trong Repository.
-3. Ném lại ngoại lệ cho lớp gọi xử lý.
+### UserRepository::save()
 
-### Kết quả
+#### A. Tổng quan
 
-- Trả về `true` nếu đọc file và xây dựng chỉ mục thành công.
-- Trả về `false` nếu đã load hoặc `repo.load()` trả về `false`.
-- Có thể ném ngoại lệ nếu dữ liệu không hợp lệ.
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, ngoại lệ.
 
-### Điểm khác với MovieRepository
+#### B. Quy trình thực hiện
 
-`MovieRepository::load()` chỉ cần gọi `repo.load()`.
+```text
+Bắt đầu
+    |
+    v
+Ghi dữ liệu TXT (lỗi: throw)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
 
-`UserRepository::load()` phải thực hiện thêm việc xây dựng hai map và kiểm tra username trùng.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
----
-
-## 9. Hàm save()
+**Bước 1 — Ghi dữ liệu TXT.**
 
 ```cpp
 bool UserRepository::save()
 {
-    return repo.save();
+    if (!repo.isLoaded())
+    {
+        throw runtime_error("Chua nap du lieu User");
+    }
+    if (!repo.save())
+    {
+        throw runtime_error(
+            "Khong the ghi file User: " + repo.getFilePath()
+        );
+```
+
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 2 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+    return true;
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Ghi danh sách User hiện tại xuống file TXT.
+### UserRepository::findById()
 
-### Giải thích
+#### A. Tổng quan
 
-`UserRepository` không trực tiếp mở file hoặc duyệt danh sách.
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& userId`.
+- **Giá trị trả về:** `User*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
 
-Toàn bộ công việc được giao cho `Repository<User>::save()`.
+#### B. Quy trình thực hiện
 
-Repository chung sẽ:
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
 
-1. Kiểm tra trạng thái load.
-2. Duyệt các User đang quản lý.
-3. Gọi `userToString()` cho từng User.
-4. Ghi các dòng dữ liệu xuống file.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Kết quả
-
-Trả về `true` nếu ghi thành công và `false` nếu không thể ghi hoặc chưa load.
-
-Hàm không cần ghi hai map vì map chỉ là cấu trúc chỉ mục trong bộ nhớ.
-
----
-
-## 10. Hàm findById()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 User* UserRepository::findById(const string& userId)
 {
     auto it = usersById.find(userId);
-
     if (it == usersById.end())
     {
         return nullptr;
     }
-
     return it->second;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Tìm kiếm User dựa trên ID.
+### UserRepository::findByUsername()
 
-### Giải thích
+#### A. Tổng quan
 
-```cpp
-auto it = usersById.find(userId);
+- **Mục đích:** Tra tài khoản theo username.
+- **Tham số:** `const string& username`.
+- **Giá trị trả về:** `User*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-`find()` là hàm có sẵn của `unordered_map`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Nó tìm phần tử có khóa bằng `userId` và trả về một iterator.
-
-`auto` cho phép trình biên dịch tự suy ra kiểu iterator.
-
-Nếu không tìm thấy:
-
-```cpp
-it == usersById.end()
-```
-
-thì trả về `nullptr`.
-
-Nếu tìm thấy:
-
-```cpp
-return it->second;
-```
-
-trả về giá trị của phần tử trong map, tức con trỏ `User*`.
-
-Trong một phần tử của `unordered_map`:
-
-- `it->first`: Khóa.
-- `it->second`: Giá trị.
-
-### Độ phức tạp
-
-O(1) trung bình, O(n) trong trường hợp xấu nhất.
-
----
-
-## 11. Hàm findByUsername()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 User* UserRepository::findByUsername(const string& username)
 {
     auto it = usersByUsername.find(username);
-
     if (it == usersByUsername.end())
     {
         return nullptr;
     }
-
     return it->second;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Tìm kiếm User theo username.
+### UserRepository::getAt()
 
-### Giải thích
+#### A. Tổng quan
 
-Hàm hoạt động tương tự `findById()`, nhưng sử dụng map `usersByUsername`.
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `User*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
 
-Đây là hàm đặc biệt quan trọng đối với `AuthService`.
+#### B. Quy trình thực hiện
 
-Ví dụ:
-
-```cpp
-User* user = userRepo.findByUsername("admin");
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-`AuthService` có thể sử dụng User tìm được để kiểm tra mật khẩu, trạng thái tài khoản và vai trò.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Tại sao không duyệt Repository?
-
-Nếu duyệt danh sách liên kết, thời gian tìm kiếm là O(n).
-
-Với `unordered_map`, thời gian tìm kiếm trung bình là O(1).
-
----
-
-## 12. Hàm getAt()
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 User* UserRepository::getAt(int index)
@@ -703,29 +674,32 @@ User* UserRepository::getAt(int index)
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Lấy User theo vị trí trong danh sách.
+### UserRepository::count()
 
-### Giải thích
+#### A. Tổng quan
 
-Hàm gọi `Repository<User>::getAt()`.
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
 
-Ví dụ:
+#### B. Quy trình thực hiện
 
-```cpp
-User* user = userRepo.getAt(0);
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Trả về User ở vị trí đầu tiên nếu tồn tại.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Nếu chỉ số không hợp lệ, `Repository<T>::getAt()` trả về `nullptr`.
-
-Hàm này sử dụng Repository chung thay vì map vì `unordered_map` không hỗ trợ truy cập theo vị trí chỉ số.
-
----
-
-## 13. Hàm count()
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 int UserRepository::count()
@@ -734,29 +708,32 @@ int UserRepository::count()
 }
 ```
 
-### Chức năng
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Trả về tổng số User đang được quản lý.
+### UserRepository::isLoaded()
 
-### Giải thích
+#### A. Tổng quan
 
-Hàm gọi `Repository<User>::count()`.
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
 
-Repository chung lấy số phần tử trong danh sách liên kết.
+#### B. Quy trình thực hiện
 
-Ví dụ:
-
-```cpp
-int total = userRepo.count();
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Nếu có 5 tài khoản, kết quả là `5`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Không cần sử dụng hai map để đếm vì Repository chung là nguồn dữ liệu chính.
-
----
-
-## 14. Hàm isLoaded()
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
 bool UserRepository::isLoaded()
@@ -765,370 +742,298 @@ bool UserRepository::isLoaded()
 }
 ```
 
-### Chức năng
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
 
-Kiểm tra dữ liệu User đã được nạp từ file hay chưa.
+### UserRepository::add()
 
-### Giải thích
+#### A. Tổng quan
 
-Hàm trả về trạng thái `loaded` được quản lý bên trong `Repository<User>`.
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `User* user`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
 
-- `true`: Dữ liệu đã load thành công.
-- `false`: Chưa load hoặc dữ liệu đã được xóa khỏi Repository.
+#### B. Quy trình thực hiện
 
-Ví dụ:
-
-```cpp
-if (!userRepo.isLoaded())
-{
-    userRepo.load();
-}
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
 ```
 
----
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-## 15. Hàm add()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 bool UserRepository::add(User* user)
-```
-
-### Chức năng
-
-Thêm một tài khoản mới vào hệ thống.
-
-Hàm phải bảo đảm User hợp lệ, ID không trùng, username không trùng và dữ liệu trong hai map được đồng bộ với Repository.
-
-### Các bước xử lý
-
-**Bước 1: Kiểm tra trạng thái và dữ liệu**
-
-```cpp
-if (!repo.isLoaded() || !isValidUser(user))
 {
-    return false;
-}
-```
-
-Không cho phép thêm tài khoản khi chưa load hoặc dữ liệu không hợp lệ.
-
-**Bước 2: Kiểm tra ID trùng**
-
-```cpp
-if (findById(user->getUserId()) != nullptr)
-{
-    return false;
-}
-```
-
-Nếu ID đã tồn tại, không thêm.
-
-**Bước 3: Kiểm tra username trùng**
-
-```cpp
-if (findByUsername(user->getUsername()) != nullptr)
-{
-    return false;
-}
-```
-
-Username phải duy nhất trong toàn bộ hệ thống.
-
-**Bước 4: Kiểm tra con trỏ trùng**
-
-```cpp
-for (int i = 0; i < repo.count(); i++)
-{
-    if (repo.getAt(i) == user)
+    if (!repo.isLoaded() || !isValidUser(user))
     {
         return false;
     }
+    // Kiem tra trung ID
+    if (findById(user->getUserId()) != nullptr)
+    {
+        return false;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+    // Kiem tra trung username
+    if (findByUsername(user->getUsername()) != nullptr)
+    {
+        return false;
+    }
+    // Khong them lai con tro da duoc quan ly
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == user)
+        {
+            return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+        }
+    }
+    // Them User vao hai map truoc
+    string userId = user->getUserId();
+    string username = user->getUsername();
+
+    usersById[userId] = user;
+
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 4 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    try
+    {
+        usersByUsername[username] = user;
+    }
+    catch (...)
+    {
+        usersById.erase(userId);
+        throw;
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 5 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    }
+
+    // Them User vao Repository
+    try
+    {
+        if (!repo.add(user))
+        {
+            usersById.erase(userId);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 6 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+            usersByUsername.erase(username);
+            return false;
+        }
+    }
+    catch (...)
+    {
+        usersById.erase(userId);
+        usersByUsername.erase(username);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 7 — Xác nhận xử lý thành công.**
+
+```cpp
+        throw;
+    }
+
+    return true;
 }
 ```
 
-Không được thêm cùng một con trỏ User nhiều lần.
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-Vì Repository chung sở hữu các đối tượng, việc lưu cùng một con trỏ hai lần có thể gây giải phóng bộ nhớ lặp.
+### UserRepository::update()
 
-**Bước 5: Thêm vào hai map**
+#### A. Tổng quan
 
-```cpp
-usersById[userId] = user;
-usersByUsername[username] = user;
+- **Mục đích:** Cập nhật đối tượng đang quản lý.
+- **Tham số:** `const User& newValues`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Tạo chỉ mục tìm kiếm cho User mới.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Bước 6: Thêm vào Repository**
-
-```cpp
-if (!repo.add(user))
-{
-    usersById.erase(userId);
-    usersByUsername.erase(username);
-    return false;
-}
-```
-
-Nếu Repository không thêm được User, hai chỉ mục vừa tạo phải được xóa để tránh dữ liệu không đồng bộ.
-
-**Bước 7: Xử lý ngoại lệ**
-
-Nếu việc thêm vào map hoặc Repository phát sinh ngoại lệ, các chỉ mục đã tạo được hoàn tác rồi ngoại lệ được ném tiếp.
-
-### Quyền sở hữu bộ nhớ
-
-Khi `add()` thành công, `Repository<User>` nhận quyền sở hữu con trỏ User.
-
-Khi `add()` trả về `false`, Repository không nhận quyền sở hữu; bên gọi vẫn phải quản lý con trỏ đó.
-
-### Lưu ý
-
-`add()` chỉ cập nhật dữ liệu trong bộ nhớ.
-
-Muốn lưu thay đổi xuống file TXT, phải gọi `save()`.
-
----
-
-## 16. Hàm update()
+**Bước 1 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
 bool UserRepository::update(const User& newValues)
+{
+    if (!repo.isLoaded() || !isValidUser(&newValues))
+    {
+        return false;
+    }
+    User* user = findById(newValues.getUserId());
+    if (user == nullptr)
+    {
+        return false;
 ```
 
-### Chức năng
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-Cập nhật thông tin của một tài khoản đã tồn tại.
-
-Hàm cho phép thay đổi:
-
-- Username.
-- Password.
-- Full name.
-- Trạng thái active.
-
-Không cho phép thay đổi:
-
-- User ID.
-- Role thông qua hàm update này.
-
-### Các bước xử lý
-
-**Bước 1: Kiểm tra dữ liệu**
+**Bước 2 — Tra cứu đối tượng theo khóa.**
 
 ```cpp
-if (!repo.isLoaded() || !isValidUser(&newValues))
-{
-    return false;
+    }
+    // Khong cho phep thay doi role
+    if (user->getRole() != newValues.getRole())
+    {
+        return false;
+    }
+    // Kiem tra username moi co bi trung khong
+    User* existingUser = findByUsername(newValues.getUsername());
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+    if (existingUser != nullptr && existingUser != user)
+    {
+        return false;
+    }
+    string oldUsername = user->getUsername();
+    string newUsername = newValues.getUsername();
+    // Neu username thay doi, them khoa moi vao map
+    if (oldUsername != newUsername)
+    {
+        usersByUsername[newUsername] = user;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    // Cap nhat thong tin User
+    try
+    {
+        user->setPassword(newValues.getPassword());
+        user->setFullName(newValues.getFullName());
+        user->setUsername(newUsername);
+        user->setActive(newValues.isActive());
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    }
+    catch (...)
+    {
+        if (oldUsername != newUsername)
+        {
+            usersByUsername.erase(newUsername);
+        }
+        throw;
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 6 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+
+    // Xoa username cu khoi map
+    if (oldUsername != newUsername)
+    {
+        usersByUsername.erase(oldUsername);
+    }
+    return true;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 7 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
 }
 ```
 
-**Bước 2: Tìm User cần cập nhật**
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-```cpp
-User* user = findById(newValues.getUserId());
 
-if (user == nullptr)
-{
-    return false;
-}
-```
-
-Sử dụng ID để xác định tài khoản cần cập nhật.
-
-**Bước 3: Kiểm tra role**
-
-```cpp
-if (user->getRole() != newValues.getRole())
-{
-    return false;
-}
-```
-
-Không cho phép thay đổi vai trò thông qua hàm này.
-
-**Bước 4: Kiểm tra username trùng**
-
-```cpp
-User* existingUser = findByUsername(newValues.getUsername());
-
-if (existingUser != nullptr && existingUser != user)
-{
-    return false;
-}
-```
-
-Điều kiện này có nghĩa:
-
-- Nếu username chưa tồn tại: Cho phép.
-- Nếu username đang thuộc chính User cần cập nhật: Cho phép.
-- Nếu username thuộc User khác: Từ chối.
-
-**Bước 5: Lưu username cũ và mới**
-
-```cpp
-string oldUsername = user->getUsername();
-string newUsername = newValues.getUsername();
-```
-
-Hai biến này phục vụ việc cập nhật chỉ mục username.
-
-**Bước 6: Thêm chỉ mục username mới**
-
-```cpp
-if (oldUsername != newUsername)
-{
-    usersByUsername[newUsername] = user;
-}
-```
-
-Nếu username thay đổi, tạo khóa mới trong map trước khi xóa khóa cũ.
-
-**Bước 7: Cập nhật thuộc tính**
-
-```cpp
-user->setPassword(newValues.getPassword());
-user->setFullName(newValues.getFullName());
-user->setUsername(newUsername);
-user->setActive(newValues.isActive());
-```
-
-Chỉ cập nhật những trường được phép thay đổi.
-
-Không gán toàn bộ đối tượng User bằng `*user = newValues`.
-
-Điều này giúp giữ nguyên địa chỉ của đối tượng và các dữ liệu liên kết không thuộc phạm vi cập nhật.
-
-**Bước 8: Xóa username cũ**
-
-```cpp
-if (oldUsername != newUsername)
-{
-    usersByUsername.erase(oldUsername);
-}
-```
-
-Sau khi cập nhật thành công, xóa khóa cũ khỏi map.
-
-### Ví dụ
-
-Trước khi cập nhật:
-
-```text
-USR0002|hoang|123456|Nguyen Van Hoang|STAFF|1
-```
-
-Sau khi cập nhật:
-
-```text
-USR0002|hoang123|654321|Nguyen Van Hoang|STAFF|1
-```
-
-Trong `usersByUsername`:
-
-```text
-Trước: "hoang"    -> User*
-Sau:   "hoang123" -> User*
-```
-
-`usersById` không cần thay đổi vì ID vẫn là `USR0002`.
-
-### Xử lý ngoại lệ
-
-Trong phiên bản hiện tại, nếu một setter ném ngoại lệ, hàm sẽ xóa khóa username mới vừa thêm rồi ném lại ngoại lệ.
-
-Tuy nhiên, cách này chưa bảo đảm hoàn tác các thuộc tính đã được setter trước đó cập nhật.
-
-Vì vậy, `update()` hiện tại chưa có bảo đảm cập nhật nguyên tử hoàn toàn khi phát sinh ngoại lệ.
-
-### Kết quả
-
-Trả về `true` khi cập nhật thành công, `false` khi không đáp ứng điều kiện nghiệp vụ.
-
-Hàm không tự ghi file. Cần gọi `save()` để lưu thay đổi.
-
----
-
-## 17. Quan hệ giữa UserRepository và Repository&lt;T&gt;
-
-`Repository<User>` xử lý các chức năng chung, còn `UserRepository` bổ sung các quy tắc riêng của tài khoản.
-
-| Chức năng | Repository&lt;User&gt; | UserRepository |
-|---|---|---|
-| Đọc file TXT | Thực hiện | Gọi và xây dựng map |
-| Ghi file TXT | Thực hiện | Gọi lại |
-| Quản lý bộ nhớ User | Thực hiện | Sử dụng |
-| Kiểm tra trùng ID | Có | Kiểm tra thêm |
-| Kiểm tra trùng username | Không | Có |
-| Tìm theo ID | Duyệt danh sách | Sử dụng map |
-| Tìm theo username | Không hỗ trợ trực tiếp | Sử dụng map |
-| Kiểm tra dữ liệu User | Không biết quy tắc cụ thể | Thực hiện |
-| Cập nhật thuộc tính User | Không hỗ trợ trực tiếp | Thực hiện |
-
-### Nguyên tắc thiết kế
-
-`Repository<T>` chịu trách nhiệm quản lý dữ liệu tổng quát.
-
-`UserRepository` chịu trách nhiệm áp dụng các quy tắc dữ liệu dành riêng cho tài khoản.
-
-`AuthService` chịu trách nhiệm xử lý nghiệp vụ đăng nhập, đăng xuất và kiểm tra quyền.
-
-Cách phân chia này giúp các lớp có trách nhiệm rõ ràng, dễ bảo trì và mở rộng.
-
----
-
-## 18. Những lưu ý quan trọng
-
-**1. Phải đồng bộ Repository và hai map**
-
-Khi thêm User, phải thêm chỉ mục.
-
-Khi đổi username, phải cập nhật chỉ mục username.
-
-Khi xóa hoặc load lại dữ liệu trong Repository, phải xử lý các chỉ mục tương ứng để tránh con trỏ không hợp lệ.
-
-**2. Không tự ý giải phóng User đã thuộc Repository**
-
-Khi `repo.add(user)` thành công, Repository chung chịu trách nhiệm giải phóng bộ nhớ.
-
-Không được `delete user` từ bên ngoài nếu User vẫn đang được Repository quản lý.
-
-**3. Không tự ý sửa username qua con trỏ**
-
-Vì các hàm tìm kiếm hiện trả về `User*`, lớp gọi có thể truy cập các setter.
-
-Nếu sửa username trực tiếp mà không thông qua `UserRepository::update()`, map `usersByUsername` sẽ không được cập nhật.
-
-Do đó, các thao tác thay đổi dữ liệu cần đi qua UserRepository.
-
-**4. Chưa có chức năng remove**
-
-Phiên bản UserRepository hiện tại chỉ hỗ trợ thêm và cập nhật.
-
-Chưa triển khai xóa tài khoản, nhằm tránh ảnh hưởng đến những dữ liệu khác có thể đang tham chiếu đến User.
-
-**5. Không tự động lưu file**
-
-`add()` và `update()` chỉ thay đổi dữ liệu trong bộ nhớ.
-
-Muốn lưu dữ liệu, cần gọi `save()`.
-
-**6. Mật khẩu hiện được lưu dưới dạng văn bản thuần**
-
-Đây là giới hạn của thiết kế TXT hiện tại. Nếu phát triển thành hệ thống thực tế, cần sử dụng cơ chế băm mật khẩu an toàn thay vì lưu mật khẩu trực tiếp.
-
----
-
-## 19. Tổng kết
-
-`UserRepository` là lớp quản lý dữ liệu tài khoản được xây dựng dựa trên `Repository<User>` chung.
-
-Lớp này sử dụng kết hợp:
-
-- `Repository<User>` để quản lý dữ liệu và bộ nhớ.
-- `unordered_map` để tìm kiếm nhanh.
-- `Validator` để kiểm tra dữ liệu văn bản.
-- Các hàm chuyển đổi để đọc và ghi định dạng TXT.
-- Các hàm nghiệp vụ dữ liệu để kiểm tra trùng lặp và cập nhật tài khoản.
-
-Nhờ đó, UserRepository vừa tái sử dụng được các chức năng của Repository chung, vừa đáp ứng các yêu cầu đặc thù của tài khoản người dùng trong hệ thống.

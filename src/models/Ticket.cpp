@@ -153,12 +153,14 @@ void Ticket::unlinkReferences()
     seat = nullptr;
 }
 
-void Ticket::markCancelled(const string& cancelledAt,
-                           const string& cancelledBy,
-                           const string& cancelReason) {
+void Ticket::markCancelled(const string& cancelledAt, const string& cancelledBy, const string& cancelReason) {
+    string newCancelledAt = cancelledAt;
+    string newCancelledBy = cancelledBy;
+    string newCancelReason = cancelReason;
+    
+    this->cancelledAt.swap(newCancelledAt);
+    this->cancelledBy.swap(newCancelledBy);
+    this->cancelReason.swap(newCancelReason);
     this->status = TicketStatus::CANCELLED;
-    this->cancelledAt = cancelledAt;
-    this->cancelledBy = cancelledBy;
-    this->cancelReason = cancelReason;
     this->refundAmount = this->paidAmount;
 }

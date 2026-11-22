@@ -84,409 +84,852 @@ Theo bảng quyền mặc định:
 
 Quyền thực tế phụ thuộc vào `RolePermissionRepository`. Admin không tự động có quyền nếu bảng quyền không cấp permission tương ứng.
 
-## 4. Constructor
+## Chi tiết triển khai từng hàm (MovieService.cpp)
 
-```cpp
-MovieService(MovieRepository& movieRepo,
-             AuthService& authService);
+### MovieService()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `MovieRepository& movieRepo, AuthService& authService) : movieRepo(movieRepo), authService(authService`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
 ```
 
-Sử dụng danh sách khởi tạo:
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
 
 ```cpp
-MovieService::MovieService(MovieRepository& movieRepo,
-                           AuthService& authService)
-    : movieRepo(movieRepo),
-      authService(authService)
+MovieService::MovieService(MovieRepository& movieRepo, AuthService& authService)
+    : movieRepo(movieRepo), authService(authService)
 {}
 ```
 
-Constructor không tự nạp dữ liệu và không tự tạo Repository.
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-## 5. Quản lý dữ liệu
+### load()
 
-### 5.1. load()
+#### A. Tổng quan
 
-```cpp
-bool load();
-```
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-**Chức năng:** Nạp dữ liệu phim từ file TXT vào Repository.
-
-Gọi:
-
-```cpp
-return movieRepo.load();
-```
-
-Việc kiểm tra định dạng, chuyển đổi dữ liệu và xử lý lỗi thuộc trách nhiệm Repository.
-
-**Kết quả:**
-
-- `true`: Nạp thành công.
-- `false`: Repository trả về thất bại.
-- Ngoại lệ: Được truyền lên tầng gọi nếu Repository phát sinh lỗi.
-
-Không gọi `load()` tùy tiện trong lúc các đối tượng khác đang sử dụng con trỏ Movie, vì việc nạp lại có thể làm mất hiệu lực các con trỏ cũ.
-
-### 5.2. save()
-
-```cpp
-bool save();
-```
-
-**Chức năng:** Lưu dữ liệu phim hiện tại xuống file TXT.
-
-```cpp
-return movieRepo.save();
-```
-
-MovieService không tự xử lý định dạng TXT.
-
-## 6. Quản lý phim
-
-### 6.1. addMovie()
-
-```cpp
-bool addMovie(Movie* movie);
-```
-
-**Chức năng:** Thêm phim mới.
-
-Quy trình:
-
-1. Kiểm tra permission `MOVIE_ADD`.
-2. Gọi `movieRepo.add(movie)`.
-3. Repository kiểm tra trạng thái đã nạp, con trỏ, mã phim, dữ liệu và mã trùng.
-4. Trả về kết quả.
-
-```cpp
-authService.requirePermission("MOVIE_ADD");
-return movieRepo.add(movie);
-```
-
-**Quy tắc:**
-
-- Mã phim phải hợp lệ và duy nhất.
-- Tên và thể loại phải hợp lệ.
-- Thời lượng phải lớn hơn 0.
-- Độ tuổi tối thiểu không âm.
-- Ngày phát hành không lớn hơn ngày kết thúc.
-
-Repository chịu trách nhiệm kiểm tra các điều kiện dữ liệu trên.
-
-Sau khi thêm thành công, Repository sở hữu đối tượng Movie. Nếu thất bại, bên gọi vẫn chịu trách nhiệm quản lý con trỏ.
-
-### 6.2. updateMovie()
-
-```cpp
-bool updateMovie(const Movie& newValues);
-```
-
-**Chức năng:** Cập nhật thông tin phim mà không làm ảnh hưởng các suất chiếu đã tạo.
-
-#### Quy trình
-
-**Bước 1: Kiểm tra quyền**
-
-```cpp
-authService.requirePermission("MOVIE_UPDATE");
-```
-
-**Bước 2: Kiểm tra Repository**
-
-```cpp
-if (!movieRepo.isLoaded())
-{
-    return false;
-}
-```
-
-**Bước 3: Tìm phim hiện tại**
-
-```cpp
-Movie* movie = movieRepo.findById(newValues.getMovieId());
-
-if (movie == nullptr)
-{
-    return false;
-}
-```
-
-**Bước 4: Không cho thay đổi trạng thái active**
-
-```cpp
-if (movie->isActive() != newValues.isActive())
-{
-    return false;
-}
-```
-
-Trạng thái hoạt động chỉ được thay đổi thông qua `setMovieActive()`.
-
-**Bước 5: Kiểm tra thay đổi ngày**
-
-```cpp
-bool dateChanged =
-    movie->getReleaseDate() != newValues.getReleaseDate() ||
-    movie->getEndDate() != newValues.getEndDate();
-```
-
-**Bước 6: Kiểm tra thay đổi thời lượng**
-
-```cpp
-bool durationChanged =
-    movie->getDurationMinutes() != newValues.getDurationMinutes();
-```
-
-**Bước 7: Kiểm tra các suất chiếu**
-
-```cpp
-if (movie->getShowtimeCount() > 0 &&
-    (dateChanged || durationChanged))
-{
-    return false;
-}
-```
-
-Khi phim đã có ít nhất một Showtime, không cho phép thay đổi:
-
-- `releaseDate`
-- `endDate`
-- `durationMinutes`
-
-Quy tắc áp dụng cả với suất chiếu đã hủy hoặc đã kết thúc.
-
-**Lý do:** Showtime lưu riêng thời điểm bắt đầu và kết thúc. Nếu thay đổi thời lượng phim sau khi đã tạo lịch, thông tin phim có thể không còn phù hợp với dữ liệu lịch sử.
-
-**Bước 8: Cập nhật**
-
-```cpp
-return movieRepo.update(newValues);
-```
-
-Repository tiếp tục kiểm tra dữ liệu trước khi cập nhật.
-
-#### Các thuộc tính được phép sửa
-
-| Thuộc tính | Chưa có Showtime | Đã có Showtime |
-|---|---|---|
-| `movieId` | Không | Không |
-| `title` | Có | Có |
-| `genre` | Có | Có |
-| `durationMinutes` | Có | Không |
-| `minAge` | Có | Có |
-| `releaseDate` | Có | Không |
-| `endDate` | Có | Không |
-| `active` | Không | Không |
-
-Việc cho phép sửa `minAge` của phim đã có Showtime là quy tắc hiện tại; tuổi khách vẫn được nhân viên xác nhận tại thời điểm bán vé.
-
-### 6.3. removeMovie()
-
-```cpp
-bool removeMovie(const string& movieId);
-```
-
-**Chức năng:** Xóa phim khỏi hệ thống.
-
-Quy trình:
-
-1. Kiểm tra `MOVIE_DELETE`.
-2. Gọi `movieRepo.removeById(movieId)`.
-3. Repository từ chối nếu phim còn liên kết Showtime.
-
-```cpp
-authService.requirePermission("MOVIE_DELETE");
-return movieRepo.removeById(movieId);
-```
-
-Không được xóa phim nếu còn bất kỳ suất chiếu nào, kể cả suất đã hủy hoặc đã kết thúc.
-
-Không tự động xóa Showtime khi xóa phim.
-
-### 6.4. setMovieActive()
-
-```cpp
-bool setMovieActive(const string& movieId,
-                    bool active);
-```
-
-**Chức năng:** Kích hoạt hoặc ngừng hoạt động một phim.
-
-#### Quy trình
-
-1. Kiểm tra `MOVIE_UPDATE`.
-2. Kiểm tra Repository đã nạp.
-3. Tìm phim theo `movieId`.
-4. Nếu trạng thái hiện tại bằng trạng thái yêu cầu, trả về `true` mà không thay đổi dữ liệu.
-5. Nếu yêu cầu ngừng hoạt động, kiểm tra các Showtime liên kết.
-6. Từ chối nếu còn suất `SCHEDULED` có thời điểm bắt đầu trong tương lai.
-7. Tạo đối tượng Movie tạm với các thuộc tính hiện tại và trạng thái mới.
-8. Gọi `movieRepo.update()` để cập nhật.
-
-#### Quy tắc
-
-- `active = true`: Kích hoạt phim.
-- `active = false`: Ngừng hoạt động phim.
-- Không cho ngừng hoạt động nếu phim còn suất tương lai chưa hủy.
-- Không xóa hoặc thay đổi các Showtime cũ.
-- Không thay đổi dữ liệu vé và hóa đơn.
-
-Khi kiểm tra các Showtime, sử dụng liên kết có sẵn trong Model Movie thay vì bắt buộc bổ sung `ShowtimeRepository` vào constructor.
-
-Cần lưu ý `Movie` hiện chỉ cung cấp `findShowtime(showtimeId)` và `getShowtimeCount()`, chưa có API duyệt Showtime theo chỉ số. Vì vậy, trước khi code phải bổ sung một cách duyệt an toàn, chỉ đọc, chẳng hạn:
-
-```cpp
-const Showtime* getShowtimeAt(int index) const;
-```
-
-Không truy cập trực tiếp danh sách liên kết private từ Service.
-
-#### Kết quả
-
-- `true`: Trạng thái đã đúng hoặc cập nhật thành công.
-- `false`: Phim không tồn tại, dữ liệu chưa nạp hoặc không thỏa điều kiện nghiệp vụ.
-- Ngoại lệ: Không có quyền hoặc lỗi được Repository truyền lên.
-
-## 7. Tra cứu phim
-
-### 7.1. findMovieById()
-
-```cpp
-const Movie* findMovieById(const string& movieId);
-```
-
-Yêu cầu `MOVIE_VIEW`.
-
-Gọi `movieRepo.findById(movieId)`.
-
-Trả về `nullptr` nếu không tìm thấy.
-
-### 7.2. getMovieAt()
-
-```cpp
-const Movie* getMovieAt(int index);
-```
-
-Yêu cầu `MOVIE_VIEW`.
-
-Trả về phim tại vị trí `index` trong Repository.
-
-Nếu vị trí không hợp lệ, trả về `nullptr` theo quy ước Repository.
-
-### 7.3. getMovieCount()
-
-```cpp
-int getMovieCount();
-```
-
-Yêu cầu `MOVIE_VIEW`.
-
-Trả về tổng số phim trong Repository, bao gồm phim đang hoạt động và đã ngừng hoạt động.
-
-## 8. Lọc và tìm kiếm phim
-
-Các hàm mới sử dụng:
-
-```cpp
-#include <vector>
-```
-
-`vector` là mảng động của thư viện chuẩn C++, cho phép lưu danh sách kết quả có số lượng thay đổi.
-
-Sử dụng `vector<const Movie*>` để tránh sao chép đối tượng Movie và không cho phép sửa trực tiếp thông qua kết quả trả về.
-
-### 8.1. getNowShowingMovies()
-
-```cpp
-vector<const Movie*> getNowShowingMovies();
-```
-
-**Chức năng:** Lấy các phim đang trong khoảng ngày phát hành.
-
-Điều kiện:
+#### B. Quy trình thực hiện
 
 ```text
-active == true
-releaseDate <= today
-today <= endDate
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Kết thúc
 ```
 
-Trong đó `today` là ngày hiện tại lấy từ `DateTime`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Quy trình:
-
-1. Kiểm tra `MOVIE_VIEW`.
-2. Kiểm tra dữ liệu đã nạp.
-3. Lấy ngày hiện tại.
-4. Duyệt toàn bộ Movie.
-5. Thêm phim thỏa điều kiện vào vector.
-6. Trả về danh sách.
-
-Không yêu cầu phim phải có Showtime thực tế.
-
-Không thay đổi thứ tự các phim trong Repository.
-
-Nếu không có phim phù hợp, trả về vector rỗng.
-
-### 8.2. getComingSoonMovies()
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
-vector<const Movie*> getComingSoonMovies();
+bool MovieService::load()
+{
+    return movieRepo.load();
+}
 ```
 
-**Chức năng:** Lấy các phim sắp chiếu.
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Điều kiện:
+### save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
 
 ```text
-active == true
-today < releaseDate
+Bắt đầu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
 ```
 
-Quy trình tương tự `getNowShowingMovies()`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Phim đã ngừng hoạt động không được đưa vào kết quả.
-
-Nếu không có phim phù hợp, trả về vector rỗng.
-
-### 8.3. searchMoviesByTitle()
+**Bước 1 — Cập nhật qua Repository.**
 
 ```cpp
-vector<const Movie*> searchMoviesByTitle(
-    const string& keyword
-);
+bool MovieService::save()
+{
+    return movieRepo.save();
+}
 ```
 
-**Chức năng:** Tìm kiếm phim có tên chứa từ khóa.
+Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
 
-#### Quy tắc
+### addMovie()
 
-- Yêu cầu `MOVIE_VIEW`.
-- Tìm kiếm theo chuỗi con trong `title`.
-- Không phân biệt chữ hoa/chữ thường đối với ký tự ASCII.
-- Không tự động bỏ dấu tiếng Việt.
-- Tìm trên toàn bộ danh sách, bao gồm phim đã ngừng hoạt động.
-- Từ khóa rỗng trả về toàn bộ phim.
-- Giữ nguyên thứ tự Repository.
+#### A. Tổng quan
 
-Ví dụ:
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `Movie* movie`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
 
 ```text
-Tên phim: Avengers Endgame
-
-Từ khóa "avengers" -> Tìm thấy
-Từ khóa "ENDGAME"  -> Tìm thấy
-Từ khóa "ven"      -> Tìm thấy
-Từ khóa "batman"   -> Không tìm thấy
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
 ```
 
-Có thể sử dụng `std::transform()` và `std::tolower()` để chuẩn hóa ký tự ASCII trước khi so sánh.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Khi sử dụng `std::tolower()`, cần chuyển ký tự sang `unsigned char` trước để tránh hành vi không xác định với giá trị `char` âm.
+**Bước 1 — Kiểm tra quyền.**
 
-Không cần bổ sung chỉ mục tìm kiếm hoặc thay đổi MovieRepository trong phiên bản này.
+```cpp
+bool MovieService::addMovie(Movie* movie)
+{
+    authService.requirePermission("MOVIE_ADD");
+
+    if (!movieRepo.isLoaded() || movie == nullptr)
+    {
+        return false;
+    }
+    // Lay danh sach ID hien co
+    vector<string> existingIds;
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `MOVIE_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+    for (int i = 0; i < movieRepo.count(); i++)
+    {
+        Movie* current = movieRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getMovieId());
+    }
+    // Sinh ID moi
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 3 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+    string movieId = IdGenerator::generateNextId("MOV", existingIds);
+    // Tao Movie moi voi ID vua sinh
+    Movie* newMovie = new Movie(movieId,
+                               movie->getTitle(),
+                               movie->getGenre(),
+                               movie->getDurationMinutes(),
+                               movie->getMinAge(),
+                               movie->getReleaseDate(),
+                               movie->getEndDate(),
+                               movie->isActive());
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. `new` cấp phát đối tượng trên heap; cần theo dõi thời điểm quyền sở hữu được chuyển sang Repository để tránh rò rỉ bộ nhớ.
+
+**Bước 4 — Cập nhật qua Repository.**
+
+```cpp
+    // Them vao Repository
+    try
+    {
+        if (!movieRepo.add(newMovie))
+        {
+            delete newMovie;
+            return false;
+        }
+    }
+    catch (...)
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+**Bước 5 — Trả kết quả.**
+
+```cpp
+    {
+        delete newMovie;
+        throw;
+    }
+    return true;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+### updateMovie()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const Movie& newValues`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Kiểm tra điều kiện
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool MovieService::updateMovie(const Movie& newValues)
+{
+    authService.requirePermission("MOVIE_UPDATE");
+
+    if (!movieRepo.isLoaded())
+    {
+        return false;
+    }
+    Movie* movie = movieRepo.findById(newValues.getMovieId());
+    if (movie == nullptr)
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `MOVIE_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    {
+        return false;
+    }
+    // Khong cho thay doi trang thai qua updateMovie
+    if (movie->isActive() != newValues.isActive())
+    {
+        return false;
+    }
+    // Kiem tra thay doi ngay phat hanh
+    bool dateChanged =
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Kiểm tra điều kiện.**
+
+```cpp
+        movie->getReleaseDate() != newValues.getReleaseDate() ||
+        movie->getEndDate() != newValues.getEndDate();
+
+    // Kiem tra thay doi thoi luong phim
+    bool durationChanged = movie->getDurationMinutes() != newValues.getDurationMinutes();
+
+    // Khong cho doi ngay hoac thoi luong khi da co suat chieu
+    if (movie->getShowtimeCount() > 0 &&
+        (dateChanged || durationChanged))
+    {
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+**Bước 4 — Cập nhật qua Repository.**
+
+```cpp
+        return false;
+    }
+
+    return movieRepo.update(newValues);
+}
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### removeMovie()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& movieId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool MovieService::removeMovie(const string& movieId)
+{
+    authService.requirePermission("MOVIE_DELETE");
+    return movieRepo.removeById(movieId);
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Repository thực hiện thao tác dữ liệu. Quyền `MOVIE_DELETE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Thao tác xóa có thể làm mất đối tượng do Repository sở hữu; các liên kết liên quan cần được Repository xử lý theo đúng ràng buộc của nó.
+
+### findMovieById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& movieId`.
+- **Giá trị trả về:** `const Movie*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const Movie* MovieService::findMovieById(const string& movieId)
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.findById(movieId);
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
+
+### getMovieAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `const Movie*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const Movie* MovieService::getMovieAt(int index)
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.getAt(index);
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
+
+### getMovieCount()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+int MovieService::getMovieCount()
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.count();
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
+
+### setMovieActive()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& movieId, bool active`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Duyệt từng phần tử
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool MovieService::setMovieActive(const string& movieId, bool active)
+{
+    authService.requirePermission("MOVIE_UPDATE");
+
+    if (!movieRepo.isLoaded())
+    {
+        return false;
+    }
+    Movie* movie = movieRepo.findById(movieId);
+    if (movie == nullptr)
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `MOVIE_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    {
+        return false;
+    }
+    // Trang thai da dung voi yeu cau
+    if (movie->isActive() == active)
+    {
+        return true;
+    }
+    // Kiem tra cac suat chieu khi ngung hoat dong phim
+    if (!active)
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Duyệt từng phần tử.**
+
+```cpp
+    {
+        string now = DateTime::getCurrentDateTime();
+        for (int i = 0; i < movie->getShowtimeCount(); i++)
+        {
+            const Showtime* showtime = movie->getShowtimeAt(i);
+            if (showtime == nullptr)
+            {
+                return false;
+            }
+            // suất chiếu đã lên lịch và chưa bắt đầu thì không cho hủy phim
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 4 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+            if (showtime->getStatus() == ShowtimeStatus::SCHEDULED &&
+                DateTime::isBefore(now, showtime->getStartAt()))
+            {
+                return false;
+            }
+        }
+    }
+    // Tao doi tuong tam voi trang thai moi
+    Movie updated(
+        movie->getMovieId(),
+```
+
+`false` báo thao tác không thành công. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 5 — Cập nhật qua Repository.**
+
+```cpp
+        movie->getTitle(),
+        movie->getGenre(),
+        movie->getDurationMinutes(),
+        movie->getMinAge(),
+        movie->getReleaseDate(),
+        movie->getEndDate(),
+        active
+    );
+
+    return movieRepo.update(updated);
+```
+
+Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu.
+
+**Bước 6 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### getNowShowingMovies()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `vector<const Movie*>`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+vector<const Movie*> MovieService::getNowShowingMovies()
+{
+    authService.requirePermission("MOVIE_VIEW");
+
+    vector<const Movie*> result;
+    if (!movieRepo.isLoaded())
+    {
+        return result;
+    }
+    string today = DateTime::getCurrentDateTime().substr(0, 10);
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+    for (int i = 0; i < movieRepo.count(); i++)
+    {
+        const Movie* movie = movieRepo.getAt(i);
+        if (movie == nullptr)
+        {
+            continue;
+        }
+        if (movie->isActive() &&
+            movie->getReleaseDate() <= today &&
+            today <= movie->getEndDate())
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Vòng `for` duyệt lần lượt các phần tử. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+        {
+            result.push_back(movie);
+        }
+    }
+    return result;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### getComingSoonMovies()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `vector<const Movie*>`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+vector<const Movie*> MovieService::getComingSoonMovies()
+{
+    authService.requirePermission("MOVIE_VIEW");
+
+    vector<const Movie*> result;
+    if (!movieRepo.isLoaded())
+    {
+        return result;
+    }
+    string today = DateTime::getCurrentDateTime().substr(0, 10);
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. `DateTime` cung cấp thời gian hoặc phép so sánh thời gian; điều kiện này quyết định dữ liệu có còn hợp lệ ở thời điểm gọi hàm hay không.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+    for (int i = 0; i < movieRepo.count(); i++)
+    {
+        const Movie* movie = movieRepo.getAt(i);
+        if (movie == nullptr)
+        {
+            continue;
+        }
+        if (movie->isActive() &&
+            today < movie->getReleaseDate())
+        {
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Vòng `for` duyệt lần lượt các phần tử. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+            result.push_back(movie);
+        }
+    }
+    return result;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### searchMoviesByTitle()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& keyword`.
+- **Giá trị trả về:** `vector<const Movie*>`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Duyệt từng phần tử
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Trả kết quả
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+vector<const Movie*> MovieService::searchMoviesByTitle(const string& keyword)
+{
+    authService.requirePermission("MOVIE_VIEW");
+
+    vector<const Movie*> result;
+    if (!movieRepo.isLoaded())
+    {
+        return result;
+    }
+    // Chuyen tu khoa thanh chu thuong
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MOVIE_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code.
+
+**Bước 2 — Duyệt từng phần tử.**
+
+```cpp
+    string searchKey = keyword;
+    for (char& c : searchKey)
+    {
+        c = static_cast<char>(
+            tolower(static_cast<unsigned char>(c))
+        );
+    }
+    // Duyet danh sach phim
+    for (int i = 0; i < movieRepo.count(); i++)
+    {
+```
+
+Vòng `for` duyệt lần lượt các phần tử. `static_cast` chuyển kiểu tường minh. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả. `static_cast` nêu rõ kiểu đích khi chuyển giá trị, giúp tránh chuyển kiểu ngầm khó nhận ra.
+
+**Bước 3 — Tra cứu dữ liệu.**
+
+```cpp
+        const Movie* movie = movieRepo.getAt(i);
+        if (movie == nullptr)
+        {
+            continue;
+        }
+        string title = movie->getTitle();
+        // Chuyen ten phim thanh chu thuong
+        for (char& c : title)
+        {
+            c = static_cast<char>(
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Vòng `for` duyệt lần lượt các phần tử. `static_cast` chuyển kiểu tường minh. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả. `static_cast` nêu rõ kiểu đích khi chuyển giá trị, giúp tránh chuyển kiểu ngầm khó nhận ra.
+
+**Bước 4 — Trả kết quả.**
+
+```cpp
+                tolower(static_cast<unsigned char>(c))
+            );
+        }
+        // Tim tu khoa trong ten phim
+        if (title.find(searchKey) != string::npos)
+        {
+            result.push_back(movie);
+        }
+    }
+    return result;
+```
+
+`static_cast` chuyển kiểu tường minh. `static_cast` nêu rõ kiểu đích khi chuyển giá trị, giúp tránh chuyển kiểu ngầm khó nhận ra.
+
+**Bước 5 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
 ## 9. Nguyên tắc xử lý kết quả
 
