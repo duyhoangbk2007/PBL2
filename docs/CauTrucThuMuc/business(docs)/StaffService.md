@@ -80,9 +80,65 @@ Các hàm nghiệp vụ và tra cứu gọi `authService.requireAdmin()` trướ
 | `getStaffAt(int index)` | `const User*` | Lấy nhân viên tại chỉ số trong danh sách Staff |
 | `getStaffCount()` | `int` | Đếm tổng số tài khoản Staff |
 
-## 6. Chi tiết các hàm
+## Chi tiết triển khai từng hàm (StaffService.cpp)
 
-### 6.1. `load()`
+### StaffService()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `UserRepository& staffRepo, AuthService& authService) : staffRepo(staffRepo), authService(authService`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
+
+```cpp
+StaffService::StaffService(UserRepository& staffRepo, AuthService& authService)
+    : staffRepo(staffRepo), authService(authService)
+{}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### load()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
 bool StaffService::load()
@@ -91,9 +147,32 @@ bool StaffService::load()
 }
 ```
 
-Nạp **toàn bộ User**, gồm cả Admin và Staff. Theo `UserRepository` hiện tại, gọi `load()` khi đã nạp dữ liệu sẽ trả `false`. Không nên gọi lại từ nhiều Service nếu cùng dùng một Repository.
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-### 6.2. `save()`
+### save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Cập nhật qua Repository.**
 
 ```cpp
 bool StaffService::save()
@@ -102,58 +181,463 @@ bool StaffService::save()
 }
 ```
 
-Lưu **toàn bộ User** xuống file TXT thông qua Repository, không chỉ tài khoản Staff. Các hàm thêm/sửa/vô hiệu hóa cập nhật dữ liệu trong bộ nhớ; cần gọi `save()` để ghi xuống file.
+Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
 
-### 6.3. `addStaff(User* staff)`
+### addStaff()
 
-**Quy trình:**
-1. Kiểm tra quyền Admin.
-2. Từ chối con trỏ `nullptr` hoặc User không có role `STAFF`.
-3. Gọi `staffRepo.add(staff)`.
+#### A. Tổng quan
 
-`UserRepository::add()` chịu trách nhiệm kiểm tra dữ liệu hợp lệ, trùng ID, trùng username và trạng thái đã load.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `User* staff`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
 
-**Kết quả:** `true` nếu thêm thành công, `false` nếu không hợp lệ; ngoại lệ nếu thiếu quyền. Khi thêm thành công, Repository sở hữu con trỏ `staff`; khi thêm thất bại, bên gọi vẫn phải quản lý và giải phóng con trỏ đó.
+#### B. Quy trình thực hiện
 
-### 6.4. `updateStaff(const User& newValues)`
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
 
-**Quy trình:**
-1. Kiểm tra quyền Admin và Repository đã load.
-2. Tìm tài khoản hiện tại bằng `newValues.getUserId()`.
-3. Từ chối nếu không tồn tại hoặc role hiện tại/role mới không phải `STAFF`.
-4. Từ chối nếu `active` mới khác `active` hiện tại.
-5. Gọi `staffRepo.update(newValues)`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Có thể cập nhật username, password và fullName. Không cho phép thay đổi role hoặc trạng thái `active` thông qua hàm này. Repository tiếp tục kiểm tra định dạng và trùng username. Nhân viên đã vô hiệu hóa vẫn có thể sửa thông tin nếu giữ nguyên `active = false`.
+**Bước 1 — Kiểm tra quyền.**
 
-### 6.5. `deactivateStaff(const string& staffId)`
+```cpp
+bool StaffService::addStaff(User* staff)
+{
+    authService.requirePermission("STAFF_ADD");
 
-**Quy trình:**
-1. Kiểm tra quyền Admin và Repository đã load.
-2. Tìm User theo ID.
-3. Từ chối nếu không tồn tại, không phải Staff hoặc đã vô hiệu hóa.
-4. Tạo đối tượng `User updated` với ID, username, password, fullName, role giữ nguyên và `active = false`.
-5. Gọi `staffRepo.update(updated)`.
+    if (!staffRepo.isLoaded() ||
+        staff == nullptr ||
+        staff->getRole() != UserRole::STAFF)
+    {
+        return false;
+    }
+```
 
-Việc tạo đối tượng `updated` **không thêm User mới**. Đây là dữ liệu tạm để Repository cập nhật User hiện có. Tài khoản không bị xóa và vẫn có thể tra cứu; `AuthService::login()` sẽ từ chối tài khoản không hoạt động.
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `STAFF_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
 
-### 6.6. `findStaffById(const string& staffId)`
+**Bước 2 — Tra cứu dữ liệu.**
 
-Kiểm tra quyền Admin, gọi `staffRepo.findById(staffId)`, sau đó lọc role `STAFF`. Trả `nullptr` nếu không tìm thấy hoặc ID thuộc Admin. Kết quả `const User*` chỉ dùng để đọc thông tin qua con trỏ trả về.
+```cpp
+    vector<string> existingIds;
 
-### 6.7. `findStaffByUsername(const string& username)`
+    for (int i = 0; i < staffRepo.count(); i++)
+    {
+        User* current = staffRepo.getAt(i);
+        if (current == nullptr)
+        {
+            return false;
+        }
+        existingIds.push_back(current->getUserId());
+```
 
-Kiểm tra quyền Admin, gọi `staffRepo.findByUsername(username)` và lọc role `STAFF`. Trả `nullptr` nếu không tìm thấy hoặc tài khoản là Admin.
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
 
-### 6.8. `getStaffAt(int index)`
+**Bước 3 — Chuẩn bị và xử lý dữ liệu.**
 
-Kiểm tra quyền Admin; từ chối chỉ số âm. Duyệt tất cả User bằng `staffRepo.getAt(i)` và dùng biến `staffIndex` chỉ tăng khi gặp role `STAFF`. Khi `staffIndex == index`, trả về User tương ứng. Trả `nullptr` nếu vượt phạm vi.
+```cpp
+    }
 
-**Chú ý:** `index` là vị trí trong **danh sách Staff đã lọc**, không phải vị trí trong toàn bộ UserRepository; bắt đầu từ 0. Nhân viên không hoạt động vẫn nằm trong danh sách.
+    string userId = IdGenerator::generateNextId("USR", existingIds);
 
-### 6.9. `getStaffCount()`
+    User* newStaff = new User(userId,
+                              staff->getUsername(),
+                              staff->getPassword(),
+                              staff->getFullName(),
+                              UserRole::STAFF,
+                              staff->isActive());
+```
 
-Kiểm tra quyền Admin, duyệt toàn bộ User và đếm những User có role `STAFF`. Kết quả **bao gồm cả nhân viên đã vô hiệu hóa**, không bao gồm Admin.
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. `new` cấp phát đối tượng trên heap; cần theo dõi thời điểm quyền sở hữu được chuyển sang Repository để tránh rò rỉ bộ nhớ.
+
+**Bước 4 — Cập nhật qua Repository.**
+
+```cpp
+
+    try
+    {
+        if (!staffRepo.add(newStaff))
+        {
+            delete newStaff;
+            return false;
+        }
+    }
+    catch (...)
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+**Bước 5 — Trả kết quả.**
+
+```cpp
+    {
+        delete newStaff;
+        throw;
+    }
+    return true;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
+
+### updateStaff()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const User& newValues`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool StaffService::updateStaff(const User& newValues)
+{
+    authService.requirePermission("STAFF_UPDATE");
+    if (!staffRepo.isLoaded())
+    {
+        return false;
+    }
+    User* current = staffRepo.findById(newValues.getUserId());
+    if (current == nullptr ||
+        current->getRole() != UserRole::STAFF ||
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `STAFF_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Cập nhật qua Repository.**
+
+```cpp
+        newValues.getRole() != UserRole::STAFF)
+    {
+        return false;
+    }
+    if (current->isActive() != newValues.isActive())
+    {
+        return false;
+    }
+    return staffRepo.update(newValues);
+}
+```
+
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+### deactivateStaff()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& staffId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+bool StaffService::deactivateStaff(const string& staffId)
+{
+    authService.requirePermission("STAFF_DEACTIVATE");
+    if (!staffRepo.isLoaded())
+    {
+        return false;
+    }
+    User* staff = staffRepo.findById(staffId);
+    if (staff == nullptr ||
+        staff->getRole() != UserRole::STAFF ||
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `STAFF_DEACTIVATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        !staff->isActive())
+    {
+        return false;
+    }
+    User updated(
+        staff->getUserId(),
+        staff->getUsername(),
+        staff->getPassword(),
+        staff->getFullName(),
+        staff->getRole(),
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Cập nhật qua Repository.**
+
+```cpp
+        false
+    );
+    return staffRepo.update(updated);
+}
+```
+
+Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu.
+
+### findStaffById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& staffId`.
+- **Giá trị trả về:** `const User*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User* StaffService::findStaffById(const string& staffId)
+{
+    authService.requirePermission("STAFF_VIEW");
+    const User* staff = staffRepo.findById(staffId);
+    if (staff == nullptr || staff->getRole() != UserRole::STAFF)
+    {
+        return nullptr;
+    }
+    return staff;
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. Quyền `STAFF_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
+
+### findStaffByUsername()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& username`.
+- **Giá trị trả về:** `const User*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User* StaffService::findStaffByUsername(const string& username)
+{
+    authService.requirePermission("STAFF_VIEW");
+    const User* staff = staffRepo.findByUsername(username);
+    if (staff == nullptr || staff->getRole() != UserRole::STAFF)
+    {
+        return nullptr;
+    }
+    return staff;
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. Quyền `STAFF_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
+
+### getStaffAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `const User*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User* StaffService::getStaffAt(int index)
+{
+    authService.requirePermission("STAFF_VIEW");
+    if (index < 0)
+    {
+        return nullptr;
+    }
+    int staffIndex = 0;
+    for (int i = 0; i < staffRepo.count(); i++)
+    {
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. Vòng `for` duyệt lần lượt các phần tử. Quyền `STAFF_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+        const User* user = staffRepo.getAt(i);
+        if (user != nullptr && user->getRole() == UserRole::STAFF)
+        {
+            if (staffIndex == index)
+            {
+                return user;
+            }
+            staffIndex++;
+        }
+    }
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+    return nullptr;
+}
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
+
+### getStaffCount()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+int StaffService::getStaffCount()
+{
+    authService.requirePermission("STAFF_VIEW");
+    int count = 0;
+    for (int i = 0; i < staffRepo.count(); i++)
+    {
+        const User* user = staffRepo.getAt(i);
+        if (user != nullptr && user->getRole() == UserRole::STAFF)
+        {
+            count++;
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. Vòng `for` duyệt lần lượt các phần tử. Quyền `STAFF_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
+
+**Bước 2 — Trả kết quả.**
+
+```cpp
+        }
+    }
+    return count;
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
 ## 7. Quy tắc dữ liệu và lưu trữ
 

@@ -93,77 +93,164 @@ Nhờ đó, hệ thống có thể kiểm tra lại trạng thái tài khoản m
 
 Nếu tài khoản bị vô hiệu hóa, `getCurrentUser()` sẽ trả về `nullptr`, kể cả khi tài khoản đã đăng nhập trước đó.
 
-## 4. Constructor
+## Chi tiết triển khai từng hàm (AuthService.cpp)
 
-```cpp
-AuthService(
-    UserRepository& userRepo,
-    RolePermissionRepository& permissionRepo
-);
+### AuthService()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `UserRepository& userRepo, RolePermissionRepository& permissionRepo) : userRepo(userRepo), permissionRepo(permissionRepo`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
 ```
 
-**Chức năng:** Khởi tạo `AuthService` với hai Repository.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Triển khai:**
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
 
 ```cpp
-AuthService::AuthService(
-    UserRepository& userRepo,
-    RolePermissionRepository& permissionRepo
-)
+AuthService::AuthService(UserRepository& userRepo, RolePermissionRepository& permissionRepo)
     : userRepo(userRepo),
       permissionRepo(permissionRepo)
+{}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### login()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& username, const string& password`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Tra cứu dữ liệu
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
+
+```cpp
+bool AuthService::login(const string& username, const string& password)
 {
+    // Xoa phien dang nhap cu
+    logout();
+    // Kiem tra du lieu da load
+    if (!userRepo.isLoaded())
+    {
+        throw runtime_error("Chua nap du lieu tai khoan");
+    }
+    // Kiem tra thong tin dang nhap
+```
+
+`throw` chuyển lỗi cho bên gọi. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Ngoại lệ được chuyển cho caller xử lý; nó khác với `false` dùng cho trường hợp nghiệp vụ không đạt.
+
+**Bước 2 — Tra cứu dữ liệu.**
+
+```cpp
+    if (username.empty() || password.empty())
+    {
+        return false;
+    }
+    // Tim tai khoan theo username
+    const User* user = userRepo.findByUsername(username);
+    if (user == nullptr)
+    {
+        return false;
+    }
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    // Kiem tra mat khau
+    if (user->getPassword() != password)
+    {
+        return false;
+    }
+    // Kiem tra trang thai tai khoan
+    if (!user->isActive())
+    {
+        return false;
+    }
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 4 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+    // Kiem tra vai tro
+    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
+    {
+        return false;
+    }
+    currentUserId = user->getUserId();
+    return true;
 }
 ```
 
-Constructor không tự động gọi `load()`.
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
 
-Việc nạp dữ liệu phải được thực hiện trước khi sử dụng các chức năng xác thực và phân quyền.
+### logout()
 
-## 5. Các hàm xác thực
+#### A. Tổng quan
 
-### 5.1. login()
+- **Mục đích:** Chuẩn bị và xử lý dữ liệu. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `void`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-```cpp
-bool login(
-    const string& username,
-    const string& password
-);
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
 ```
 
-**Chức năng:** Đăng nhập vào hệ thống.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Quy trình:**
-
-1. Gọi `logout()` để xóa phiên đăng nhập cũ.
-2. Kiểm tra `UserRepository` đã được load.
-3. Kiểm tra username và password không rỗng.
-4. Tìm tài khoản bằng `findByUsername()`.
-5. Kiểm tra mật khẩu.
-6. Kiểm tra tài khoản đang hoạt động.
-7. Kiểm tra vai trò hợp lệ.
-8. Lưu `userId` vào `currentUserId`.
-
-**Kết quả:**
-
-- `true`: Đăng nhập thành công.
-- `false`: Thông tin đăng nhập không hợp lệ, tài khoản không tồn tại, bị khóa hoặc có vai trò không hợp lệ.
-- Ném `runtime_error`: Dữ liệu tài khoản chưa được load.
-
-**Lưu ý:** Phiên đăng nhập cũ bị xóa trước khi kiểm tra thông tin đăng nhập mới.
-
-Phiên bản hiện tại so sánh mật khẩu trực tiếp với dữ liệu trong Repository. Chưa triển khai cơ chế băm mật khẩu.
-
-### 5.2. logout()
-
-```cpp
-void logout();
-```
-
-**Chức năng:** Đăng xuất khỏi hệ thống.
-
-**Triển khai:**
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
 
 ```cpp
 void AuthService::logout()
@@ -172,203 +259,372 @@ void AuthService::logout()
 }
 ```
 
-Sau khi đăng xuất:
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-- `isLoggedIn()` trả về `false`.
-- `getCurrentUser()` trả về `nullptr`.
-- `hasPermission()` trả về `false`.
+### getCurrentUser()
 
-### 5.3. getCurrentUser()
+#### A. Tổng quan
 
-```cpp
-const User* getCurrentUser() const;
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `const User*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Trả kết quả
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
 ```
 
-**Chức năng:** Lấy thông tin tài khoản đang đăng nhập.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Quy trình:**
-
-1. Kiểm tra `currentUserId` không rỗng.
-2. Kiểm tra `UserRepository` đã load.
-3. Tìm tài khoản theo ID.
-4. Kiểm tra tài khoản còn hoạt động.
-5. Kiểm tra vai trò thuộc `ADMIN` hoặc `STAFF`.
-6. Trả về con trỏ `const User*`.
-
-Nếu bất kỳ điều kiện nào không hợp lệ, trả về `nullptr`.
-
-Việc trả về con trỏ `const User*` giúp bên gọi không thể trực tiếp sửa dữ liệu người dùng thông qua kết quả này.
-
-### 5.4. isLoggedIn()
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
-bool isLoggedIn() const;
-```
-
-**Chức năng:** Kiểm tra phiên đăng nhập hiện tại có hợp lệ không.
-
-**Triển khai:**
-
-```cpp
-return getCurrentUser() != nullptr;
-```
-
-Hàm không chỉ kiểm tra `currentUserId` có rỗng hay không mà còn kiểm tra tài khoản có tồn tại và đang hoạt động.
-
-## 6. Các hàm kiểm tra vai trò
-
-### 6.1. isAdmin()
-
-```cpp
-bool isAdmin() const;
-```
-
-Trả về `true` nếu tài khoản hiện tại hợp lệ và có vai trò `UserRole::ADMIN`.
-
-### 6.2. isStaff()
-
-```cpp
-bool isStaff() const;
-```
-
-Trả về `true` nếu tài khoản hiện tại hợp lệ và có vai trò `UserRole::STAFF`.
-
-### 6.3. requireLogin()
-
-```cpp
-const User& requireLogin() const;
-```
-
-**Chức năng:** Yêu cầu tài khoản phải đăng nhập hợp lệ.
-
-- Hợp lệ: Trả về `const User&`.
-- Không hợp lệ: Ném `runtime_error`.
-
-Hàm được tái sử dụng trong `requireAdmin()` và `requirePermission()`.
-
-### 6.4. requireAdmin()
-
-```cpp
-const User& requireAdmin() const;
-```
-
-**Chức năng:** Yêu cầu người dùng phải có vai trò `ADMIN`.
-
-**Quy trình:**
-
-1. Gọi `requireLogin()`.
-2. Kiểm tra `UserRole::ADMIN`.
-3. Nếu không phải Admin, ném `runtime_error`.
-4. Nếu hợp lệ, trả về `const User&`.
-
-**Lưu ý:** `requireAdmin()` kiểm tra vai trò trực tiếp, không sử dụng bảng permission.
-
-Hàm được giữ lại để tương thích với các Service cũ. Khi tích hợp RBAC vào nghiệp vụ, nên thay bằng `requirePermission()` tại những vị trí phù hợp.
-
-## 7. Các hàm phân quyền RBAC
-
-### 7.1. hasPermission()
-
-```cpp
-bool hasPermission(
-    const string& permission
-) const;
-```
-
-**Chức năng:** Kiểm tra tài khoản hiện tại có permission được yêu cầu hay không.
-
-**Quy trình:**
-
-1. Gọi `getCurrentUser()`.
-2. Nếu không có tài khoản hợp lệ, trả về `false`.
-3. Kiểm tra `RolePermissionRepository` đã load.
-4. Xác định vai trò của người dùng.
-5. Chuyển `UserRole` thành chuỗi `ADMIN` hoặc `STAFF`.
-6. Gọi `permissionRepo.hasPermission(role, permission)`.
-7. Trả về kết quả kiểm tra.
-
-**Ví dụ:**
-
-```cpp
-auth.hasPermission("MOVIE_ADD");
-```
-
-Nếu người dùng đang đăng nhập có vai trò `STAFF`, hàm sẽ kiểm tra:
-
-```cpp
-permissionRepo.hasPermission("STAFF", "MOVIE_ADD");
-```
-
-**Các trường hợp trả về `false`:**
-
-- Chưa đăng nhập.
-- Tài khoản không tồn tại hoặc bị vô hiệu hóa.
-- Repository phân quyền chưa load.
-- Vai trò không hợp lệ.
-- Permission không được cấp cho vai trò.
-
-Hàm không tự động cho phép Admin thực hiện mọi thao tác.
-
-Admin cũng phải được cấp permission tương ứng trong file TXT.
-
-### 7.2. requirePermission()
-
-```cpp
-const User& requirePermission(
-    const string& permission
-) const;
-```
-
-**Chức năng:** Yêu cầu tài khoản phải có permission trước khi thực hiện nghiệp vụ.
-
-**Triển khai:**
-
-```cpp
-const User& AuthService::requirePermission(
-    const string& permission
-) const
+const User* AuthService::getCurrentUser() const //lấy thông tin tài khoản đang đăng nhập vào hệ thống
 {
-    const User& user = requireLogin();
-
-    if (!hasPermission(permission))
+    if (currentUserId.empty() || !userRepo.isLoaded())
     {
-        throw runtime_error("Khong co quyen: " + permission);
+        return nullptr;
     }
+    // Tim tai khoan hien tai
+    const User* user = userRepo.findById(currentUserId);
+    if (user == nullptr)
+    {
+```
 
+`nullptr` cho biết không có đối tượng để truy cập. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
+
+**Bước 2 — Trả kết quả.**
+
+```cpp
+        return nullptr;
+    }
+    // Kiem tra tai khoan con hoat dong
+    if (!user->isActive())
+    {
+        return nullptr;
+    }
+    // Kiem tra vai tro
+    if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
+    {
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+        return nullptr;
+    }
     return user;
 }
 ```
 
-**Giải thích:**
+`nullptr` cho biết không có đối tượng để truy cập. `nullptr` báo không có đối tượng phù hợp, để caller kiểm tra trước khi truy cập.
 
-- `requireLogin()`: Đảm bảo tài khoản đang đăng nhập hợp lệ.
-- `hasPermission()`: Kiểm tra permission theo vai trò.
-- `throw runtime_error(...)`: Từ chối thao tác nếu thiếu quyền.
-- `return user`: Trả về tài khoản nếu được phép.
+### isLoggedIn()
 
-**Ví dụ:**
+#### A. Tổng quan
 
-```cpp
-auth.requirePermission("MOVIE_ADD");
-```
+- **Mục đích:** Trả kết quả. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
 
-Nếu người dùng không có quyền, hàm ném ngoại lệ:
+#### B. Quy trình thực hiện
 
 ```text
-Khong co quyen: MOVIE_ADD
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
 ```
 
-Nếu chưa đăng nhập, ngoại lệ đến từ `requireLogin()`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-**Phân biệt hai hàm:**
+**Bước 1 — Trả kết quả.**
 
-| Tiêu chí | `hasPermission()` | `requirePermission()` |
-|---|---|---|
-| Mục đích | Kiểm tra quyền | Bắt buộc có quyền |
-| Kết quả | `bool` | `const User&` |
-| Thiếu quyền | `false` | Ném ngoại lệ |
-| Chưa đăng nhập | `false` | Ném ngoại lệ |
-| Sử dụng | Kiểm tra điều kiện, hiển thị chức năng | Bảo vệ nghiệp vụ trong Service |
+```cpp
+bool AuthService::isLoggedIn() const // kiểm tra hiện tại tài khoản có đăng nhập hợp lệ hay k
+{
+    return getCurrentUser() != nullptr;
+}
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### isAdmin()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả kết quả. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả.**
+
+```cpp
+bool AuthService::isAdmin() const
+{
+    const User* user = getCurrentUser();
+    return user != nullptr && user->getRole() == UserRole::ADMIN;
+}
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### isStaff()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả kết quả. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả.**
+
+```cpp
+bool AuthService::isStaff() const
+{
+    const User* user = getCurrentUser();
+    return user != nullptr && user->getRole() == UserRole::STAFF;
+}
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### requireLogin()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `const User&`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User& AuthService::requireLogin() const //yêu cầu đăng nhập để thực hiện nghiệp vụ
+{
+    const User* user = getCurrentUser();
+    if (user == nullptr) {
+        throw runtime_error("Can dang nhap bang tai khoan dang hoat dong");
+    }
+    return *user;
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `throw` chuyển lỗi cho bên gọi. `requireLogin()` bảo đảm có tài khoản đang đăng nhập trước khi truy vấn hoặc cập nhật. Ngoại lệ được chuyển cho caller xử lý; nó khác với `false` dùng cho trường hợp nghiệp vụ không đạt.
+
+### requireAdmin()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `const User&`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User& AuthService::requireAdmin() const
+{
+    const User& user = requireLogin();
+    if (user.getRole() != UserRole::ADMIN) { 
+       throw runtime_error("Thao tac yeu cau quyen Admin");
+    }
+    return user;
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `throw` chuyển lỗi cho bên gọi. `requireAdmin()` xác nhận vai trò Admin; khi không đạt, hàm dừng bằng ngoại lệ trước khi thay đổi dữ liệu. `requireLogin()` bảo đảm có tài khoản đang đăng nhập trước khi truy vấn hoặc cập nhật. Ngoại lệ được chuyển cho caller xử lý; nó khác với `false` dùng cho trường hợp nghiệp vụ không đạt.
+
+### hasPermission()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& permission`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Từ chối dữ liệu không hợp lệ
+    |
+    v
+Trả kết quả
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
+
+```cpp
+bool AuthService::hasPermission(const string& permission) const
+{
+    const User* user = getCurrentUser();
+    if (user == nullptr || !permissionRepo.isLoaded())
+    {
+        return false;
+    }
+    string role;
+    if (user->getRole() == UserRole::ADMIN)
+    {
+```
+
+`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Từ chối dữ liệu không hợp lệ.**
+
+```cpp
+        role = "ADMIN";
+    }
+    else if (user->getRole() == UserRole::STAFF)
+    {
+        role = "STAFF";
+    }
+    else
+    {
+        return false;
+    }
+```
+
+`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 3 — Trả kết quả.**
+
+```cpp
+    return permissionRepo.hasPermission(role, permission);
+}
+```
+
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
+
+### requirePermission()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& permission`.
+- **Giá trị trả về:** `const User&`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
+
+```cpp
+const User& AuthService::requirePermission(const string& permission) const
+{
+    const User& user = requireLogin();
+    if (!hasPermission(permission))
+    {
+        throw runtime_error("Khong co quyen: " + permission);
+    }
+    return user;
+}
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `throw` chuyển lỗi cho bên gọi. `requireLogin()` bảo đảm có tài khoản đang đăng nhập trước khi truy vấn hoặc cập nhật. Ngoại lệ được chuyển cho caller xử lý; nó khác với `false` dùng cho trường hợp nghiệp vụ không đạt.
 
 ## 8. Cơ chế phân quyền bằng file TXT
 

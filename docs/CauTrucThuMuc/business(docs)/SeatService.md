@@ -50,27 +50,65 @@ Chúng phải tồn tại lâu hơn SeatService.
 
 ---
 
-## 3. Constructor
+## Chi tiết triển khai từng hàm (SeatService.cpp)
+
+### SeatService()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
+- **Tham số:** `SeatRepository& seatRepo, AuthService& authService) : seatRepo(seatRepo), authService(authService`.
+- **Giá trị trả về:** `constructor` (không trả giá trị).
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị và xử lý dữ liệu
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
 
 ```cpp
-SeatService::SeatService(
-    SeatRepository& seatRepo,
-    AuthService& authService
-)
-    : seatRepo(seatRepo),
-      authService(authService)
+SeatService::SeatService(SeatRepository& seatRepo, AuthService& authService)
+    : seatRepo(seatRepo), authService(authService)
 {}
 ```
 
-### Chức năng
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Nhận các đối tượng SeatRepository và AuthService đã được tạo.
+### load()
 
-Không tự tạo Repository, không đọc file và không thực hiện đăng nhập.
+#### A. Tổng quan
 
----
+- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-## 4. Hàm load()
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu đã nạp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu đã nạp.**
 
 ```cpp
 bool SeatService::load()
@@ -79,25 +117,32 @@ bool SeatService::load()
 }
 ```
 
-### Chức năng
+Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
 
-Nạp dữ liệu Seat từ file TXT thông qua SeatRepository.
+### save()
 
-SeatRepository chịu trách nhiệm:
+#### A. Tổng quan
 
-- Đọc dữ liệu.
-- Chuyển đổi thành đối tượng Seat.
-- Tìm Room tương ứng.
-- Liên kết Seat với Room.
-- Rollback nếu liên kết thất bại.
+- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-RoomRepository phải được load trước khi load SeatRepository.
+#### B. Quy trình thực hiện
 
-SeatService không tự thực hiện các thao tác này.
+```text
+Bắt đầu
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
+```
 
----
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-## 5. Hàm save()
+**Bước 1 — Cập nhật qua Repository.**
 
 ```cpp
 bool SeatService::save()
@@ -106,248 +151,236 @@ bool SeatService::save()
 }
 ```
 
-### Chức năng
+Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
 
-Lưu dữ liệu ghế hiện tại xuống file TXT.
+### addSeat()
 
-Việc chuyển đổi và ghi dữ liệu do Repository xử lý.
+#### A. Tổng quan
 
----
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `Seat* seat`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-## 6. Hàm addSeat()
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 bool SeatService::addSeat(Seat* seat)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SEAT_ADD");
     return seatRepo.add(seat);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Repository thực hiện thao tác dữ liệu. Quyền `SEAT_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ.
 
-Thêm ghế mới vào hệ thống.
+### updateSeat()
 
-### Bước 1: Kiểm tra quyền Admin
+#### A. Tổng quan
 
-```cpp
-authService.requireAdmin();
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const Seat& newValues`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Cập nhật qua Repository
+    |
+    v
+Kết thúc
 ```
 
-Nếu không có quyền Admin, hàm ném ngoại lệ.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Bước 2: Gọi SeatRepository
-
-```cpp
-return seatRepo.add(seat);
-```
-
-Repository kiểm tra:
-
-- Dữ liệu Seat hợp lệ.
-- Room tồn tại.
-- Seat chưa được thêm trước đó.
-- Không trùng khóa ghép.
-- Không trùng vị trí.
-- Ghế nằm trong phạm vi Room.
-- Liên kết Room–Seat thành công.
-
-### Kết quả
-
-- `true`: Thêm thành công.
-- `false`: Repository từ chối.
-- Ném `runtime_error`: Không có quyền Admin.
-
-Khi thêm thành công, Repository quản lý vòng đời đối tượng Seat.
-
----
-
-## 7. Hàm updateSeat()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 bool SeatService::updateSeat(const Seat& newValues)
-```
-
-### Chức năng
-
-Cập nhật thông tin của một Seat đã tồn tại.
-
-Trong phiên bản hiện tại, thao tác cập nhật chỉ cho phép thay đổi loại ghế.
-
-### Bước 1: Kiểm tra quyền Admin
-
-```cpp
-authService.requireAdmin();
-```
-
-Chỉ Admin được phép cập nhật ghế.
-
-### Bước 2: Kiểm tra Repository
-
-```cpp
-if (!seatRepo.isLoaded())
 {
-    return false;
+    authService.requirePermission("SEAT_UPDATE");
+    if (!seatRepo.isLoaded())
+    {
+        return false;
+    }
+    Seat* seat = seatRepo.findById(newValues.getRoomId(), newValues.getSeatId());
+    if (seat == nullptr)
+    {
+```
+
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `SEAT_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
+
+**Bước 2 — Cập nhật qua Repository.**
+
+```cpp
+        return false;
+    }
+    return seatRepo.update(newValues);
 }
 ```
 
-Không cho phép cập nhật khi dữ liệu chưa load.
+`false` báo thao tác không thành công. Repository thực hiện thao tác dữ liệu. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
 
-### Bước 3: Tìm ghế hiện tại
+### removeSeat()
 
-```cpp
-Seat* seat = seatRepo.findById(
-    newValues.getRoomId(),
-    newValues.getSeatId()
-);
+#### A. Tổng quan
 
-if (seat == nullptr)
-{
-    return false;
-}
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& roomId, const string& seatId`.
+- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
 ```
 
-Ghế được tìm bằng khóa ghép `roomId|seatId`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-### Bước 4: Gọi Repository cập nhật
-
-```cpp
-return seatRepo.update(newValues);
-```
-
-SeatRepository tiếp tục kiểm tra:
-
-- Dữ liệu Seat hợp lệ.
-- Không thay đổi hàng.
-- Không thay đổi cột.
-- Chỉ cập nhật loại ghế.
-
-### Kết quả
-
-- `true`: Cập nhật thành công.
-- `false`: Ghế không tồn tại hoặc dữ liệu không hợp lệ.
-- Ném `runtime_error`: Không có quyền Admin.
-
-### Vì sao Service không tự kiểm tra vị trí ghế?
-
-Vì `SeatRepository::update()` đã thực hiện việc kiểm tra này.
-
-SeatService không cần lặp lại toàn bộ kiểm tra dữ liệu của Repository.
-
-Tầng Business chỉ bổ sung những quy tắc nghiệp vụ riêng khi cần thiết.
-
----
-
-## 8. Hàm removeSeat()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
-bool SeatService::removeSeat(
-    const string& roomId,
-    const string& seatId
-)
+bool SeatService::removeSeat(const string& roomId, const string& seatId)
 {
-    authService.requireAdmin();
+    authService.requirePermission("SEAT_DELETE");
     return seatRepo.removeById(roomId, seatId);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Repository thực hiện thao tác dữ liệu. Quyền `SEAT_DELETE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Thao tác xóa có thể làm mất đối tượng do Repository sở hữu; các liên kết liên quan cần được Repository xử lý theo đúng ràng buộc của nó.
 
-Xóa một ghế theo Room ID và Seat ID.
+### findSeatById()
 
-### Quy trình
+#### A. Tổng quan
 
-1. Kiểm tra quyền Admin.
-2. Gọi SeatRepository tìm Seat.
-3. Repository xác định Room đang liên kết.
-4. Tháo liên kết Seat khỏi Room.
-5. Xóa Seat khỏi Repository.
-6. Giải phóng bộ nhớ đối tượng Seat.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `const string& roomId, const string& seatId`.
+- **Giá trị trả về:** `const Seat*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-### Kết quả
+#### B. Quy trình thực hiện
 
-- `true`: Xóa thành công.
-- `false`: Không tìm thấy Seat hoặc không thể xóa.
-- Ném `runtime_error`: Không có quyền Admin.
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
 
-**Lưu ý:** Phiên bản hiện tại chưa kiểm tra Seat có được Ticket tham chiếu hay không. Quy tắc này cần được bổ sung khi tích hợp Ticket.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
----
-
-## 9. Hàm findSeatById()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
-const Seat* SeatService::findSeatById(
-    const string& roomId,
-    const string& seatId
-)
+const Seat* SeatService::findSeatById(const string& roomId, const string& seatId)
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.findById(roomId, seatId);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SEAT_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
 
-Tìm ghế theo khóa ghép.
+### getSeatAt()
 
-Yêu cầu người dùng đã đăng nhập.
+#### A. Tổng quan
 
-Admin và Staff đều có quyền tra cứu.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `const Seat*`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
-### Kết quả
+#### B. Quy trình thực hiện
 
-- Trả về `const Seat*` nếu tìm thấy.
-- Trả về `nullptr` nếu không tìm thấy.
-- Ném ngoại lệ nếu chưa đăng nhập.
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
 
-### Vì sao sử dụng const Seat*?
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Để bên gọi không thể sửa trực tiếp dữ liệu Seat thông qua con trỏ trả về.
-
-Mọi thay đổi cần đi qua hàm nghiệp vụ có kiểm tra quyền.
-
----
-
-## 10. Hàm getSeatAt()
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 const Seat* SeatService::getSeatAt(int index)
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.getAt(index);
 }
 ```
 
-### Chức năng
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SEAT_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
-Lấy Seat theo vị trí trong danh sách SeatRepository.
+### getSeatCount()
 
-Trả về `nullptr` nếu vị trí không hợp lệ.
+#### A. Tổng quan
 
-Hàm yêu cầu đăng nhập.
+- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
+- **Tham số:** `không có`.
+- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
+- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
 
----
+#### B. Quy trình thực hiện
 
-## 11. Hàm getSeatCount()
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra quyền
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra quyền.**
 
 ```cpp
 int SeatService::getSeatCount()
 {
-    authService.requireLogin();
+    authService.requirePermission("SEAT_VIEW");
     return seatRepo.count();
 }
 ```
 
-### Chức năng
-
-Lấy tổng số Seat đang được quản lý trong SeatRepository.
-
-Đây là số ghế của toàn bộ các phòng, không phải số ghế của một phòng cụ thể.
-
-Hàm yêu cầu đăng nhập.
-
----
+`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `SEAT_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
 
 ## 12. Luồng hoạt động
 

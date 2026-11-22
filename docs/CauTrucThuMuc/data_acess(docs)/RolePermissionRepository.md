@@ -1,122 +1,233 @@
-# RolePermissionRepository
+# RolePermissionRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`RolePermissionRepository` thuộc tầng Data Access, chịu trách nhiệm đọc bảng phân quyền từ file TXT và kiểm tra một vai trò có được gán một mã quyền hay không. Repository không đăng nhập người dùng, không tự cấp hoặc thu hồi quyền và không trực tiếp xử lý nghiệp vụ.
+`RolePermissionRepository` đọc các dòng `ROLE|PERMISSION` vào `vector<string>`, không dùng `Repository<T>`. `loaded` cho biết bảng quyền hợp lệ; nếu nạp lỗi, `hasPermission()` trả `false`. Repository không đăng nhập người dùng hoặc tự cấp quyền.
 
-**Các file liên quan:**
-- `src/data_access/RolePermissionRepository.h`
-- `src/data_access/RolePermissionRepository.cpp`
-- `src/utils/FileIO.h`, `src/utils/FileIO.cpp`
-- `data/role_permissions.txt`
-- `tests/test_role_permission_repository.cpp`
+Code chỉ chấp nhận vai trò `ADMIN` và `STAFF`, dòng đúng một dấu `|`, không rỗng, không trùng. Nó chưa đối chiếu mã `PERMISSION` với danh sách quyền thiết kế. Dữ liệu được thêm dần khi nạp; nếu lỗi ở dòng sau, vector có thể còn phần đã đọc nhưng `loaded = false` ngăn sử dụng.
 
-## 2. Định dạng dữ liệu
+Mã nguồn: `src/data_access/RolePermissionRepository.cpp` và `src/data_access/RolePermissionRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-Mỗi dòng trong `data/role_permissions.txt` có dạng:
+## 2. Chi tiết từng hàm
+
+### RolePermissionRepository::RolePermissionRepository()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
+
+#### B. Quy trình thực hiện
 
 ```text
-ROLE|PERMISSION
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
 ```
 
-Ví dụ:
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-```text
-ADMIN|MOVIE_ADD
-ADMIN|MOVIE_DELETE
-STAFF|MOVIE_VIEW
-```
-
-- `ROLE`: hiện hỗ trợ `ADMIN` hoặc `STAFF`.
-- `PERMISSION`: mã quyền mà các Service sử dụng để kiểm tra.
-- Không có dòng schema hoặc tiêu đề.
-- Phiên bản đơn giản hiện tại **không đối chiếu** `PERMISSION` với danh sách 31 mã quyền đã thiết kế (gồm `PRICING_VIEW` và `PRICING_UPDATE`); vì vậy mã sai chính tả nhưng đúng định dạng vẫn có thể được nạp.
-
-## 3. Thuộc tính
-
-| Thuộc tính | Kiểu dữ liệu | Mục đích |
-|---|---|---|
-| `filePath` | `string` | Đường dẫn file TXT |
-| `permissions` | `vector<string>` | Lưu nguyên từng dòng `ROLE|PERMISSION` |
-| `loaded` | `bool` | Cho biết lần nạp gần nhất thành công hay không |
-
-Không cần Model riêng hoặc kế thừa `Repository<T>`.
-
-## 4. Các hàm
-
-### 4.1. `RolePermissionRepository(const string& filePath)`
-
-Lưu đường dẫn file và đặt `loaded = false`. Vector ban đầu rỗng.
-
-### 4.2. `bool load()`
-
-1. Đặt `loaded = false`, xóa quyền cũ.
-2. Gọi `FileIO::readLines(filePath, lines)` để đọc file TXT vào `vector<string>`.
-3. Duyệt từng dòng, kiểm tra có đúng một dấu `|`, hai phần không rỗng và vai trò là `ADMIN` hoặc `STAFF`.
-4. Kiểm tra không có dòng trùng nhau.
-5. Lưu các dòng hợp lệ vào `permissions`.
-6. Nếu tất cả đều hợp lệ, đặt `loaded = true` và trả về `true`; ngược lại trả về `false`.
-
-**Lưu ý:** Với cách cài đặt đã thảo luận, `permissions` được thêm dần trong vòng lặp. Nếu một dòng phía sau bị lỗi, vector có thể còn dữ liệu đọc dở, nhưng `loaded = false` nên `hasPermission()` luôn từ chối. Có thể cải thiện bằng vector tạm và chỉ gán vào `permissions` sau khi kiểm tra xong toàn bộ file.
-
-**Lưu ý về xuống dòng:** `FileIO::readLines()` trên nhánh `main` chưa tự loại bỏ ký tự `\r` còn lại khi đọc file CRLF; nên thống nhất xử lý khi tích hợp để tránh sai lệch dữ liệu.
-
-### 4.3. `bool isLoaded() const`
-
-Trả về `loaded` để kiểm tra Repository đã nạp dữ liệu thành công chưa.
-
-### 4.4. `bool hasPermission(const string& role, const string& permission) const`
-
-- Nếu `loaded == false`, trả về `false`.
-- Ghép `role + "|" + permission` thành khóa cần tìm.
-- Duyệt `permissions`; tìm thấy chuỗi khớp hoàn toàn thì trả về `true`, nếu không thì `false`.
-
-Ví dụ: `hasPermission("STAFF", "MOVIE_VIEW")` tìm chuỗi `STAFF|MOVIE_VIEW`.
-
-## 5. Quy tắc và giới hạn
-
-- File không tồn tại hoặc đọc lỗi: `load()` trả về `false`.
-- Dòng thiếu dấu `|`, có nhiều dấu `|`, thiếu role hoặc permission: từ chối.
-- Role khác `ADMIN`/`STAFF`: từ chối.
-- Bản ghi trùng: từ chối.
-- File rỗng: được nạp thành công nhưng không cấp quyền nào.
-- Khi chưa nạp thành công: `hasPermission()` luôn trả về `false` (*fail closed*).
-- Repository chỉ đọc bảng quyền; chưa có `save()`, `grantPermission()` hoặc `revokePermission()`.
-- Việc thay đổi file TXT cần gọi lại `load()` (hoặc khởi động lại ứng dụng nếu ứng dụng chỉ nạp lúc khởi động).
-- Quyền xem dữ liệu của chính mình như `INVOICE_VIEW_OWN` vẫn cần Service kiểm tra chủ sở hữu dữ liệu, không chỉ dựa vào mã quyền.
-
-## 6. Ví dụ sử dụng
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
-RolePermissionRepository repo("data/role_permissions.txt");
-
-if (!repo.load())
+RolePermissionRepository::RolePermissionRepository(const string& filePath)
+    : filePath(filePath), loaded(false)
 {
-    // Khong cho phep thuc hien thao tac can quyen
-    return;
 }
-
-bool allowed = repo.hasPermission("STAFF", "MOVIE_VIEW");
 ```
 
-## 7. Kiểm thử
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-File: `tests/test_role_permission_repository.cpp`.
+### RolePermissionRepository::load()
 
-Các nhóm kiểm thử đã xây dựng: trạng thái trước khi load; nạp file hợp lệ; quyền tồn tại và không tồn tại; nạp lại file; file không tồn tại; thiếu hoặc thừa dấu `|`; role/permission rỗng; role không hợp lệ; dòng trùng; lỗi giữa file; file rỗng.
+#### A. Tổng quan
 
-**Kết quả:** Người thực hiện đã xác nhận hoàn tất chạy test; chưa ghi số `Passed/Failed` vì chưa nhận được phần `SUMMARY` cụ thể.
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, nhánh trả `false`.
 
-Lệnh biên dịch tham khảo tại thư mục gốc (Git Bash):
+#### B. Quy trình thực hiện
 
-```bash
-g++ -std=c++17 -Wall -Wextra -I./src tests/test_role_permission_repository.cpp src/data_access/RolePermissionRepository.cpp src/utils/*.cpp -o test_role_permission.exe
-./test_role_permission.exe
+```text
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
 ```
 
-## 8. Hướng phát triển tiếp theo
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-1. Tích hợp `RolePermissionRepository` vào `AuthService`.
-2. Bổ sung `AuthService::hasPermission()` và `AuthService::requirePermission()`.
-3. Cập nhật các Service để kiểm tra mã quyền cụ thể thay vì chỉ kiểm tra cứng `requireAdmin()`.
-4. Kiểm thử phân quyền ở tầng Service trước khi tích hợp giao diện Qt.
+**Bước 1 — Đọc dữ liệu TXT.**
+
+```cpp
+bool RolePermissionRepository::load()
+{
+    loaded = false;
+    permissions.clear();
+    vector<string> lines;
+    if (!FileIO::readLines(filePath, lines))
+    {
+        return false;
+```
+
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    }
+    for (const string& line : lines)
+    {
+        size_t pos = line.find('|');
+        if (pos == string::npos ||
+            pos == 0 ||
+            pos == line.size() - 1 ||
+            line.find('|', pos + 1) != string::npos)
+        {
+            return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+        }
+        string role = line.substr(0, pos);
+        if (role != "ADMIN" && role != "STAFF")
+        {
+            return false;
+        }
+        for (const string& item : permissions)
+        {
+            if (item == line)
+            {
+                return false;
+            }
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 4 — Xác nhận xử lý thành công.**
+
+```cpp
+        }
+        permissions.push_back(line);
+    }
+    loaded = true;
+    return true;
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+### RolePermissionRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+bool RolePermissionRepository::isLoaded() const
+{
+    return loaded;
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+### RolePermissionRepository::hasPermission()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra một vai trò có mã quyền.
+- **Tham số:** `const string& role, const string& permission`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+bool RolePermissionRepository::hasPermission(const string& role, const string& permission) const
+{
+    if (!loaded)
+    {
+        return false;
+    }
+    string key = role + "|" + permission;
+    for (const string& item : permissions)
+    {
+        if (item == key)
+        {
+            return true;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 2 — Từ chối điều kiện không đạt.**
+
+```cpp
+        }
+    }
+    return false;
+}
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+

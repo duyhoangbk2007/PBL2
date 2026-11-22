@@ -85,7 +85,7 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 - Nhân viên kiểm tra giấy tờ học sinh; ghế đôi loại học sinh yêu cầu cả hai người đủ điều kiện.
 - Lấy tỷ lệ giảm cao nhất đủ điều kiện, không cộng dồn. Tiền giảm = `(giá gốc × tỷ lệ) / 100` và giữ phần thập phân; thực trả = giá gốc − tiền giảm.
 - Điểm mỗi vé = phần nguyên `thực trả / 10000` nếu có thành viên, ngược lại bằng 0. Điểm hóa đơn là tổng điểm từng vé.
-- `PricingService` hiện tính tiền giảm, tiền trả và điểm nhưng chưa cộng/thu hồi điểm trên `Member`, chưa tạo vé hoặc ghi snapshot giá vào `Ticket`; các thao tác này thuộc luồng bán/hủy vé chưa hoàn thiện.
+- `PricingService` tính tiền giảm, tiền trả và điểm; `BookingService` hiện dùng các kết quả này để tạo vé, lưu snapshot giá/điểm, cộng điểm khi bán và thu hồi đúng điểm vé khi hủy. Lưu nhiều TXT vẫn không phải transaction đa file.
 - Thành viên có mã, họ tên, số điện thoại duy nhất và điểm không âm; khởi tạo 0 điểm. Không chỉnh điểm trực tiếp.
 - Chỉ báo cộng điểm thành công khi các lần ghi liên quan đã thành công. Không xóa thành viên đã có hóa đơn.
 - Lưu giá gốc, tiền giảm, thực trả và điểm trên vé tại thời điểm bán; đổi cấu hình không làm thay đổi lịch sử.
@@ -120,6 +120,10 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 - Đếm vé tạo trong kỳ theo thời điểm hóa đơn, vé hủy trong kỳ theo thời điểm hủy. Một vé đôi tính một vé; thống kê số người thì tính hai chỗ.
 - Top phim theo kỳ bán: chỉ lấy vé thuộc hóa đơn lập trong kỳ còn SOLD tại lúc xem; cộng giá thực trả hoặc đếm vé. Chỉ tiêu này có thể khác doanh thu dòng tiền nếu hoàn ở kỳ khác.
 - Xếp hạng phim giảm dần theo chỉ tiêu; bằng nhau thì mã phim tăng dần. Có thể dùng `std::sort` trên kết quả đã lọc.
+
+**Triển khai hiện tại của Bước 11:** `InvoiceService` cho Admin có `INVOICE_VIEW_ALL` xem mọi hóa đơn; Staff có `INVOICE_VIEW_OWN` chỉ xem hóa đơn của mình, tra hóa đơn cũ theo mã nhưng chỉ liệt kê lịch sử trong ngày hiện tại. Trạng thái `ACTIVE`/`PARTIALLY_CANCELLED`/`CANCELLED` suy từ Ticket; tiền hoàn cộng trên vé đã hủy, tiền còn lại bằng tổng gốc trừ tiền hoàn. `ReportService` chỉ cho Admin có `REPORT_VIEW`: tổng bán theo `Invoice::createdAt`, tổng hoàn theo `Ticket::cancelledAt`, doanh thu thuần là hiệu hai tổng; đếm vé bán theo ngày lập hóa đơn kể cả vé sau đó hủy, đếm vé hủy theo ngày hủy. `getMovieRevenue()` và `getTopMovies()` chỉ cộng `paidAmount` của vé còn `SOLD` có hóa đơn lập trong kỳ. `getTopMovies()` gọi `calculateMovieRevenue()` cho từng phim rồi dùng `std::sort()` theo doanh thu giảm dần, hòa theo `movieId` tăng dần; chỉ đưa phim có vé phù hợp vào kết quả.
+
+Các API báo cáo yêu cầu khoảng DateTime hợp lệ `[from, to)`; mã phim không tồn tại hoặc `limit <= 0` là đầu vào sai. Thiếu quyền, Repository chưa load, con trỏ/liên kết vé–hóa đơn–suất sai, tiền từng bản ghi không hợp lệ hoặc dữ liệu hủy sai phải báo ngoại lệ, không trả số liệu giả. **Giới hạn cần xử lý:** code `ReportService` hiện chưa đối chiếu tổng `paidAmount` của toàn bộ Ticket với `Invoice::totalAmount`; test tương ứng đang FAIL. Không coi kiểm thử ReportService hoặc toàn Bước 11 đã hoàn tất.
 
 ## 7. Sửa/xóa và toàn vẹn
 

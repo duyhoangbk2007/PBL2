@@ -101,7 +101,21 @@
 6. Test trường hợp đúng, dữ liệu sai, trùng khóa/vị trí, chưa load, quyền Admin/Staff/chưa đăng nhập, lưu/đọc lại, và quan hệ liên kết.
 7. Cập nhật tài liệu mô tả **đúng code đã triển khai**, không ghi chức năng tương lai là đã hoàn thành.
 
-## 8. Biên dịch và kiểm thử
+## 8. Quy chuẩn bắt buộc cho tài liệu Service và Repository
+
+Mỗi hàm Service hoặc Repository đã triển khai trong `.cpp` hoặc trong header (với template), kể cả hàm private/helper, constructor và destructor, phải có mục riêng trong tài liệu `*Service.md` hoặc `*Repository.md` tương ứng theo đúng ba phần:
+
+1. **Tổng quan:** mục đích, tham số, giá trị trả về và điều kiện quan trọng (constructor ghi rõ không có giá trị trả về).
+2. **Quy trình thực hiện:** sơ đồ code block `text`, dùng `|` và `v` đi xuống, ghi các bước theo thứ tự thực thi và nhánh lỗi chính, không liệt kê từng dòng.
+3. **Giải thích chi tiết từng bước kèm code:** chia toàn bộ code gốc của hàm `.cpp` (hoặc `.h` đối với template) thành các đoạn liên tiếp theo bước, giữ nguyên 100% dòng lệnh, comment và dấu ngoặc; giải thích ngay sau mỗi đoạn. Ghép các đoạn theo thứ tự phải khôi phục được toàn bộ hàm gốc. Không chép nguyên hàm lần thứ hai.
+
+Phần giải thích sau code cần nói rõ đoạn code làm gì và vì sao cần bước đó; ý nghĩa của biến, đối tượng, hàm gọi và giá trị trả về; kết quả khi điều kiện đúng/sai và trạng thái dữ liệu thay đổi. Giải thích cú pháp, thư viện hoặc kỹ thuật C++ khó hiểu ngay nơi sử dụng. Với con trỏ, liên kết đối tượng, rollback, ngoại lệ và lưu file, nêu thứ tự thực hiện và lý do. Đoạn đơn giản chỉ cần giải thích ngắn gọn, tránh diễn đạt lại từng dòng mà không làm rõ bản chất.
+
+Khi tạo mới hoặc sửa bất kỳ Service hay Repository nào, đồng bộ tài liệu cùng lượt thay đổi. Đối chiếu trực tiếp `.h`/`.cpp`, kiểm tra đủ mọi hàm và ghép các đoạn code để xác nhận không thiếu dòng. Giữ nguyên sơ đồ, bố cục và phần giải thích đã tốt khi cập nhật tài liệu cũ; mô tả rõ phần chưa triển khai. Giữ phần tổng quan cấp lớp và các quy tắc nghiệp vụ/phân quyền quan trọng, tránh lặp lại chúng ở từng hàm khi không cần.
+
+Khi chuẩn hóa tài liệu hiện có, **chỉnh sửa và thay thế nội dung tại chỗ**: tích hợp phần hữu ích của bản cũ vào một mục duy nhất cho mỗi hàm, xóa code/sơ đồ/giải thích trùng lặp. Tuyệt đối không nối thêm một bản tài liệu thứ hai hoặc phụ lục lặp lại toàn bộ các hàm ở cuối file.
+
+## 9. Biên dịch và kiểm thử
 
 - Mỗi file test có `main()` riêng; **không** biên dịch nhiều file test cùng lúc.
 - Trong Git Bash, biên dịch toàn bộ `.cpp` trong `src` nhưng loại `main.cpp` để tránh `multiple definition of main`:
@@ -116,7 +130,7 @@ g++ -std=c++17 -I src tests/test_room_service.cpp $(find src -name "*.cpp" ! -na
 - Test dùng file TXT tạm, không ghi đè dữ liệu thật; dọn file sau test.
 - Test phân quyền phải kiểm tra exception từ `requireAdmin`/`requireLogin`.
 
-## 9. Quy trình Git và cộng tác Hoàng–Kiệt
+## 10. Quy trình Git và cộng tác Hoàng–Kiệt
 
 - Mỗi người làm trên nhánh riêng theo quy ước đang sử dụng; không commit trực tiếp vào `main` nếu chưa được thống nhất.
 - Trước khi bắt đầu: cập nhật nhánh, đọc `.h` và thay đổi mới của người kia; không code dựa trên API cũ.
@@ -126,7 +140,7 @@ g++ -std=c++17 -I src tests/test_room_service.cpp $(find src -name "*.cpp" ! -na
 - Khi review: ưu tiên lỗi thực tế và tính tương thích; nêu file/hàm, nguyên nhân, cách sửa tối thiểu. Không biến vấn đề phong cách thành lỗi bắt buộc.
 - Trước khi merge: biên dịch, chạy test liên quan, kiểm tra xung đột, xác minh tài liệu và không làm hỏng các module đã hoàn thành.
 
-## 10. Checklist trước khi bàn giao SeatRepository/SeatService
+## 11. Checklist trước khi bàn giao SeatRepository/SeatService
 
 - [ ] API `.h` đã được hai thành viên thống nhất.
 - [ ] Khóa ghép `(roomId, seatId)` hoạt động đúng.

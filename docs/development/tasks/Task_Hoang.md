@@ -143,11 +143,13 @@ Theo [phân công chính](../PhanCongCongViec.md), Hoàng phụ trách toàn b�
 
 ### Bước 11 – Hủy vé, lịch sử hóa đơn và thống kê
 
-**Phụ trách: Hoàng. Trạng thái: chưa bắt đầu.**
+**Phụ trách: Hoàng. Trạng thái: đang thực hiện; hủy vé và lịch sử hóa đơn đã có test riêng PASS, báo cáo còn một ca FAIL, toàn Bước 11 chưa hoàn thành.**
 
-- [ ] Mở rộng `BookingService` cho hủy/hoàn vé, thu hồi điểm và giữ lịch sử; cung cấp truy vấn hóa đơn.
-- [ ] Triển khai `ReportService` cho tiền bán/hoàn, doanh thu thuần, vé bán/hủy và top phim.
-- [ ] Kiểm thử C++ nghiệp vụ hủy, quyền, lịch sử, thống kê và trường hợp biên; bàn giao hợp đồng dữ liệu cho GUI.
+- [x] `BookingService::cancelTicket()` hủy từng vé, ghi nhận tiền hoàn, thu hồi điểm, giữ Ticket/Invoice lịch sử và lưu TXT; `test_cancel_ticket.cpp` đạt 32 PASS, 0 FAIL ngày 2026-11-22.
+- [x] `InvoiceService` đã có tra cứu theo mã, lọc lịch sử, trạng thái suy từ Ticket, tiền hoàn và tiền còn lại; `test_invoice_service.cpp` từng đạt **37 PASS, 0 FAIL**. Staff chỉ xem hóa đơn mình lập, danh sách giới hạn ngày hiện tại.
+- [x] Đã viết đủ 7 API `ReportService`: tiền bán/hoàn, doanh thu thuần, đếm vé bán/hủy và doanh thu/top phim. `getTopMovies()` gọi `calculateMovieRevenue()` cho từng phim rồi dùng `std::sort()`; chỉ Admin có `REPORT_VIEW`.
+- [ ] Hoàn tất kiểm thử C++ ReportService: lần chạy lại `test_report_service.cpp` đạt **31 PASS, 1 FAIL**. Ca tổng `paidAmount` vé khác `Invoice::totalAmount` chưa được phát hiện; không đánh dấu backend báo cáo đã nghiệm thu.
+- [ ] Kiểm thử tích hợp GUI và bàn giao hợp đồng dữ liệu đầy đủ cho Kiệt; chưa có bằng chứng tích hợp GUI lịch sử/báo cáo.
 
 ### Bước 12 – Xây dựng giao diện Qt
 

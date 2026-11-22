@@ -1,106 +1,168 @@
-# MemberRepository
+# MemberRepository — mã nguồn và quy tắc dữ liệu
 
 ## 1. Tổng quan
 
-`MemberRepository` là lớp thuộc tầng **Data Access**, chịu trách nhiệm quản lý, lưu trữ và truy xuất dữ liệu thành viên (`Member`).
+`MemberRepository` chứa `Repository<Member>` sở hữu các `Member*` và hai `unordered_map` tra theo mã, số điện thoại. Bản đồ chỉ giữ con trỏ mượn; khi nạp/cập nhật phải đồng bộ danh sách và chỉ mục. File dữ liệu là `members.txt` theo đường dẫn constructor.
 
-Lớp sử dụng `Repository<Member>` để tái sử dụng các chức năng quản lý danh sách, đọc và ghi dữ liệu từ file TXT.
+Repository kiểm tra ID, tên, số điện thoại và điểm hợp lệ; quyền người dùng và tích/thu hồi điểm khi bán/hủy vé thuộc Business. Hàm `isValidPhone()` là helper `static` ở phạm vi file; nó được tài liệu hóa cùng các hàm lớp vì tham gia trực tiếp vào kiểm tra dữ liệu.
 
-Ngoài ra, `MemberRepository` sử dụng hai `unordered_map` để tăng tốc độ tìm kiếm thành viên theo mã và số điện thoại.
+Mã nguồn: `src/data_access/MemberRepository.cpp` và `src/data_access/MemberRepository.h`. Các đoạn code dưới đây giữ nguyên nội dung hàm, gồm dòng trống và comment trong hàm. Khi ghép các đoạn của một hàm theo thứ tự, ta thu được đúng định nghĩa gốc.
 
-`MemberRepository` không tự thao tác luồng file: `load()`/`save()` dùng `Repository<Member>` và `FileIO`. Lớp không thực hiện phân quyền hoặc nghiệp vụ tích điểm khi bán/hủy vé.
+## 2. Chi tiết từng hàm
 
-**File liên quan:**
-- `src/data_access/MemberRepository.h`
-- `src/data_access/MemberRepository.cpp`
-- `src/data_access/Repository.h`
-- `src/models/Member.h`
-- `src/models/Member.cpp`
-- `src/utils/Validator.h`
-- File dữ liệu `members.txt` theo đường dẫn truyền vào constructor; không giả định file dữ liệu thật đã tồn tại.
-- `tests/test_member_repository.cpp`
+### isValidPhone() — helper phạm vi file
 
-## 2. Cấu trúc lớp
+#### A. Tổng quan
 
-### 2.1. Thuộc tính
+- **Mục đích:** Kiểm tra số điện thoại đúng định dạng.
+- **Tham số:** `const string& phone`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, nhánh trả `false`.
 
-```cpp
-private:
-    Repository<Member> repo;
-    unordered_map<string, Member*> membersById;
-    unordered_map<string, Member*> membersByPhone;
-```
-
-| Thuộc tính | Chức năng |
-|---|---|
-| `repo` | Quản lý danh sách đối tượng Member, đọc và ghi file TXT. |
-| `membersById` | Tìm kiếm thành viên theo mã `memberId`. |
-| `membersByPhone` | Tìm kiếm thành viên theo số điện thoại. |
-
-Hai `unordered_map` chỉ lưu con trỏ đến các đối tượng do `repo` quản lý, không sở hữu đối tượng và không tự giải phóng bộ nhớ.
-
-### 2.2. Các hàm private
-
-```cpp
-static string getMemberId(Member* member);
-static Member* stringToMember(const string& line);
-static string memberToString(Member* member);
-static bool isValidMember(const Member* member);
-```
-
-Ngoài ra, file `.cpp` có hàm hỗ trợ `static bool isValidPhone(const string& phone)` ở phạm vi file.
-
-### 2.3. Các hàm public
-
-```cpp
-MemberRepository(const string& filePath);
-
-bool load();
-bool save();
-
-bool add(Member* member);
-bool update(const Member& newValues);
-
-Member* findById(const string& memberId);
-Member* findByPhone(const string& phone);
-
-Member* getAt(int index);
-int count();
-bool isLoaded();
-```
-
-## 3. Định dạng dữ liệu
-
-Dữ liệu thành viên được lưu tại đường dẫn TXT truyền cho constructor; trong ứng dụng mục tiêu là `data/members.txt`.
-
-Mỗi dòng tương ứng với một thành viên:
+#### B. Quy trình thực hiện
 
 ```text
-memberId|fullName|phone|points
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
 ```
 
-Ví dụ:
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+static bool isValidPhone(const string& phone)
+{
+    if (phone.size() != 10 || phone[0] != '0')
+    {
+        return false;
+    }
+    for (char c : phone)
+    {
+        if (c < '0' || c > '9')
+        {
+            return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 2 — Xác nhận xử lý thành công.**
+
+```cpp
+        }
+    }
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::isValidMember()
+
+#### A. Tổng quan
+
+- **Mục đích:** Kiểm tra tính hợp lệ của dữ liệu đầu vào.
+- **Tham số:** `const Member* member`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
 
 ```text
-MEM0001|Nguyen Van A|0901234567|100
-MEM0002|Tran Thi B|0912345678|50
-MEM0003|Le Van C|0987654321|0
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Kết thúc
 ```
 
-### Quy tắc dữ liệu
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-| Trường | Quy tắc |
-|---|---|
-| `memberId` | Đúng định dạng `MEMxxxx`, theo `Validator::isValidId()`, duy nhất và không thay đổi. |
-| `fullName` | Hợp lệ theo `Validator::isValidText()`. |
-| `phone` | Gồm 10 chữ số, bắt đầu bằng `0`, không trùng với thành viên khác. |
-| `points` | Số nguyên không âm. Thành viên mới có 0 điểm. |
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
 
-Danh sách hóa đơn (`invoices`) thuộc quan hệ giữa các model, không được lưu trực tiếp trong `members.txt`.
+```cpp
+bool MemberRepository::isValidMember(const Member* member)
+{
+    if (member == nullptr)
+    {
+        return false;
+    }
+    if (!Validator::isValidId(member->getMemberId(), "MEM"))
+    {
+        return false;
+```
 
-## 4. Chi tiết các hàm
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
 
-### 4.1. Constructor
+**Bước 2 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+    }
+    if (!Validator::isValidText(member->getFullName()))
+    {
+        return false;
+    }
+    if (!isValidPhone(member->getPhone()))
+    {
+        return false;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Từ chối điều kiện không đạt.**
+
+```cpp
+    }
+    if (member->getPoints() < 0)
+    {
+        return false;
+    }
+    return true;
+}
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+### MemberRepository::MemberRepository()
+
+#### A. Tổng quan
+
+- **Mục đích:** Khởi tạo Repository và các tham chiếu/callback cần dùng.
+- **Tham số:** `const string& filePath`.
+- **Giá trị trả về:** không có (constructor/destructor).
+- **Điều kiện quan trọng:** Các tham chiếu và callback truyền vào phải còn hợp lệ khi Repository sử dụng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Chuẩn bị giá trị cho bước kế tiếp.**
 
 ```cpp
 MemberRepository::MemberRepository(const string& filePath)
@@ -109,428 +171,902 @@ MemberRepository::MemberRepository(const string& filePath)
 }
 ```
 
-**Chức năng:** Khởi tạo `Repository<Member>` với đường dẫn file và ba hàm callback.
+Danh sách sau dấu `:` khởi tạo thành viên trước thân constructor; tham chiếu được giữ để dùng về sau, còn thân hàm không nạp file.
 
-- `getMemberId`: lấy mã thành viên.
-- `stringToMember`: chuyển chuỗi TXT thành đối tượng Member.
-- `memberToString`: chuyển đối tượng Member thành chuỗi TXT.
+### MemberRepository::getMemberId()
 
-Constructor chưa thực hiện nạp dữ liệu. Cần gọi `load()` trước khi sử dụng các thao tác thêm hoặc cập nhật.
+#### A. Tổng quan
 
-### 4.2. `isValidPhone()`
+- **Mục đích:** Lấy ID của đối tượng làm khóa.
+- **Tham số:** `Member* member`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
 
-```cpp
-static bool isValidPhone(const string& phone);
-```
-
-**Chức năng:** Kiểm tra định dạng số điện thoại.
-
-Điều kiện hợp lệ:
-
-- Đúng 10 ký tự.
-- Ký tự đầu tiên là `0`.
-- Các ký tự đều thuộc khoảng `'0'` đến `'9'`.
-
-Trả về `true` nếu hợp lệ, ngược lại trả về `false`.
-
-Hàm chỉ kiểm tra định dạng, không kiểm tra số điện thoại đã tồn tại hay chưa.
-
-### 4.3. `isValidMember()`
-
-```cpp
-static bool isValidMember(const Member* member);
-```
-
-**Chức năng:** Kiểm tra dữ liệu của một đối tượng Member.
-
-Các điều kiện:
-
-1. Con trỏ không phải `nullptr`.
-2. `memberId` hợp lệ với tiền tố `MEM`.
-3. `fullName` hợp lệ theo `Validator`.
-4. `phone` hợp lệ theo `isValidPhone()`.
-5. `points >= 0`.
-
-Trả về `true` khi tất cả điều kiện hợp lệ.
-
-Hàm không kiểm tra trùng ID hoặc số điện thoại. Những điều kiện này được xử lý trong `load()`, `add()` và `update()`.
-
-### 4.4. `getMemberId()`
-
-```cpp
-static string getMemberId(Member* member);
-```
-
-**Chức năng:** Trả về mã thành viên.
-
-- Con trỏ hợp lệ: trả về `member->getMemberId()`.
-- Con trỏ `nullptr`: trả về chuỗi rỗng.
-
-Hàm được truyền cho `Repository<Member>` để phục vụ các thao tác liên quan đến ID.
-
-### 4.5. `stringToMember()`
-
-```cpp
-static Member* stringToMember(const string& line);
-```
-
-**Chức năng:** Chuyển một dòng TXT thành đối tượng `Member`.
-
-**Quy trình:**
-
-1. Tách chuỗi bằng ký tự `|`.
-2. Kiểm tra có đúng 4 trường.
-3. Kiểm tra chuỗi `points` chỉ chứa chữ số.
-4. Chuyển `points` sang kiểu `int` bằng `stoi()`.
-5. Tạo đối tượng Member bằng `new`.
-6. Kiểm tra đối tượng bằng `isValidMember()`.
-7. Trả về con trỏ Member nếu hợp lệ.
-
-Nếu dữ liệu không hợp lệ, hàm ném `runtime_error`.
-
-Nếu đối tượng đã được cấp phát nhưng kiểm tra thất bại, code giải phóng đối tượng trước khi ném ngoại lệ.
-
-### 4.6. `memberToString()`
-
-```cpp
-static string memberToString(Member* member);
-```
-
-**Chức năng:** Chuyển đối tượng Member thành chuỗi để ghi xuống file TXT.
-
-Hàm kiểm tra dữ liệu bằng `isValidMember()`, sau đó tạo chuỗi:
+#### B. Quy trình thực hiện
 
 ```text
-memberId|fullName|phone|points
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
 ```
 
-Sử dụng `to_string()` để chuyển điểm từ `int` sang `string`.
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-Nếu dữ liệu không hợp lệ, hàm ném `runtime_error`.
-
-### 4.7. `load()`
+**Bước 1 — Trả kết quả cho bên gọi.**
 
 ```cpp
-bool load();
-```
-
-**Chức năng:** Nạp dữ liệu từ file và xây dựng các chỉ mục tìm kiếm.
-
-**Quy trình:**
-
-1. Kiểm tra Repository chưa được load.
-2. Gọi `repo.load()` để đọc dữ liệu.
-3. Xóa nội dung hai map trước khi xây dựng chỉ mục.
-4. Duyệt các thành viên đã nạp.
-5. Kiểm tra trùng ID và số điện thoại.
-6. Thêm con trỏ vào `membersById` và `membersByPhone`.
-7. Trả về `true` khi thành công.
-
-Nếu phát hiện dữ liệu trùng hoặc xảy ra lỗi trong quá trình xây dựng chỉ mục, hàm dọn hai map, gọi `repo.clear()` và ném lại ngoại lệ.
-
-**Lưu ý:** `Repository<Member>` chịu trách nhiệm đọc file và kiểm tra trùng ID. `MemberRepository` bổ sung việc kiểm tra trùng số điện thoại.
-
-### 4.8. `save()`
-
-```cpp
-bool save();
-```
-
-**Chức năng:** Lưu danh sách thành viên xuống file TXT.
-
-**Quy trình:**
-
-1. Kiểm tra Repository đã load.
-2. Gọi `repo.save()`.
-3. Trả về `true` nếu ghi thành công.
-
-Nếu chưa load hoặc ghi thất bại, hàm ném `runtime_error`.
-
-Dữ liệu được ghi thông qua callback `memberToString()`.
-
-### 4.9. `findById()`
-
-```cpp
-Member* findById(const string& memberId);
-```
-
-**Chức năng:** Tìm thành viên theo mã.
-
-Hàm sử dụng:
-
-```cpp
-membersById.find(memberId);
-```
-
-- Tìm thấy: trả về con trỏ `Member*`.
-- Không tìm thấy: trả về `nullptr`.
-
-Độ phức tạp tìm kiếm trung bình: **O(1)**.
-
-### 4.10. `findByPhone()`
-
-```cpp
-Member* findByPhone(const string& phone);
-```
-
-**Chức năng:** Tìm thành viên theo số điện thoại.
-
-Hàm sử dụng `membersByPhone` để tra cứu.
-
-- Tìm thấy: trả về `Member*`.
-- Không tìm thấy: trả về `nullptr`.
-
-Độ phức tạp tìm kiếm trung bình: **O(1)**.
-
-### 4.11. `getAt()`
-
-```cpp
-Member* getAt(int index);
-```
-
-**Chức năng:** Lấy thành viên theo vị trí trong danh sách.
-
-Gọi trực tiếp:
-
-```cpp
-return repo.getAt(index);
-```
-
-Nếu vị trí không hợp lệ, trả về `nullptr` theo cách triển khai của `Repository<Member>`.
-
-### 4.12. `count()`
-
-```cpp
-int count();
-```
-
-**Chức năng:** Trả về tổng số thành viên đang được quản lý.
-
-```cpp
-return repo.count();
-```
-
-### 4.13. `isLoaded()`
-
-```cpp
-bool isLoaded();
-```
-
-**Chức năng:** Kiểm tra Repository đã nạp dữ liệu hay chưa.
-
-```cpp
-return repo.isLoaded();
-```
-
-### 4.14. `add()`
-
-```cpp
-bool add(Member* member);
-```
-
-**Chức năng:** Thêm một thành viên mới.
-
-**Điều kiện:**
-
-1. Repository đã load.
-2. Member hợp lệ.
-3. Điểm ban đầu bằng 0.
-4. ID chưa tồn tại.
-5. Số điện thoại chưa tồn tại.
-6. Con trỏ chưa được Repository quản lý.
-
-**Quy trình:**
-
-1. Kiểm tra toàn bộ điều kiện.
-2. Lấy ID và số điện thoại.
-3. Thêm con trỏ vào `membersById`.
-4. Thêm con trỏ vào `membersByPhone`.
-5. Gọi `repo.add(member)`.
-6. Trả về `true` nếu thành công.
-
-Nếu thêm vào map thứ hai hoặc Repository thất bại, các chỉ mục đã thêm được hoàn tác.
-
-**Giá trị trả về:**
-
-- `true`: Thêm thành công.
-- `false`: Không thỏa mãn điều kiện hoặc `repo.add()` trả về `false`.
-- Ngoại lệ: Có lỗi hệ thống trong quá trình thao tác.
-
-**Quản lý bộ nhớ:**
-
-Khi thêm thành công, `Repository<Member>` nhận quyền sở hữu con trỏ và chịu trách nhiệm giải phóng đối tượng.
-
-Nếu `add()` trả về `false`, đối tượng chưa được chuyển quyền sở hữu và bên gọi phải quản lý bộ nhớ của nó.
-
-### 4.15. `update()`
-
-```cpp
-bool update(const Member& newValues);
-```
-
-**Chức năng:** Cập nhật họ tên và số điện thoại của thành viên.
-
-**Điều kiện:**
-
-1. Repository đã load.
-2. Dữ liệu mới hợp lệ.
-3. ID thành viên tồn tại.
-4. Điểm không thay đổi.
-5. Số điện thoại mới không thuộc thành viên khác.
-
-**Quy trình:**
-
-1. Tìm thành viên theo ID.
-2. Kiểm tra điểm và số điện thoại mới.
-3. Lưu số điện thoại cũ.
-4. Nếu số điện thoại thay đổi, thêm khóa mới vào `membersByPhone`.
-5. Cập nhật họ tên và số điện thoại của đối tượng.
-6. Xóa khóa số điện thoại cũ khỏi map.
-7. Trả về `true`.
-
-Nếu điều kiện không hợp lệ, trả về `false`.
-
-Nếu phát sinh ngoại lệ trong quá trình cập nhật, code hiện tại có xử lý hoàn tác chỉ mục số điện thoại mới. Việc bảo đảm hoàn tác đầy đủ trạng thái đối tượng trong mọi tình huống ngoại lệ cần được tiếp tục rà soát.
-
-## 5. Quy tắc nghiệp vụ
-
-### 5.1. Mã thành viên
-
-- Mã có tiền tố `MEM`.
-- Mã phải duy nhất.
-- Không được thay đổi mã sau khi tạo.
-- Repository từ chối mã trùng với thành viên đang được nạp. Chưa có cơ chế riêng để kiểm tra mã từng được cấp nhưng không còn trong file.
-
-### 5.2. Số điện thoại
-
-- Đúng định dạng quy định.
-- Không được trùng giữa các thành viên.
-- Được phép cập nhật nếu số mới chưa thuộc thành viên khác.
-- Khi thay đổi phải cập nhật đồng bộ `membersByPhone`.
-
-### 5.3. Điểm thành viên
-
-- Không được âm.
-- Thành viên mới có 0 điểm.
-- `update()` không cho phép sửa điểm.
-- Nghiệp vụ cộng/thu hồi điểm khi bán/hủy vé chưa triển khai ở B08; cần phối hợp với vé và hóa đơn khi các thành phần đó có mã.
-
-### 5.4. Xóa thành viên
-
-Phiên bản hiện tại chưa cung cấp `removeById()`.
-
-Theo quy tắc nghiệp vụ, không được xóa thành viên đã có hóa đơn. Việc kiểm tra tham chiếu hóa đơn cần được thiết kế trước khi bổ sung chức năng xóa.
-
-## 6. Xử lý lỗi
-
-| Trường hợp | Cách xử lý |
-|---|---|
-| Load khi đã load | Ném `runtime_error` |
-| Không đọc được file | Ném `runtime_error` |
-| File sai định dạng | Ném `runtime_error` |
-| Trùng ID hoặc phone khi load | Ném `runtime_error`, dọn dữ liệu nạp lỗi |
-| Save khi chưa load | Ném `runtime_error` |
-| Ghi file thất bại | Ném `runtime_error` |
-| Add dữ liệu không hợp lệ | Trả về `false` |
-| Add trùng ID hoặc phone | Trả về `false` |
-| Update ID không tồn tại | Trả về `false` |
-| Update trùng phone | Trả về `false` |
-| Update thay đổi điểm | Trả về `false` |
-
-`add()` và `update()` có thể ném ngoại lệ hệ thống khi thao tác với các cấu trúc dữ liệu.
-
-## 7. Quản lý bộ nhớ và đồng bộ dữ liệu
-
-`Repository<Member>` sở hữu các đối tượng Member đã thêm thành công hoặc đã nạp từ file.
-
-Hai map chỉ lưu địa chỉ của các đối tượng đó.
-
-Các nguyên tắc cần tuân thủ:
-
-- Không tự `delete` con trỏ đã thuộc Repository.
-- Không lưu một đối tượng nhiều lần trong Repository.
-- Không để map chứa con trỏ không còn hợp lệ.
-- Khi thêm thất bại, hoàn tác các chỉ mục đã thêm.
-- Khi đổi số điện thoại, xóa khóa cũ sau khi cập nhật thành công.
-- Không tự ý thay đổi ID hoặc số điện thoại của đối tượng thông qua con trỏ bên ngoài Repository, vì có thể làm chỉ mục không đồng bộ.
-
-Việc cập nhật các thuộc tính có ảnh hưởng đến chỉ mục phải được thực hiện thông qua phương thức quản lý thích hợp.
-
-## 8. Kiểm thử
-
-**File:** `tests/test_member_repository.cpp`
-
-**Kết quả biên dịch và chạy lại trên nhánh hiện tại ngày 2026-11-18:**
-
-```text
-===== SUMMARY =====
-Passed: 63
-Failed: 0
-Total: 63
-```
-
-### Các nhóm kiểm thử
-
-| Nhóm | Nội dung |
-|---|---|
-| Load | File rỗng, file hợp lệ, load hai lần |
-| Truy xuất | `findById`, `findByPhone`, `getAt`, `count`, `isLoaded` |
-| Add | Thành công, trùng ID, trùng phone, dữ liệu không hợp lệ |
-| Update | Đổi họ tên, đổi phone, giữ phone cũ, trùng phone, thay đổi điểm |
-| Save | Save và load lại, save trước load |
-| File lỗi | Trùng ID, trùng phone, thiếu trường, điểm sai định dạng, điểm tràn số |
-| Trạng thái | Kiểm tra dữ liệu và chỉ mục sau thao tác thất bại |
-
-Kết quả PASS xác nhận các trường hợp đã chạy đều đạt. Chưa khẳng định đã bao phủ mọi tình huống lỗi cấp phát bộ nhớ, lỗi ghi file giữa chừng hoặc ngoại lệ trong setter.
-
-### Lệnh biên dịch và chạy test
-
-Sử dụng PowerShell tại thư mục gốc dự án:
-
-```powershell
-$src = Get-ChildItem src -Recurse -Filter *.cpp |
-    Where-Object { $_.Name -ne "main.cpp" } |
-    ForEach-Object { $_.FullName }
-
-g++ -std=c++17 -Wall -Wextra -I . -I src $src tests/test_member_repository.cpp -o test_member_repository.exe
-
-if ($LASTEXITCODE -eq 0) {
-    .\test_member_repository.exe
+string MemberRepository::getMemberId(Member* member)
+{
+    if (member == nullptr)
+    {
+        return "";
+    }
+    return member->getMemberId();
 }
 ```
 
-## 9. Phạm vi trách nhiệm
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
 
-### MemberRepository chịu trách nhiệm
+### MemberRepository::stringToMember()
 
-- Đọc và ghi dữ liệu thành viên.
-- Kiểm tra định dạng dữ liệu.
-- Kiểm tra trùng mã và số điện thoại.
-- Thêm, cập nhật và tìm kiếm thành viên.
-- Duy trì tính nhất quán giữa Repository và các chỉ mục.
+#### A. Tổng quan
 
-### MemberRepository không chịu trách nhiệm
+- **Mục đích:** Chuyển một dòng TXT thành đối tượng Model.
+- **Tham số:** `const string& line`.
+- **Giá trị trả về:** `Member*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
 
-- Kiểm tra quyền Admin hoặc Staff.
-- Tính điểm từ số tiền thanh toán.
-- Cộng hoặc thu hồi điểm khi bán/hủy vé.
-- Thực hiện giao dịch lưu đồng thời vé, hóa đơn và điểm.
-- Xây dựng giao diện quản lý thành viên.
-- Tự động liên kết danh sách hóa đơn của thành viên.
+#### B. Quy trình thực hiện
 
-`MemberService` hiện xử lý phân quyền và thêm/sửa/tra cứu thành viên. Nghiệp vụ điểm, hóa đơn và liên kết khi bán/hủy vé còn chờ `BookingService` cùng các thành phần giao dịch liên quan.
+```text
+Bắt đầu
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (lỗi: throw)
+    |
+    v
+Kiểm tra dữ liệu hợp lệ
+    |
+    v
+Trả kết quả cho bên gọi (lỗi: throw)
+    |
+    v
+Kết thúc
+```
 
-## 10. Kết luận
+#### C. Giải thích chi tiết từng bước kèm code C++
 
-`MemberRepository` đã có các chức năng cơ bản để quản lý dữ liệu thành viên:
+**Bước 1 — Duyệt và đối chiếu từng phần tử.**
 
-- Nạp và lưu dữ liệu TXT.
-- Thêm thành viên mới.
-- Cập nhật họ tên và số điện thoại.
-- Tìm kiếm theo ID và số điện thoại.
-- Kiểm tra dữ liệu hợp lệ và trùng lặp.
-- Đồng bộ các chỉ mục tìm kiếm.
+```cpp
+Member* MemberRepository::stringToMember(const string& line)
+{
+    vector<string> fields;
+    size_t start = 0;
+    while (true)
+    {
+        size_t pos = line.find('|', start);
+        if (pos == string::npos)
+        {
+            fields.push_back(line.substr(start));
+```
 
-**Trạng thái:** Đã triển khai và kiểm thử riêng đạt **63 PASS, 0 FAIL**. `MemberService` đã có test riêng đạt **69 PASS, 0 FAIL**; cả hai kết quả chưa xác nhận toàn B08 đã hoàn thành.
+Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
 
-**Bước tiếp theo:** Xem [MemberService](<../business(docs)/MemberService.md>) để tích hợp API đã triển khai; kiểm chứng thêm nghiệp vụ điểm và quan hệ hóa đơn/vé khi các thành phần giao dịch sẵn sàng.
+**Bước 2 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+            break;
+        }
+        fields.push_back(line.substr(start, pos - start));
+        start = pos + 1;
+    }
+    if (fields.size() != 4)
+    {
+        throw runtime_error("Sai so luong truong Member");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 3 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    }
+    if (fields[3].empty())
+    {
+        throw runtime_error("Points Member khong hop le");
+    }
+    // kiểm tra points chỉ gồm chữ số
+    for (char c : fields[3])
+    {
+        if (c < '0' || c > '9')
+        {
+            throw runtime_error("Points Member khong hop le");
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 4 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+        }
+    }
+    int points;
+    //chuyển chuỗi points thành số nguyên
+    try
+    {
+        size_t pos = 0;
+        points = stoi(fields[3], &pos);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. Phép parse đổi chuỗi TXT sang trường có kiểu; dữ liệu không chuyển được phải bị từ chối trước khi tạo đối tượng hợp lệ.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+        if (pos != fields[3].size())
+        {
+            throw runtime_error("Points Member khong hop le");
+        }
+    }
+    catch (const exception&)
+    {
+        throw runtime_error("Points Member khong hop le");
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 6 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+    }
+    Member* member = new Member(
+        fields[0],
+        fields[1],
+        fields[2],
+        points
+    );
+    if (!isValidMember(member))
+    {
+        delete member;
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `new` cấp phát Model trên heap. Cho đến khi Repository nhận thành công, nhánh lỗi hoặc caller vẫn phải chịu trách nhiệm giải phóng. `delete` giải phóng đối tượng; không được dùng lại con trỏ sau lệnh này.
+
+**Bước 7 — Trả kết quả cho bên gọi.**
+
+```cpp
+        throw runtime_error("Du lieu Member khong hop le");
+    }
+    return member;
+}
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+### MemberRepository::memberToString()
+
+#### A. Tổng quan
+
+- **Mục đích:** Chuyển đối tượng Model thành một dòng TXT.
+- **Tham số:** `Member* member`.
+- **Giá trị trả về:** `string`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** dữ liệu hợp lệ, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (lỗi: throw)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+string MemberRepository::memberToString(Member* member)
+{
+    if (!isValidMember(member))
+    {
+        throw runtime_error("Member khong hop le khi ghi file");
+    }
+    return member->getMemberId() + "|" +
+           member->getFullName() + "|" +
+           member->getPhone() + "|" +
+           to_string(member->getPoints());
+```
+
+Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::load()
+
+#### A. Tổng quan
+
+- **Mục đích:** Nạp và kiểm tra dữ liệu từ TXT vào RAM.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Đọc dữ liệu TXT (lỗi: throw)
+    |
+    v
+Duyệt và đối chiếu từng phần tử
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục (lỗi: throw)
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Xóa dữ liệu nạp dở khi kiểm tra thất bại
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Đọc dữ liệu TXT.**
+
+```cpp
+bool MemberRepository::load()
+{
+    if (repo.isLoaded())
+    {
+        throw runtime_error("Du lieu Member da duoc nap: " + repo.getFilePath());
+    }
+    if (!repo.load())
+    {
+        throw runtime_error("Khong the nap file Member: " + repo.getFilePath());
+```
+
+Lời gọi nạp đọc TXT vào bộ nhớ. Nếu trả `false`, hàm dừng ở nhánh lỗi; dữ liệu chỉ được xem là dùng được sau khi các bước kiểm tra tiếp theo hoàn tất. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 2 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    }
+    // xây dựng 2 map
+    membersById.clear();
+    membersByPhone.clear();
+    try
+    {
+        for (int i = 0; i < repo.count(); i++)
+        {
+            Member* member = repo.getAt(i);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 3 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+            if (membersById.find(member->getMemberId()) != membersById.end() ||
+                membersByPhone.find(member->getPhone()) != membersByPhone.end())
+            {
+                throw runtime_error(
+                    "Trung ID hoac phone trong file " +
+                    repo.getFilePath() +
+                    " tai dong " + to_string(i + 1)
+                );
+            }
+```
+
+`throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 4 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+            membersById[member->getMemberId()] = member;
+            membersByPhone[member->getPhone()] = member;
+        }
+    }
+    catch (...)
+    {
+        membersById.clear();
+        membersByPhone.clear();
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 5 — Xóa dữ liệu nạp dở khi kiểm tra thất bại.**
+
+```cpp
+        repo.clear();
+        throw;
+    }
+    return true;
+}
+```
+
+`repo.clear()` giải phóng các đối tượng vừa nạp và đặt lại trạng thái; vì dữ liệu chưa qua hết kiểm tra, không được để chúng tiếp tục xuất hiện như bản ghi hợp lệ.
+
+### MemberRepository::save()
+
+#### A. Tổng quan
+
+- **Mục đích:** Ghi trạng thái hiện tại ra TXT.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, ngoại lệ.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Ghi dữ liệu TXT (lỗi: throw)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Ghi dữ liệu TXT.**
+
+```cpp
+bool MemberRepository::save()
+{
+    if (!repo.isLoaded())
+    {
+        throw runtime_error("Chua nap du lieu Member");
+    }
+    if (!repo.save())
+    {
+        throw runtime_error("Khong the ghi file Member: " + repo.getFilePath());
+```
+
+Lời gọi ghi chuyển trạng thái hiện tại ra TXT. Kết quả ghi quyết định giá trị trả về; một lời gọi này không bảo đảm các file Repository khác cùng được cập nhật. Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.
+
+**Bước 2 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::findById()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tra đối tượng theo ID.
+- **Tham số:** `const string& memberId`.
+- **Giá trị trả về:** `Member*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+Member* MemberRepository::findById(const string& memberId)
+{
+    auto it = membersById.find(memberId);
+    if (it == membersById.end())
+    {
+        return nullptr;
+    }
+    return it->second;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::findByPhone()
+
+#### A. Tổng quan
+
+- **Mục đích:** Tra thành viên theo số điện thoại.
+- **Tham số:** `const string& phone`.
+- **Giá trị trả về:** `Member*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** con trỏ rỗng.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+Member* MemberRepository::findByPhone(const string& phone)
+{
+    auto it = membersByPhone.find(phone);
+    if (it == membersByPhone.end())
+    {
+        return nullptr;
+    }
+    return it->second;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 2 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::getAt()
+
+#### A. Tổng quan
+
+- **Mục đích:** Lấy phần tử theo chỉ số.
+- **Tham số:** `int index`.
+- **Giá trị trả về:** `Member*`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+Member* MemberRepository::getAt(int index)
+{
+    return repo.getAt(index);
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::count()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả số phần tử đang quản lý.
+- **Tham số:** không có.
+- **Giá trị trả về:** `int`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** không có điều kiện đặc biệt ngoài các câu lệnh bên dưới.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+int MemberRepository::count()
+{
+    return repo.count();
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::isLoaded()
+
+#### A. Tổng quan
+
+- **Mục đích:** Trả trạng thái đã nạp.
+- **Tham số:** không có.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Trả kết quả cho bên gọi
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Trả kết quả cho bên gọi.**
+
+```cpp
+bool MemberRepository::isLoaded()
+{
+    return repo.isLoaded();
+}
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó.
+
+### MemberRepository::add()
+
+#### A. Tổng quan
+
+- **Mục đích:** Thêm đối tượng hợp lệ vào Repository.
+- **Tham số:** `Member* member`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Kiểm tra dữ liệu hợp lệ (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Duyệt và đối chiếu từng phần tử (không đạt: false)
+    |
+    v
+Chuẩn bị giá trị cho bước kế tiếp
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Bắt lỗi và khôi phục trạng thái (không đạt: false)
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Kiểm tra dữ liệu hợp lệ.**
+
+```cpp
+bool MemberRepository::add(Member* member)
+{
+    if (!repo.isLoaded() || !isValidMember(member))
+    {
+        return false;
+    }
+    if (member->getPoints() != 0)
+    {
+        return false;
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+    if (findById(member->getMemberId()) != nullptr)
+    {
+        return false;
+    }
+    if (findByPhone(member->getPhone()) != nullptr)
+    {
+        return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Duyệt và đối chiếu từng phần tử.**
+
+```cpp
+    }
+    // kiểm tra nếu có thành viên rồi thì không thêm nữa
+    for (int i = 0; i < repo.count(); i++)
+    {
+        if (repo.getAt(i) == member)
+        {
+            return false;
+        }
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy. Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định tiếp tục, bỏ qua hay dừng khi gặp dữ liệu sai.
+
+**Bước 4 — Chuẩn bị giá trị cho bước kế tiếp.**
+
+```cpp
+    }
+    string memberId = member->getMemberId();
+    string phone = member->getPhone();
+    // Thêm vào 2 map
+    membersById[memberId] = member;
+    try
+    {
+        membersByPhone[phone] = member;
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    }
+    catch (...)
+    {
+        membersById.erase(memberId);
+        throw;
+    }
+
+    try
+    {
+        if (!repo.add(member))
+        {
+            membersById.erase(memberId);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 6 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+            membersByPhone.erase(phone);
+            return false;
+        }
+    }
+    catch (...)
+    {
+        membersById.erase(memberId);
+        membersByPhone.erase(phone);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 7 — Xác nhận xử lý thành công.**
+
+```cpp
+        throw;
+    }
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+### MemberRepository::update()
+
+#### A. Tổng quan
+
+- **Mục đích:** Cập nhật đối tượng đang quản lý.
+- **Tham số:** `const Member& newValues`.
+- **Giá trị trả về:** `bool`; xem các nhánh `return` bên dưới.
+- **Điều kiện quan trọng:** trạng thái nạp, con trỏ rỗng, dữ liệu hợp lệ, nhánh trả `false`.
+
+#### B. Quy trình thực hiện
+
+```text
+Bắt đầu
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Từ chối điều kiện không đạt (không đạt: false)
+    |
+    v
+Tra cứu đối tượng theo khóa (không đạt: false)
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục
+    |
+    v
+Bắt lỗi và khôi phục trạng thái
+    |
+    v
+Kiểm tra điều kiện trước khi tiếp tục
+    |
+    v
+Xác nhận xử lý thành công
+    |
+    v
+Kết thúc
+```
+
+#### C. Giải thích chi tiết từng bước kèm code C++
+
+**Bước 1 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+bool MemberRepository::update(const Member& newValues)
+{
+    if (!repo.isLoaded() || !isValidMember(&newValues))
+    {
+        return false;
+    }
+
+    Member* member = findById(newValues.getMemberId());
+```
+
+Trạng thái `loaded` quyết định Repository đã sẵn sàng chưa; nhánh chưa nạp dừng trước khi thao tác dựa trên dữ liệu đó. Điều kiện hợp lệ ngăn dữ liệu sai định dạng hoặc ngoài giới hạn đi vào danh sách đang quản lý. `return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 2 — Từ chối điều kiện không đạt.**
+
+```cpp
+
+    if (member == nullptr)
+    {
+        return false;
+    }
+
+    // Khong cho phep thay doi diem truc tiep
+    if (member->getPoints() != newValues.getPoints())
+    {
+        return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 3 — Tra cứu đối tượng theo khóa.**
+
+```cpp
+    }
+
+    // Kiem tra trung so dien thoai
+    Member* existingMember = findByPhone(newValues.getPhone());
+
+    if (existingMember != nullptr && existingMember != member)
+    {
+        return false;
+```
+
+`return false` kết thúc ngay nhánh không đạt; các thao tác cập nhật phía sau không chạy.
+
+**Bước 4 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+    }
+
+    string oldPhone = member->getPhone();
+    string newPhone = newValues.getPhone();
+
+    // Them khoa moi vao map truoc
+    if (oldPhone != newPhone)
+    {
+        membersByPhone[newPhone] = member;
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 5 — Bắt lỗi và khôi phục trạng thái.**
+
+```cpp
+    }
+
+    try
+    {
+        member->setFullName(newValues.getFullName());
+        member->setPhone(newPhone);
+    }
+    catch (...)
+    {
+        if (oldPhone != newPhone)
+        {
+            membersByPhone.erase(newPhone);
+```
+
+`try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
+
+**Bước 6 — Kiểm tra điều kiện trước khi tiếp tục.**
+
+```cpp
+        }
+        throw;
+    }
+
+    // Xoa khoa cu sau khi cap nhat thanh cong
+    if (oldPhone != newPhone)
+    {
+        membersByPhone.erase(oldPhone);
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+**Bước 7 — Xác nhận xử lý thành công.**
+
+```cpp
+    }
+
+    return true;
+}
+```
+
+Đoạn này chuẩn bị hoặc trả giá trị theo code. Nó chỉ đổi RAM hoặc TXT nếu có lời gọi cập nhật hay ghi dữ liệu tương ứng.
+
+
