@@ -1,5 +1,6 @@
 #include "ApplicationContext.h"
 #include "BookingAdapter.h"
+#include "BookingView.h"
 #include "MainWindow.h"
 #include "PricingManagementView.h"
 #include <QApplication>
@@ -282,6 +283,22 @@ void run()
     require(readFile(files.filePath("invoices.txt")) == savedInvoices &&
             readFile(files.filePath("tickets.txt")) == savedTickets,
             "duplicate checkout submitted");
+    choose(movies, "MOV0001");
+    choose(shows, "SHW0001");
+    proceed();
+    cell(0, 2);
+    require(types->rowCount() == 1 && types->item(0, 0)->text() == "A03", "refresh setup seat");
+    std::string externalInvoice;
+    require(ctx.booking.createBooking("SHW0001", {{"A03", TicketType::REGULAR}}, "", true, true,
+                                      externalInvoice) && !externalInvoice.empty(), "external sale fixture");
+    auto* bookingView = booking->findChild<BookingView*>();
+    require(bookingView, "booking view cast");
+    bookingView->refresh();
+    require(types->rowCount() == 0 &&
+            grid->model()->index(0, 2).data(Qt::ToolTipRole).toString().contains("đã bán"),
+            "refresh restored sold seat");
+    cell(0, 2);
+    require(types->rowCount() == 0, "sold seat selectable after refresh");
     window.findChild<QPushButton*>("logout")->click();
     QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     login(window, "cashier", secret);

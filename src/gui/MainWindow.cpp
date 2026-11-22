@@ -246,8 +246,25 @@ QWidget* MainWindow::createSidebar()
         items->addWidget(button);
         QWidget* content = nullptr;
         const bool catalog = page.permission == "MOVIE_VIEW" || page.permission == "ROOM_VIEW" || page.permission == "SEAT_VIEW" || page.permission == "SHOWTIME_VIEW";
+        const bool transactionPage =
+            page.permission == "TICKET_SELL" ||
+            page.permission == "INVOICE_VIEW_OWN" ||
+            page.permission == "TICKET_CANCEL" ||
+            page.permission == "REPORT_VIEW";
         if (catalog && !context.catalogError.isEmpty()) {
             content = label(context.catalogError, "description");
+        } else if (transactionPage &&
+                !context.catalogError.isEmpty()) {
+            content = label(context.catalogError, "description");
+        } else if (page.permission == "TICKET_SELL" &&
+                !context.memberError.isEmpty()) {
+            content = label(context.memberError, "description");
+        } else if (page.permission == "TICKET_SELL" &&
+                !context.transactionError.isEmpty()) {
+            content = label(context.transactionError, "description");
+        } else if (page.permission == "TICKET_SELL" &&
+                !context.pricingError.isEmpty()) {
+            content = label(context.pricingError, "description");
         } else if (page.permission == "MOVIE_VIEW") {
             auto* movies = new MovieManagementView(context.movies, auth);
             content = movies;

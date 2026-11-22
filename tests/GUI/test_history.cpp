@@ -101,17 +101,23 @@ void exerciseLiveInvoices()
           saleLines->item(1, 5)->text() == "CANCELLED" &&
           saleLines->cellWidget(0, 6) && !saleLines->cellWidget(1, 6), "live cancellation rows");
     bool opened = false;
+    bool retryReady = false;
     QTimer::singleShot(0, [&] {
         auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
         if (!dialog) { return; }
         opened = true;
-        dialog->findChild<QPlainTextEdit*>()->setPlainText("Khach doi lich");
+        auto* reason = dialog->findChild<QPlainTextEdit*>();
+        auto* submit = button(dialog, "Xác nhận hủy vé");
+        reason->setPlainText("Ly do|khong hop le");
         dialog->findChild<QCheckBox*>()->setChecked(true);
-        button(dialog, "Xác nhận hủy vé")->click();
+        submit->click();
+        retryReady = submit->isEnabled();
+        reason->setPlainText("Khach doi lich");
+        submit->click();
         QTimer::singleShot(0, dialog, &QDialog::reject);
     });
     button(&cancellation, "Hủy vé")->click();
-    check(opened && context.invoices.getInvoiceStatus("INV0001") == InvoiceStatus::CANCELLED &&
+    check(opened && retryReady && context.invoices.getInvoiceStatus("INV0001") == InvoiceStatus::CANCELLED &&
           context.invoices.getRefundAmount("INV0001") == 150000 &&
           !saleLines->cellWidget(0, 6), "cancelTicket did not persist and refresh");
     context.auth.logout();

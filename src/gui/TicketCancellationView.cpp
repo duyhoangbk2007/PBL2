@@ -101,16 +101,18 @@ void TicketCancellationView::confirm(const SalesHistory::Invoice& invoice, const
     auto* submit = buttons->addButton("Xác nhận hủy vé", QDialogButtonBox::AcceptRole);
     submit->setEnabled(false);
     const auto update = [=] {
-        submit->setEnabled(!preview->isChecked() && !reason->toPlainText().trimmed().isEmpty() && refund->isChecked());
+        submit->setEnabled(!storageError && !preview->isChecked() &&
+                           !reason->toPlainText().trimmed().isEmpty() && refund->isChecked());
     };
     connect(reason, &QPlainTextEdit::textChanged, this, update);
     connect(refund, &QCheckBox::toggled, this, update);
-    connect(submit, &QPushButton::clicked, this, [this, &dialog, ticket, reason, refund, submit, message] {
+    connect(submit, &QPushButton::clicked, this, [this, &dialog, ticket, reason, refund, submit, message, update] {
         submit->setEnabled(false);
         try {
             if (!booking.cancelTicket(ticket.id.toStdString(), reason->toPlainText().trimmed().toStdString(),
                                       refund->isChecked())) {
                 message->setText("Không thể hủy vé. Kiểm tra mã vé, trạng thái và điều kiện giao dịch.");
+                update();
                 return;
             }
             dialog.accept();

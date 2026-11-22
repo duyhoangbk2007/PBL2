@@ -1,41 +1,58 @@
+
 #pragma once
+
 #include "../business/BookingService.h"
+
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace BookingAdapter {
-enum class SeatStatus { Available, Sold, Unknown };
-enum class SaleResult { NotImplemented };
+
+enum class SeatStatus {
+    Available,
+    Sold,
+    Unknown
+};
 
 struct SeatAvailability {
+    std::unordered_set<std::string> availableIds;
     bool verified = false;
-    std::unordered_set<std::string> availableSeatIds;
 
     SeatStatus status(const std::string& seatId) const
     {
-        if (!verified) { return SeatStatus::Unknown; }
-        return availableSeatIds.count(seatId) ? SeatStatus::Available : SeatStatus::Sold;
+        if (!verified) {
+            return SeatStatus::Unknown;
+        }
+
+        return availableIds.count(seatId)
+            ? SeatStatus::Available
+            : SeatStatus::Sold;
     }
 };
 
-inline SeatAvailability loadAvailability(BookingService& booking, const std::string& showtimeId)
+inline SeatAvailability loadAvailability(
+    BookingService& service,
+    const std::string& showtimeId)
 {
     SeatAvailability result;
-    for (const Seat* seat : booking.getAvailableSeats(showtimeId)) {
-        if (seat == nullptr) { return result; }
-        result.availableSeatIds.insert(seat->getSeatId());
+
+    // BookingService chịu trách nhiệm xác định ghế trống.
+    const std::vector<Seat*> seats =
+        service.getAvailableSeats(showtimeId);
+
+    for (const Seat* seat : seats) {
+        if (seat != nullptr) {
+            result.availableIds.insert(
+                seat->getSeatId());
+        }
     }
+
+    // Chỉ dùng khi các điều kiện nạp dữ liệu và
+    // suất chiếu đã được kiểm tra ở phía gọi.
     result.verified = true;
+
     return result;
 }
 
-inline SeatStatus seatStatus(const std::string& /*showtimeId*/, const std::string& /*seatId*/)
-{
-    return SeatStatus::Unknown;
-}
-
-inline SaleResult saleSupport()
-{
-    return SaleResult::NotImplemented;
-}
-}
+} // namespace BookingAdapter
