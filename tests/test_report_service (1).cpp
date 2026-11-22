@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -28,8 +29,14 @@ void check(bool ok, const string& name)
 template <typename Action>
 bool throwsError(Action action)
 {
-    try { action(); }
-    catch (const exception&) { return true; }
+    try
+    {
+        action();
+    }
+    catch (const exception&)
+    {
+        return true;
+    }
     return false;
 }
 
@@ -45,7 +52,23 @@ void writeFile(const string& name, const string& contents)
 string readFile(const string& name)
 {
     ifstream in(name);
-    return string((istreambuf_iterator<char>(in)), istreambuf_iterator<char>());
+    if (!in)
+    {
+        throw runtime_error("Khong doc duoc file test: " + name);
+    }
+    return string(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
+}
+
+void replaceOnce(const string& fileName, const string& oldValue, const string& newValue)
+{
+    string contents = readFile(fileName);
+    size_t pos = contents.find(oldValue);
+    if (pos == string::npos)
+    {
+        throw runtime_error("Khong tim thay du lieu can thay trong " + fileName);
+    }
+    contents.replace(pos, oldValue.size(), newValue);
+    writeFile(fileName, contents);
 }
 
 void prepare(bool reportPermission = true)
@@ -115,6 +138,14 @@ struct Fixture
             throw runtime_error("Khong load duoc Invoice/Ticket");
         }
     }
+
+    void loginAdmin()
+    {
+        if (!auth.login("admin", "123456"))
+        {
+            throw runtime_error("Khong dang nhap duoc Admin");
+        }
+    }
 };
 
 void testReports()
@@ -124,118 +155,185 @@ void testReports()
     string ticketsBefore = readFile("tickets.txt");
     Fixture f;
     f.loadAll();
-    check(f.auth.login("admin", "123456"), "Admin login");
+    f.loginAdmin();
+
     const string day20 = "2026-11-20T00:00:00";
     const string day22 = "2026-11-22T00:00:00";
     const string day23 = "2026-11-23T00:00:00";
     const string monthStart = "2026-11-01T00:00:00";
     const string monthEnd = "2026-12-01T00:00:00";
 
-    check(f.report.getTotalSales(day22, day23) == 160, "sales by invoice date");
-    check(f.report.getTotalRefund(day22, day23) == 150, "refund by cancellation date");
-    check(f.report.getActualRevenue(day22, day23) == 10, "daily net revenue");
+    check(f.report.getTotalSales(day22, day23) == 160, "Sales: invoice createdAt");
+    check(f.report.getTotalRefund(day22, day23) == 150, "Refund: ticket cancelledAt");
+    check(f.report.getActualRevenue(day22, day23) == 10, "Revenue: sales - refund");
     check(f.report.getActualRevenue(day22, "2026-11-22T10:00:00") == -100,
-          "refund of an older sale can make daily revenue negative");
+          "Revenue: refund of older sale may yield negative result");
     check(f.report.getTotalSales(day20, day22) == 200 &&
           f.report.getTotalRefund(day20, day22) == 0,
-          "sale and refund on different days");
+          "Sale and refund in different periods");
     check(f.report.getTotalSales(monthStart, monthEnd) == 360 &&
           f.report.getTotalRefund(monthStart, monthEnd) == 150 &&
           f.report.getActualRevenue(monthStart, monthEnd) == 210,
-          "monthly cash flow");
+          "Monthly sales, refund and revenue");
     check(f.report.getTotalSales("2026-10-01T00:00:00", monthStart) == 50,
-          "exclusive month upper bound");
+          "Upper time bound is exclusive");
 
     check(f.report.getSoldTicketCount(day22, day23) == 2,
-          "tickets sold on day 22");
+          "Sold count: invoice createdAt");
     check(f.report.getSoldTicketCount(monthStart, monthEnd) == 4,
-          "sold count includes later cancelled ticket");
+          "Sold count includes tickets cancelled later");
     check(f.report.getCancelledTicketCount(day22, day23) == 2 &&
           f.report.getCancelledTicketCount(day20, day22) == 0,
-          "cancel count uses cancellation time");
+          "Cancelled count: cancelledAt");
     check(f.report.getCancelledTicketCount(monthStart, monthEnd) == 2,
-          "monthly cancelled count");
+          "Monthly cancelled count");
 
     check(f.report.getMovieRevenue("MOV0001", monthStart, monthEnd) == 100,
-          "movie revenue excludes cancelled tickets");
+          "Movie revenue excludes cancelled tickets");
     check(f.report.getMovieRevenue("MOV0002", day22, day23) == 80 &&
           f.report.getMovieRevenue("MOV0003", day22, day23) == 80,
-          "movie revenue by sale period");
+          "Movie revenue by invoice date");
     check(f.report.getMovieRevenue("MOV0004", monthStart, monthEnd) == 0,
-          "valid movie without sales returns zero");
+          "Movie without sales returns zero");
+
     vector<Movie*> top = f.report.getTopMovies(monthStart, monthEnd, 10);
-    check(top.size() == 3 && top[0] == f.movies.findById("MOV0001") &&
+    check(top.size() == 3 &&
+          top[0] == f.movies.findById("MOV0001") &&
           top[1] == f.movies.findById("MOV0002") &&
           top[2] == f.movies.findById("MOV0003"),
-          "top movies: revenue descending, ID ascending on tie, borrowed pointers");
-    check(f.report.getTopMovies(day22, day23, 1).size() == 1 &&
-          f.report.getTopMovies(day22, day23, 1)[0]->getMovieId() == "MOV0002",
-          "top limit and tied revenue");
+          "Top movies: revenue descending, ID ascending, borrowed pointers");
+    vector<Movie*> topOne = f.report.getTopMovies(day22, day23, 1);
+    check(topOne.size() == 1 && topOne[0]->getMovieId() == "MOV0002",
+          "Top movies: limit and tie-breaking");
     check(f.report.getTopMovies("2026-12-01T00:00:00", "2027-01-01T00:00:00", 5).empty() &&
-          f.report.getTotalSales("2026-12-01T00:00:00", "2027-01-01T00:00:00") == 0,
-          "empty period returns empty top and zero sales");
+          f.report.getTotalSales("2026-12-01T00:00:00", "2027-01-01T00:00:00") == 0 &&
+          f.report.getTotalRefund("2026-12-01T00:00:00", "2027-01-01T00:00:00") == 0,
+          "Empty period returns zero or empty vector");
     check(readFile("invoices.txt") == invoicesBefore &&
           readFile("tickets.txt") == ticketsBefore,
-          "reports do not write TXT");
+          "Reports never write Invoice/Ticket TXT");
 }
 
 void testErrors()
 {
+    const string from = "2026-11-01T00:00:00";
+    const string to = "2026-12-01T00:00:00";
+
     prepare();
     Fixture f;
     f.loadAll();
-    const string from = "2026-11-01T00:00:00";
-    const string to = "2026-12-01T00:00:00";
-    check(throwsError([&] { f.report.getTotalSales(from, to); }), "guest denied");
-    f.auth.login("staff", "123456");
+    check(throwsError([&] { f.report.getTotalSales(from, to); }), "Guest denied");
+    check(f.auth.login("staff", "123456"), "Staff login");
     check(throwsError([&] { f.report.getTotalRefund(from, to); }), "Staff denied");
-    f.auth.login("admin", "123456");
-    check(throwsError([&] { f.report.getTotalSales("bad", to); }),
-          "invalid date rejected");
-    check(throwsError([&] { f.report.getSoldTicketCount(to, from); }),
-          "reversed interval rejected");
-    check(throwsError([&] { f.report.getTopMovies(from, to, 0); }),
-          "zero top limit rejected");
-    check(throwsError([&] { f.report.getTopMovies(from, to, -1); }),
-          "negative top limit rejected");
-    check(throwsError([&] { f.report.getMovieRevenue("MOV9999", from, to); }),
-          "unknown movie rejected");
+    f.loginAdmin();
+    check(throwsError([&] { f.report.getTotalSales("bad", to); }), "Invalid datetime denied");
+    check(throwsError([&] { f.report.getSoldTicketCount(to, from); }), "Reversed period denied");
+    check(throwsError([&] { f.report.getTopMovies(from, to, 0); }), "Top limit zero denied");
+    check(throwsError([&] { f.report.getTopMovies(from, to, -1); }), "Top limit negative denied");
+    check(throwsError([&] { f.report.getMovieRevenue("MOV9999", from, to); }), "Unknown movie denied");
     f.tickets.findById("TKT0001")->unlinkReferences();
     check(throwsError([&] { f.report.getCancelledTicketCount(from, to); }),
-          "broken Ticket-Invoice link rejected");
+          "Broken Ticket-Invoice/Showtime link denied");
 
     prepare(false);
     Fixture missingRight;
     missingRight.loadAll();
-    missingRight.auth.login("admin", "123456");
+    missingRight.loginAdmin();
     check(throwsError([&] { missingRight.report.getTotalSales(from, to); }),
           "Admin without REPORT_VIEW denied");
 
     prepare();
     Fixture notLoaded;
     notLoaded.loadBase();
-    notLoaded.auth.login("admin", "123456");
+    notLoaded.loginAdmin();
     check(throwsError([&] { notLoaded.report.getTotalSales(from, to); }),
           "InvoiceRepository not loaded");
-    check(notLoaded.invoices.load(), "load invoices for partial fixture");
+    check(notLoaded.invoices.load(), "Load invoices for partial fixture");
     check(throwsError([&] { notLoaded.report.getTotalRefund(from, to); }),
           "TicketRepository not loaded");
 
+    // Verify the same broken-reference guard is used in movie reports.
+    check(throwsError([&] { f.report.getMovieRevenue("MOV0001", from, to); }),
+          "Broken ticket reference denied in movie revenue");
+
+}
+
+
+// Check both ends of [from, to) for sales and cancellation statistics.
+void testTimeBoundaries()
+{
     prepare();
-    string invoices = readFile("invoices.txt");
-    size_t amountPos = invoices.find("2026-11-20T10:00:00|200");
-    if (amountPos == string::npos)
+    // Move one invoice exactly to the start and one to the exclusive end.
+    replaceOnce("invoices.txt", "INV0002|SHW0002|USR0001||2026-11-22T11:00:00|80",
+                "INV0002|SHW0002|USR0001||2026-11-22T00:00:00|80");
+    replaceOnce("invoices.txt", "INV0003|SHW0003|USR0001||2026-11-22T12:00:00|80",
+                "INV0003|SHW0003|USR0001||2026-11-23T00:00:00|80");
+    replaceOnce("tickets.txt", "2026-11-22T09:00:00|USR0002|Refund|100",
+                "2026-11-22T00:00:00|USR0002|Refund|100");
+    replaceOnce("tickets.txt", "2026-11-22T13:00:00|USR0002|Refund|50",
+                "2026-11-23T00:00:00|USR0002|Refund|50");
+
+    Fixture f;
+    f.loadAll();
+    f.loginAdmin();
+    const string from = "2026-11-22T00:00:00";
+    const string to = "2026-11-23T00:00:00";
+    check(f.report.getTotalSales(from, to) == 80,
+          "Boundary: invoice at from included, at to excluded");
+    check(f.report.getTotalRefund(from, to) == 100,
+          "Boundary: cancellation at from included, at to excluded");
+    check(f.report.getSoldTicketCount(from, to) == 1,
+          "Boundary: sold count uses half-open interval");
+    check(f.report.getCancelledTicketCount(from, to) == 1,
+          "Boundary: cancelled count uses half-open interval");
+    check(f.report.getMovieRevenue("MOV0002", from, to) == 80 &&
+          f.report.getMovieRevenue("MOV0003", from, to) == 0,
+          "Boundary: movie revenue uses invoice creation time");
+}
+
+// A free SOLD ticket must still qualify a movie for the top list.
+void testZeroRevenueMovie()
+{
+    prepare();
+    replaceOnce("invoices.txt", "INV0002|SHW0002|USR0001||2026-11-22T11:00:00|80",
+                "INV0002|SHW0002|USR0001||2026-11-22T11:00:00|0");
+    replaceOnce("tickets.txt", "TKT0003|INV0002|SHW0002|A03|REGULAR|80|0|80|0|SOLD||||0",
+                "TKT0003|INV0002|SHW0002|A03|REGULAR|0|0|0|0|SOLD||||0");
+    Fixture f;
+    f.loadAll();
+    f.loginAdmin();
+    const string from = "2026-11-22T00:00:00";
+    const string to = "2026-11-23T00:00:00";
+    check(f.report.getMovieRevenue("MOV0002", from, to) == 0,
+          "Zero-price SOLD ticket: movie revenue is zero");
+    vector<Movie*> top = f.report.getTopMovies(from, to, 10);
+    check(top.size() == 2 && top[0]->getMovieId() == "MOV0003" &&
+          top[1]->getMovieId() == "MOV0002",
+          "Zero-price SOLD ticket: movie still appears in top");
+}
+
+// ReportService validates loaded in-memory objects; repositories may reject
+// malformed TXT earlier during load, which is a separate responsibility.
+void testInvalidLoadedData()
+{
+    const string from = "2026-11-01T00:00:00";
+    const string to = "2026-12-01T00:00:00";
+    prepare();
+    Fixture f;
+    f.loadAll();
+    f.loginAdmin();
+
+    // A broken link must be rejected even if its ticket is outside the period.
+    Ticket* ticket = f.tickets.findById("TKT0005");
+    check(ticket != nullptr, "Invalid data: fixture ticket exists");
+    if (ticket != nullptr)
     {
-        throw runtime_error("Khong tim thay tong tien fixture");
+        ticket->unlinkReferences();
+        check(throwsError([&] { f.report.getTotalRefund(from, to); }),
+              "Invalid data: broken link rejected in refunds");
+        check(throwsError([&] { f.report.getTopMovies(from, to, 3); }),
+              "Invalid data: broken link rejected in top movies");
     }
-    invoices.replace(amountPos, string("2026-11-20T10:00:00|200").size(),
-                     "2026-11-20T10:00:00|201");
-    writeFile("invoices.txt", invoices);
-    Fixture wrongTotal;
-    wrongTotal.loadAll();
-    wrongTotal.auth.login("admin", "123456");
-    check(throwsError([&] { wrongTotal.report.getTotalRefund(from, to); }),
-          "invoice total inconsistent with tickets rejected");
 }
 
 int main()
@@ -249,6 +347,9 @@ int main()
         fs::current_path(testPath);
         testReports();
         testErrors();
+        testTimeBoundaries();
+        testZeroRevenueMovie();
+        testInvalidLoadedData();
         fs::current_path(oldPath);
         fs::remove_all(testPath);
     }
