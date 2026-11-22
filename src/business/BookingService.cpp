@@ -269,6 +269,7 @@ bool BookingService::createBooking(const string& showtimeId,
     int oldPoints = member == nullptr ? 0 : member->getPoints();
     try
     {
+        // tạo hóa đơn
         Invoice* invoice = new Invoice(newInvoiceId, showtimeId, staffId, memberId, createdAt, summary.totalAmount);
         try
         {
@@ -284,6 +285,7 @@ bool BookingService::createBooking(const string& showtimeId,
             throw;
         }
         invoiceAdded = true;
+
         // Tạo từng vé
         for (size_t i = 0; i < items.size(); i++)
         {
@@ -312,6 +314,7 @@ bool BookingService::createBooking(const string& showtimeId,
                 throw;
             }
         }
+        
         if (!ticketAddFailed && member != nullptr)
         {
             member->setPoints(oldPoints + summary.earnedPoints);

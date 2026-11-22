@@ -40,8 +40,13 @@ private:
 
     PricingService& pricingService;
     AuthService& authService;
+    
     bool storageFailed = false;
-
+    void rollbackBooking(const std::vector<std::string>& addedTicketIds,
+                         const std::string& invoiceId,
+                         bool invoiceAdded,
+                         Member* member,
+                         int oldPoints);
 public:
     BookingService(ShowtimeRepository& showtimeRepo,
                    SeatRepository& seatRepo,
@@ -64,11 +69,6 @@ public:
                        bool ageConfirmed,
                        bool paymentConfirmed,
                        std::string& invoiceId);
-     void rollbackBooking(const std::vector<std::string>& addedTicketIds,
-                         const std::string& invoiceId,
-                         bool invoiceAdded,
-                         Member* member,
-                         int oldPoints);
 };
 
 #endif

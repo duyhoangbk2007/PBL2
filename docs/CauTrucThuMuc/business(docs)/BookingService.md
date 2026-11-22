@@ -159,6 +159,13 @@ private:
 
     PricingService& pricingService;
     AuthService& authService;
+    bool storageFailed = false;
+
+    void rollbackBooking(const vector<string>& addedTicketIds,
+                         const string& invoiceId,
+                         bool invoiceAdded,
+                         Member* member,
+                         int oldPoints);
 };
 ```
 
@@ -229,6 +236,8 @@ Sử dụng để:
 Các thuộc tính sử dụng **tham chiếu (`&`)** vì `BookingService` không sở hữu các Repository và Service.
 
 Các đối tượng phụ thuộc phải tồn tại trong suốt thời gian sử dụng `BookingService`.
+
+`storageFailed` chặn lần bán tiếp trên cùng đối tượng Service sau lỗi ghi TXT. `rollbackBooking()` là hàm **private**, chỉ dùng để hoàn tác trong RAM trước khi bắt đầu ghi file.
 
 ---
 
@@ -486,6 +495,7 @@ Hàm hiện không phân biệt các nguyên nhân trên bằng mã lỗi.
 - GUI không được tự thay đổi dữ liệu Model.
 - Danh sách ghế trống không có nghĩa ghế đã được giữ chỗ.
 - Khi bán vé, `createBooking()` phải kiểm tra lại trạng thái ghế.
+- Hàm không kiểm tra quyền; kết quả chỉ phản ánh dữ liệu Repository đang nạp và thời điểm gọi. Vé `CANCELLED` không chiếm ghế vì `isSeatSold()` chỉ xét vé `SOLD`.
 
 ---
 
@@ -662,13 +672,13 @@ Cần kiểm tra kết quả tính toán hợp lệ và giới hạn số nguyê
 
 Nếu phát hiện lỗi sau khi đã thêm một số giá vé vào `summary`, phải bảo đảm kết quả thất bại không bị GUI sử dụng như một báo giá hợp lệ.
 
-Có thể thực hiện tính toán vào biến tạm và chỉ gán cho `summary` sau khi toàn bộ bước kiểm tra thành công.
+Code dùng biến `BookingSummary calculated` để gom giá và điểm; chỉ gán vào `summary` khi mọi vé hợp lệ. Nó từ chối tổng tiền không hữu hạn và tổng điểm vượt `int`. `PricingService` có thể ném ngoại lệ khi chưa đăng nhập, thiếu quyền xem giá hoặc cấu hình giá chưa nạp; các ngoại lệ này không bị đổi thành `false`.
 
 ---
 
 ## 10. createBooking()
 
-### 10.1. Khai báo dự kiến
+### 10.1. Khai báo hiện tại
 
 ```cpp
 bool createBooking(
@@ -681,7 +691,7 @@ bool createBooking(
 );
 ```
 
-So với phiên bản hiện tại, hàm bổ sung:
+Hai tham số xác nhận đã có trong phiên bản hiện tại:
 
 ```cpp
 bool ageConfirmed
@@ -765,6 +775,8 @@ const User& staff =
     );
 ```
 
+Ngay sau kiểm tra quyền, code kiểm tra `storageFailed`. Nếu lần lưu trước trên cùng Service đã lỗi, hàm ném `runtime_error` và không bán tiếp.
+
 **Bước 3: Kiểm tra xác nhận**
 
 ```cpp
@@ -825,6 +837,8 @@ Nếu có thành viên, kiểm tra việc cộng điểm không vượt quá gi�
 
 Tại thời điểm này chưa thay đổi dữ liệu trong RAM.
 
+Code còn lấy trước giá gốc và điểm của từng Ticket vào hai `vector` (`basePrices`, `ticketPoints`). Nhờ vậy, vòng tạo Ticket dùng đúng giá đã tính cho giao dịch và không gọi lại hàm tính giá sau khi đã thêm Invoice. `addedTicketIds.reserve(items.size())` chuẩn bị dung lượng theo số vé trước khi thay đổi RAM.
+
 ### 11.2. Giai đoạn 2 — Tạo giao dịch trong RAM
 
 **Bước 9: Tạo Invoice**
@@ -882,6 +896,8 @@ member->setPoints(
 
 Phải giữ số điểm cũ để có thể khôi phục nếu cần.
 
+Trong code, `try/catch` bao quanh giai đoạn thêm Invoice/Ticket và cộng điểm. `invoiceAdded` đánh dấu Invoice đã thuộc Repository; `addedTicketIds` giữ ID Ticket đã thêm. Nếu `add()` trả `false`, con trỏ chưa được Repository nhận được `delete`, sau đó `rollbackBooking()` hoàn tác các đối tượng đã thêm và hàm trả `false`. Nếu phát sinh ngoại lệ, `catch (...)` gọi rollback rồi ném lại ngoại lệ bằng `throw;`. Ngoại lệ từ chính rollback được báo là lỗi nghiêm trọng; code không coi giao dịch đã hoàn tác thành công trong trường hợp đó.
+
 ### 11.3. Giai đoạn 3 — Lưu giao dịch
 
 **Bước 13: Lưu Invoice**
@@ -916,6 +932,8 @@ Chỉ sau khi tất cả lần lưu thành công:
 invoiceId = newInvoiceId;
 return true;
 ```
+
+Ba lần lưu được gọi tuần tự trong một `try`: Invoice → Ticket → Member (chỉ khi có thành viên). Mỗi kết quả được kiểm tra riêng để xác định bước lỗi. Bất kỳ lỗi ghi nào cũng đặt `storageFailed = true` và ném ngoại lệ; `invoiceId` vẫn rỗng. Code **không** gọi `rollbackBooking()` sau khi bắt đầu lưu, vì ngay cả lần `save()` trả `false` cũng có thể đã làm file thay đổi một phần. Lần gọi `createBooking()` tiếp theo trên cùng Service sẽ bị chặn để tránh tự động bán lại.
 
 ---
 
@@ -957,11 +975,21 @@ Trong quá trình tạo giao dịch, cần biết:
 - Thành viên nào đã được cập nhật điểm.
 - Số điểm thành viên trước giao dịch.
 
-Có thể dùng `vector<string>` để theo dõi ID các Ticket đã thêm thành công.
+Code dùng `vector<string> addedTicketIds` để theo dõi ID các Ticket đã thêm thành công.
 
 Không cần xây dựng một hệ thống giao dịch tổng quát chỉ để xử lý một nghiệp vụ bán vé.
 
 ### 12.4. Thứ tự rollback
+
+Hàm private hiện có:
+
+```cpp
+void rollbackBooking(const vector<string>& addedTicketIds,
+                     const string& invoiceId,
+                     bool invoiceAdded,
+                     Member* member,
+                     int oldPoints);
+```
 
 Khi thất bại trước giai đoạn lưu file:
 
@@ -972,6 +1000,8 @@ Khi thất bại trước giai đoạn lưu file:
 5. Trả về thất bại.
 
 Phải tháo Ticket trước Invoice vì Ticket có liên kết tới Invoice.
+
+Code gọi `member->setPoints(oldPoints)` trước, duyệt `addedTicketIds` từ cuối về đầu và gọi `ticketRepo.rollbackPending()`, rồi mới gọi `invoiceRepo.rollbackPending()` nếu `invoiceAdded`. Nếu bất kỳ bước hoàn tác nào trả `false`, hàm ném `runtime_error`; không báo rollback thành công giả.
 
 ### 12.5. Trách nhiệm của Repository
 
@@ -988,9 +1018,7 @@ Cơ chế này phải:
 - Không xóa đối tượng thuộc Repository khác.
 - Không ghi file trong quá trình rollback RAM.
 
-**Lưu ý triển khai:** Phiên bản TicketRepository và InvoiceRepository hiện tại chưa cung cấp đầy đủ API hoàn tác này.
-
-Cần thiết kế và kiểm thử API hỗ trợ trước khi hoàn thiện rollback trong `createBooking()`.
+`TicketRepository` và `InvoiceRepository` hiện có `rollbackPending(id)`. Mỗi Repository theo dõi các ID vừa `add()` thành công trong `pendingIds`; `save()` thành công xóa danh sách pending. `rollbackPending()` chỉ chấp nhận ID pending cuối cùng, nên các Ticket phải được hoàn tác theo thứ tự ngược. Ticket tháo liên kết Invoice trước khi `Repository<T>::removeById()` xóa đối tượng; Invoice chỉ được hoàn tác khi không còn Ticket và phải tháo liên kết User/Member. ID đã lưu không còn pending nên không thể dùng API này để xóa lịch sử.
 
 Không sử dụng hàm xóa nghiệp vụ thông thường để xóa vé hoặc hóa đơn lịch sử.
 
@@ -1033,6 +1061,8 @@ Không được tự động rollback RAM rồi coi giao dịch như chưa từn
 Cơ chế này bảo đảm có phương án hoàn tác khi tạo giao dịch trong RAM thất bại.
 
 Nó **không bảo đảm tính nguyên tử của giao dịch trên nhiều file TXT**.
+
+`storageFailed` chỉ thuộc đối tượng `BookingService` đang dùng, không phải cờ bền vững lưu trong TXT. Sau lỗi ghi, người vận hành cần kiểm tra/khôi phục dữ liệu trước khi tạo Service mới hoặc khởi động lại ứng dụng. Chưa có transaction đa file hay cơ chế tự phục hồi.
 
 Nếu muốn khôi phục tự động sau mọi lỗi ghi file, cần bổ sung cơ chế giao dịch lưu trữ riêng trong tương lai.
 
@@ -1094,6 +1124,15 @@ Ngoài các trường hợp `add()` trả `false`, cần xử lý cả ngoại l
 Nếu giao dịch đã thay đổi RAM, ngoại lệ không được làm bỏ qua quá trình dọn dẹp cần thiết.
 
 Không được nuốt ngoại lệ nghiêm trọng rồi trả `false` như một lỗi nghiệp vụ thông thường.
+
+### 13.5. Các kỹ thuật C++ được dùng
+
+- `vector<T>` là mảng có thể tăng kích thước. `addedTicketIds` ghi lại các Ticket đã thêm để hoàn tác; `reserve(items.size())` chuẩn bị chỗ trước vòng tạo vé, còn `push_back()` thêm một ID.
+- `try` bao quanh thao tác có thể ném lỗi; `catch (...)` bắt mọi loại ngoại lệ để dọn RAM. `throw;` trong `catch` ném lại **ngoại lệ gốc**, không tạo lỗi mới khi rollback đã thành công. Nếu chính rollback ném lỗi, lỗi rollback cần được xử lý như tình trạng RAM không chắc chắn.
+- `new` tạo Model trên vùng nhớ động. Trước khi `Repository::add()` thành công, Service phải `delete` nếu thất bại; sau khi thêm thành công, Repository sở hữu con trỏ và việc xóa phải qua `rollbackPending()`.
+- `nullptr` biểu thị không có đối tượng; `Member* member` có thể bằng `nullptr` khi giao dịch không gắn thành viên. Dấu `&` trong constructor là tham chiếu đến Repository/Service do nơi khác sở hữu.
+- `std::isfinite()` kiểm tra số thực không phải vô cực/NaN. `numeric_limits<int>::max()` là giới hạn trên của `int`, dùng để tránh tràn khi cộng điểm.
+- `size_t` là kiểu đếm phần tử của container; vòng lặp Ticket dùng kiểu này để đi cùng `items.size()`. `DateTime::isBefore()` so sánh thời điểm hiện tại với giờ bắt đầu suất; `IdGenerator::generateNextId()` tạo mã từ các ID đang nạp.
 
 ---
 
@@ -1293,13 +1332,15 @@ Cần hiển thị lỗi và yêu cầu kiểm tra trạng thái dữ liệu.
 
 ## 17. Kiểm thử
 
-File dự kiến:
+File hiện có:
 
 ```text
 tests/test_booking_service.cpp
 ```
 
 ### 17.1. getAvailableSeats()
+
+Đã kiểm thử: suất hợp lệ có ba ghế trống, danh sách giảm sau khi bán, và ghế trở lại trống sau khi rollback pending Ticket. Các ca suất bị hủy, đã bắt đầu, phòng ngừng hoạt động, Repository chưa load và vé `CANCELLED` dưới đây vẫn là danh sách cần bổ sung; chưa được xác nhận bởi test Booking hiện tại.
 
 - Suất hợp lệ, tất cả ghế trống.
 - Một số ghế đã bán.
@@ -1319,6 +1360,8 @@ tests/test_booking_service.cpp
 - Vé CANCELLED không chiếm ghế.
 
 ### 17.2. calculateBooking()
+
+Đã kiểm thử: hai vé 75.000 đồng cho thành viên cho **14 điểm** (7 điểm mỗi vé), VIP/STUDENT, ghế trùng, ghế sai, thành viên không tồn tại, loại vé sai, danh sách rỗng và suất không tồn tại. Những ca còn lại trong danh sách dưới đây là mục tiêu kiểm thử bổ sung.
 
 - Một vé thường.
 - Một vé học sinh.
@@ -1340,6 +1383,8 @@ tests/test_booking_service.cpp
 
 ### 17.3. createBooking()
 
+Đã kiểm thử: Staff/Admin bán vé, xác nhận độ tuổi/thu tiền, nhiều Ticket cùng Invoice, liên kết Model, điểm thành viên, ID, ghế đã bán, quyền đăng nhập và đọc lại TXT. Ca thiếu quyền `TICKET_SELL` khi đã đăng nhập chưa được kiểm thử riêng trong file này.
+
 - Admin bán vé.
 - Staff bán vé.
 - Không có quyền bán.
@@ -1358,6 +1403,8 @@ tests/test_booking_service.cpp
 - Lưu và load lại dữ liệu thành công.
 
 ### 17.4. Rollback
+
+Đã kiểm thử trực tiếp API Repository: hoàn tác một và hai Ticket pending, yêu cầu thứ tự ngược, Invoice không được xóa khi còn Ticket, tháo liên kết, trả ghế về trạng thái trống, và không cho rollback vé/hóa đơn đã lưu. Đã giả lập lỗi ghi từng file Invoice, Ticket, Member bằng đường dẫn tạm: `createBooking()` ném ngoại lệ, `invoiceId` rỗng, RAM không bị giả vờ hoàn tác; trường hợp lỗi Invoice còn kiểm tra chặn bán tiếp trên cùng Service. **Chưa có test tự động ép `TicketRepository::add()` thất bại ở giữa `createBooking()` để đi qua `rollbackBooking()` với nhiều Ticket.**
 
 - Thêm Invoice thất bại.
 - Thêm Ticket đầu tiên thất bại.
@@ -1379,31 +1426,27 @@ Các ca lỗi ghi file phải được kiểm thử bằng môi trường dữ l
 
 ---
 
-## 18. Những thay đổi cần triển khai
+## 18. Đối chiếu triển khai hiện tại
 
 ### 18.1. BookingService.h
 
 - Giữ ba hàm public.
 - Giữ `BookingItem`.
 - Giữ `BookingSummary`.
-- Bổ sung `ageConfirmed` và `paymentConfirmed` cho `createBooking()`.
+- Đã bổ sung `ageConfirmed` và `paymentConfirmed` cho `createBooking()`.
 - Không thêm Undo.
 - Không thêm `errorMessage`.
 
 ### 18.2. BookingService.cpp
 
-- Rà soát `getAvailableSeats()`.
-- Sửa tính điểm trong `calculateBooking()`.
-- Bỏ logic phân bổ điểm dư cho vé cuối.
-- Kiểm tra xác nhận độ tuổi và thu tiền.
-- Hoàn thiện kiểm tra dữ liệu trước giao dịch.
-- Bổ sung rollback trong RAM.
-- Kiểm tra từng lần lưu TXT.
-- Phân biệt lỗi nghiệp vụ và lỗi lưu dữ liệu nghiêm trọng.
+- `getAvailableSeats()` lọc ghế theo suất chưa bắt đầu, phòng hoạt động và vé `SOLD`.
+- `calculateBooking()` cộng điểm tính riêng trên từng Ticket; không phân bổ điểm dư.
+- `createBooking()` kiểm tra xác nhận, chuẩn bị ID/giá/điểm, tạo Invoice/Ticket, gọi `rollbackBooking()` khi giai đoạn RAM thất bại và kiểm tra từng lần lưu TXT.
+- Lỗi nghiệp vụ trả `false`; lỗi phân quyền, tính toán nghiêm trọng, rollback lỗi hoặc ghi TXT lỗi được chuyển bằng ngoại lệ theo vị trí phát sinh.
 
 ### 18.3. TicketRepository và InvoiceRepository
 
-Cần bổ sung cơ chế hoàn tác đối tượng vừa tạo trong giao dịch chưa lưu.
+Đã có `rollbackPending(id)` để hoàn tác đối tượng vừa tạo trong giao dịch chưa lưu.
 
 Thiết kế API phải bảo đảm:
 
@@ -1415,7 +1458,7 @@ Thiết kế API phải bảo đảm:
 
 ### 18.4. Tài liệu liên quan
 
-Sau khi code và test thành công, cập nhật:
+Các tài liệu sau cần được đối chiếu trong công việc cập nhật tài liệu riêng; lượt hiện tại chỉ cập nhật `BookingService.md` và checklist tiến độ Bước 10:
 
 - `docs/Business_UI_Contract.md`
 - `docs/TongQuan/business_rules.md`
@@ -1446,14 +1489,9 @@ Sau khi code và test thành công, cập nhật:
 
 ### 19.2. Cần sửa hoặc bổ sung
 
-- Tính điểm theo từng vé.
-- Bỏ phân bổ điểm dư.
-- Xác nhận độ tuổi.
-- Xác nhận thu tiền.
-- Rollback khi thêm đối tượng thất bại.
-- Xử lý ngoại lệ trong quá trình tạo giao dịch.
-- Xử lý lỗi lưu nhiều file.
-- Kiểm thử riêng BookingService.
+- Kiểm thử tự động nhánh thêm Ticket thất bại giữa `createBooking()` sau khi một số Ticket đã thêm; hiện mới kiểm thử hoàn tác nhiều Ticket qua Repository.
+- Bổ sung các ca biên còn mở trong Mục 17 và kiểm tra tích hợp GUI trước nghiệm thu.
+- Chưa có transaction đa file hoặc tự phục hồi sau khi ghi dở; giới hạn này cần được xử lý khi yêu cầu nghiệp vụ thay đổi.
 - Cập nhật Business – UI Contract.
 
 ### 19.3. Điều kiện nghiệm thu
@@ -1468,4 +1506,4 @@ Chỉ xem Bước 10 hoàn thành khi:
 - Tài liệu phản ánh đúng code.
 - Đã kiểm tra tích hợp với các Repository và Service liên quan.
 
-**Trạng thái hiện tại: Đã chốt thiết kế mục tiêu, chưa hoàn tất triển khai và kiểm thử.**
+**Trạng thái hiện tại:** Đã triển khai luồng bán vé và test riêng đạt 55 PASS, 0 FAIL khi chạy ngày 2026-11-22; các giới hạn ở Mục 17 và 19.2 vẫn mở, nên chưa nghiệm thu toàn Bước 10.
