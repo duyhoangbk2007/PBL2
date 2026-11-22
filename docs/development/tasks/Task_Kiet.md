@@ -67,11 +67,13 @@ Các Bước 04–11 là Backend do Hoàng phụ trách; yêu cầu hiển thị
 
 ### Bước 12 – Xây dựng giao diện Qt
 
-**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: đang thực hiện theo trao đổi từ Kiệt.** Backend đã có `BookingService::createBooking()` và `cancelTicket()` với test riêng PASS; mức độ tích hợp hai API vào GUI chưa được xác nhận trên nhánh này.
+**Phụ trách toàn bộ GUI: Kiệt. Trạng thái: đang thực hiện theo trao đổi từ Kiệt.** Backend đã có `BookingService::createBooking()`, `cancelTicket()` và `InvoiceService` với test riêng PASS; `ReportService` có đủ 7 API nhưng test hiện còn **1 FAIL**. Mức độ tích hợp các API vào GUI chưa được xác nhận trên nhánh này.
 
 - [ ] Xây dựng `MainWindow`, dashboard Admin/Staff, `LoginView`, `MovieManagementView`, `RoomManagementView`, `ShowtimeManagementView`, `StaffManagementView`, `MemberManagementView`, `BookingView`, `SeatMapView`, `InvoiceHistoryView` và `ReportView` theo phạm vi chức năng đã thống nhất.
 - [ ] Tích hợp các View với Service do Hoàng cung cấp; GUI chỉ hiển thị và nhận thao tác, không xử lý quyền hoặc quy tắc nghiệp vụ thay Backend.
 - [ ] Với hủy vé, GUI cho Admin nhập lý do, xác nhận đã hoàn tiền, gọi `cancelTicket()` và làm mới vé/sơ đồ ghế; không sửa Ticket/Member hoặc ghi TXT trực tiếp. Xử lý ngoại lệ ghi file bằng thông báo cần kiểm tra dữ liệu, không tự thử lại.
+- [ ] `InvoiceHistoryView` dùng `InvoiceService` để tra theo mã, lọc `[from,to)` và hiển thị trạng thái/tiền hoàn/còn lại; Staff chỉ liệt kê hóa đơn của mình trong ngày hiện tại, nhưng được tra hóa đơn cũ của mình theo mã.
+- [ ] `ReportView` chuẩn bị gọi 7 API `ReportService` cho Admin có `REPORT_VIEW`; GUI đổi ngày/tháng thành `[from,to)`, hiển thị cả doanh thu âm và top phim đã sắp xếp. Chờ ca kiểm thử tổng tiền Invoice–Ticket của backend được xử lý trước khi coi luồng báo cáo là đã tích hợp xong.
 - [ ] Cấu hình và kiểm tra build GUI Qt, trạng thái màn hình và thông báo lỗi.
 
 ### Bước 13 – Kiểm thử tích hợp và sửa lỗi

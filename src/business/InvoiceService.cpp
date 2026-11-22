@@ -145,7 +145,7 @@ vector<Ticket*> InvoiceService::getValidTickets(Invoice* invoice)
     {
         throw runtime_error("Chua nap du lieu ve");
     }
-    vector<Ticket*> tickets = ticketRepo.getByInvoice(invoice->getInvoiceId());
+    vector<Ticket*> tickets = ticketRepo.getByInvoice(invoice->getInvoiceId()); 
     if (tickets.empty() || invoice->getTicketCount() != static_cast<int>(tickets.size()))
     {
         throw runtime_error("Hoa don khong co ve hoac lien ket ve khong nhat quan");
