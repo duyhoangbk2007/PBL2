@@ -2,6 +2,7 @@
 #include "SalesHistoryAdapter.h"
 #include <QWidget>
 class AuthService;
+class InvoiceService;
 class QCheckBox;
 class QLabel;
 class QLineEdit;
@@ -12,11 +13,12 @@ namespace HistoryUi { class Dates; }
 class InvoiceHistoryView : public QWidget
 {
 public:
-    explicit InvoiceHistoryView(AuthService& auth);
+    explicit InvoiceHistoryView(InvoiceService& service, AuthService& auth);
 private:
     void search();
     void detail();
     AuthService& auth;
+    InvoiceService& service;
     HistoryUi::Dates* dates;
     QLineEdit *code, *staff, *movie, *show;
     QTableWidget* invoices;

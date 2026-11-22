@@ -33,6 +33,8 @@ private:
     QPushButton *back, *next, *undo, *clearSeats, *cancel;
     QVector<Line> choices; // Selection order is also the undo stack.
     QString roomId;
+    bool bookingInProgress = false;
+    bool bookingStorageError = false;
     void populateMovies();
     void populateShows();
     void loadSeats();

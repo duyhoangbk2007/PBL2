@@ -20,6 +20,10 @@
 #include <cmath>
 #include <stdexcept>
 #include <map>
+#include <string>
+#include <vector>
+#include <exception>
+
 
 namespace {
 class SeatMatrixView : public QTableView
@@ -104,13 +108,39 @@ public:
         if (role == Qt::TextAlignmentRole) {
             return int(Qt::AlignCenter);
         }
-        if (role == Qt::ToolTipRole && seat.availability == BookingAdapter::SeatStatus::Unknown) {
-            return "Chưa xác minh tình trạng bán · chọn thử";
+        if (role == Qt::ToolTipRole) {
+            switch (seat.availability) {
+                case BookingAdapter::SeatStatus::Available:
+                    return "Ghế còn trống";
+                case BookingAdapter::SeatStatus::Sold:
+                    return "Ghế đã bán";
+                case BookingAdapter::SeatStatus::Unknown:
+                    return "Chưa xác minh trạng thái ghế";
+            }
         }
         if (role == Qt::BackgroundRole) {
-            if (selected.contains(seat.id)) { return QColor("#cbd6ff"); }
-            if (seat.kind == SeatType::COUPLE) { return QColor("#fcecf4"); }
-            if (seat.kind == SeatType::VIP) { return QColor("#eceaff"); }
+            if (seat.availability ==
+                BookingAdapter::SeatStatus::Sold) {
+                return QColor("#cbd0d8");
+            }
+
+            if (seat.availability ==
+                BookingAdapter::SeatStatus::Unknown) {
+                return QColor("#f3d7a5");
+            }
+
+            if (selected.contains(seat.id)) {
+                return QColor("#cbd6ff");
+            }
+
+            if (seat.kind == SeatType::COUPLE) {
+                return QColor("#fcecf4");
+            }
+
+            if (seat.kind == SeatType::VIP) {
+                return QColor("#eceaff");
+            }
+
             return QColor("#e6eaf1");
         }
         return {};
@@ -229,7 +259,19 @@ BookingView::BookingView(ApplicationContext& context)
         CatalogUi::run(notice, [&] {
             if (!validShow()) { populateShows(); setStep(0); return; }
             auto it = grid->cells.find({index.row(), index.column()});
-            if (it == grid->cells.end() || grid->selected.contains(it->second.id)) { return; }
+
+            if (it == grid->cells.end() ||
+                grid->selected.contains(it->second.id)) {
+                return;
+            }
+
+            if (it->second.availability !=
+                BookingAdapter::SeatStatus::Available) {
+                notice->setText(
+                    "Ghế này đã được bán hoặc chưa xác minh "
+                    "trạng thái. Vui lòng chọn ghế khác.");
+                return;
+            }
             choices.append({it->second.id, it->second.kind, TicketType::REGULAR});
             grid->mark(it->second.id, true);
             resetChecks();
@@ -254,6 +296,12 @@ BookingView::BookingView(ApplicationContext& context)
     });
     connect(memberQuery, &QLineEdit::textChanged, this, [this] { CatalogUi::run(notice, [this] { lookupMember(); }); });
     connect(members, &QComboBox::currentIndexChanged, this, [this] { resetChecks(); quote(); });
+    connect(age, &QCheckBox::toggled, this, [this] {
+        if (steps->currentIndex() == 3) { setStep(3); }
+    });
+    connect(cash, &QCheckBox::toggled, this, [this] {
+        if (steps->currentIndex() == 3) { setStep(3); }
+    });
     connect(next, &QPushButton::clicked, this, [this] { CatalogUi::run(notice, [this] { advance(); }); });
     connect(back, &QPushButton::clicked, this, [this] { setStep(qMax(0, steps->currentIndex() - 1)); });
     connect(cancel, &QPushButton::clicked, this, [this] {
@@ -397,30 +445,96 @@ bool BookingView::validShow() const
     return movie && movie->isActive() && show && show->getMovieId() == filmId && upcoming(*show);
 }
 
+
 void BookingView::loadSeats()
 {
     clearChoices();
     setStep(0);
-    if (!validShow()) { return; }
-    if (!ctx.auth.hasPermission("ROOM_VIEW") || !ctx.auth.hasPermission("SEAT_VIEW")) {
-        notice->setText("Cần quyền xem phòng và sơ đồ ghế.");
+
+    if (!validShow()) {
         return;
     }
-    const auto showId = shows->currentData().toString().toStdString();
-    const auto* show = ctx.showtimes.findShowtimeById(showId);
-    const auto* room = ctx.rooms.findRoomById(show->getRoomId());
-    if (!room) { notice->setText("Không tìm thấy phòng."); return; }
+
+    if (!ctx.auth.hasPermission("ROOM_VIEW") ||
+        !ctx.auth.hasPermission("SEAT_VIEW")) {
+        notice->setText(
+            "Cần quyền xem phòng và sơ đồ ghế.");
+        return;
+    }
+
+    // Không dùng dữ liệu giao dịch khi load lỗi.
+    if (!ctx.catalogError.isEmpty() ||
+        !ctx.transactionError.isEmpty()) {
+        notice->setText(
+            "Dữ liệu suất chiếu hoặc giao dịch "
+            "chưa sẵn sàng.");
+        return;
+    }
+
+    const auto showId =
+        shows->currentData().toString().toStdString();
+
+    const auto* show =
+        ctx.showtimes.findShowtimeById(showId);
+
+    if (!show) {
+        notice->setText("Không tìm thấy suất chiếu.");
+        return;
+    }
+
+    const auto* room =
+        ctx.rooms.findRoomById(show->getRoomId());
+
+    if (!room || !room->isActive()) {
+        notice->setText(
+            "Phòng chiếu không tồn tại "
+            "hoặc đã ngừng hoạt động.");
+        return;
+    }
+
+    // BookingService xác định ghế còn trống.
+    const auto availability =
+        BookingAdapter::loadAvailability(
+            ctx.booking, showId);
+
+    if (!availability.verified) {
+        notice->setText(
+            "Không thể xác minh trạng thái ghế.");
+        return;
+    }
+
     BookingGrid::Cells cells;
+
     const int count = ctx.seats.getSeatCount();
+
     for (int i = 0; i < count; ++i) {
         const auto* seat = ctx.seats.getSeatAt(i);
-        if (seat && seat->getRoomId() == room->getRoomId()) {
-            cells[{seat->getRow()-1, seat->getColumn()-1}] = {QString::fromStdString(seat->getSeatId()), seat->getSeatType(),
-                BookingAdapter::seatStatus(showId, seat->getSeatId())};
+
+        if (!seat ||
+            seat->getRoomId() != room->getRoomId()) {
+            continue;
         }
+
+        const auto status =
+            availability.status(seat->getSeatId());
+
+        cells[{seat->getRow() - 1,
+               seat->getColumn() - 1}] = {
+            QString::fromStdString(
+                seat->getSeatId()),
+            seat->getSeatType(),
+            status
+        };
     }
-    roomId = QString::fromStdString(room->getRoomId());
-    grid->replace(room->getRowCount(), room->getColumnCount(), std::move(cells));
+
+    roomId =
+        QString::fromStdString(room->getRoomId());
+
+    grid->replace(
+        room->getRowCount(),
+        room->getColumnCount(),
+        std::move(cells));
+
     notice->clear();
     setStep(0);
 }
@@ -470,36 +584,146 @@ bool BookingView::quote()
     review->setRowCount(0);
     total->clear();
     estimate->clear();
+
+    student->setVisible(false);
+
+    if (choices.isEmpty()) {
+        return false;
+    }
+
+    if (!validShow()) {
+        notice->setText(
+            "Suất chiếu không còn hợp lệ.");
+        return false;
+    }
+
+    if (!ctx.pricingError.isEmpty() ||
+        !ctx.memberError.isEmpty() ||
+        !ctx.transactionError.isEmpty()) {
+        notice->setText(
+            "Dữ liệu giá, thành viên hoặc giao dịch "
+            "chưa sẵn sàng.");
+        return false;
+    }
+
+    const std::string showtimeId =
+        shows->currentData().toString().toStdString();
+
+    std::string memberId;
+
+    if (members->currentIndex() > 0) {
+        memberId =
+            members->currentData().toString().toStdString();
+    }
+
+    std::vector<BookingItem> items;
+    items.reserve(choices.size());
+
+    bool hasStudent = false;
+    bool hasStudentCouple = false;
+
+    for (const auto& line : choices) {
+        items.push_back({
+            line.id.toStdString(),
+            line.ticket
+        });
+
+        if (line.ticket == TicketType::STUDENT) {
+            hasStudent = true;
+
+            if (line.seat == SeatType::COUPLE) {
+                hasStudentCouple = true;
+            }
+        }
+    }
+
     try {
-        double sum = 0;
-        qint64 points = 0;
-        bool students = false, studentCouple = false;
-        const bool hasMember = members->currentIndex() > 0;
-        for (const auto& line : choices) {
-            const double base = ctx.pricing.getBasePrice(line.seat);
-            const double discount = ctx.pricing.calculateDiscount(base, line.ticket, hasMember);
-            const double paid = ctx.pricing.calculatePaidAmount(base, discount);
-            const int earned = ctx.pricing.calculatePoints(paid, hasMember);
+        BookingSummary summary;
+
+        const bool success =
+            ctx.booking.calculateBooking(
+                showtimeId,
+                items,
+                memberId,
+                summary
+            );
+
+        if (!success) {
+            notice->setText(
+                "Không thể tính giá vé. "
+                "Vui lòng kiểm tra lại suất chiếu, "
+                "ghế và thành viên.");
+
+            return false;
+        }
+
+        if (summary.ticketPrices.size() !=
+            items.size()) {
+            notice->setText(
+                "Dữ liệu báo giá không hợp lệ.");
+            return false;
+        }
+
+        for (int i = 0;
+             i < static_cast<int>(items.size());
+             ++i) {
+
+            const auto& line = choices[i];
+
+            const double paid =
+                summary.ticketPrices[i];
+
             const int row = review->rowCount();
             review->insertRow(row);
-            writeLine(review, row, {line.id, typeName(line.seat), line.ticket == TicketType::STUDENT ? "STUDENT" : "REGULAR",
-                formatVnd(base), formatVnd(discount), formatVnd(paid), QString::number(earned)});
-            sum += paid;
-            points += earned;
-            students |= line.ticket == TicketType::STUDENT;
-            studentCouple |= line.ticket == TicketType::STUDENT && line.seat == SeatType::COUPLE;
+
+            writeLine(review, row, {
+                line.id,
+                typeName(line.seat),
+                line.ticket == TicketType::STUDENT
+                    ? "STUDENT"
+                    : "REGULAR",
+                "—",
+                "—",
+                formatVnd(paid),
+                "—"
+            });
         }
-        if (!std::isfinite(sum)) { throw std::overflow_error("Tổng tiền vượt giới hạn."); }
-        total->setText(QString("Tổng tạm tính: %1   ·   %2 điểm dự kiến").arg(formatVnd(sum)).arg(points));
+
+        total->setText(
+            QString(
+                "Tổng tạm tính: %1"
+                "   ·   %2 điểm dự kiến"
+            )
+            .arg(formatVnd(summary.totalAmount))
+            .arg(summary.earnedPoints)
+        );
+
         estimate->setText(total->text());
-        student->setVisible(students);
-        student->setText(studentCouple ? "Đã kiểm tra giấy tờ học sinh cho từng người, gồm cả hai người ở ghế COUPLE."
-                                       : "Đã kiểm tra giấy tờ của từng khách dùng vé học sinh.");
+
+        student->setVisible(hasStudent);
+
+        student->setText(
+            hasStudentCouple
+                ? "Đã kiểm tra giấy tờ học sinh "
+                  "cho từng người, gồm cả hai "
+                  "người ở ghế COUPLE."
+                : "Đã kiểm tra giấy tờ của từng "
+                  "khách dùng vé học sinh."
+        );
+
+        notice->clear();
         return true;
+
     } catch (const std::exception& ex) {
         review->setRowCount(0);
         total->clear();
-        notice->setText("Chưa thể tạm tính: " + QString::fromUtf8(ex.what()));
+        estimate->clear();
+
+        notice->setText(
+            "Chưa thể tạm tính: " +
+            QString::fromUtf8(ex.what())
+        );
+
         return false;
     }
 }
@@ -511,15 +735,14 @@ void BookingView::setStep(int step)
     progress->setText(titles.at(step));
     back->setEnabled(step > 0);
     next->setText(step == 3 ? "Hoàn tất giao dịch" : "Tiếp tục →");
-    next->setEnabled(step == 0 ? !roomId.isEmpty() : step < 3 && !choices.isEmpty());
-    if (step == 3 && BookingAdapter::saleSupport() == BookingAdapter::SaleResult::NotImplemented) {
-        next->setEnabled(false);
-        notice->setText("Chức năng bán vé đang chờ tích hợp backend.");
-    }
+    next->setEnabled(!bookingInProgress && !bookingStorageError &&
+                     (step == 0 ? !roomId.isEmpty() :
+                      !choices.isEmpty() && (step < 3 || (age->isChecked() && cash->isChecked()))));
 }
 
 void BookingView::advance()
 {
+    if (bookingInProgress || bookingStorageError) { return; }
     if (!validShow()) {
         refresh();
         notice->setText("Suất chiếu đã thay đổi hoặc bắt đầu. Vui lòng chọn lại.");
@@ -537,5 +760,40 @@ void BookingView::advance()
         age->setText(QString("Đã kiểm tra khách đủ tuổi theo phim (%1+).").arg(film->getMinAge()));
         reviewTitle->setText(movies->currentText() + "\n" + shows->currentText() + "\n" + members->currentText());
     }
-    if (step < 3) { setStep(step + 1); }
+    if (step < 3) { setStep(step + 1); return; }
+
+    std::vector<BookingItem> items;
+    items.reserve(choices.size());
+    for (const auto& line : choices) {
+        items.push_back({line.id.toStdString(), line.ticket});
+    }
+    const std::string memberId = members->currentIndex() > 0
+        ? members->currentData().toString().toStdString() : std::string();
+    std::string invoiceId;
+    bookingInProgress = true;
+    next->setEnabled(false);
+    try {
+        if (!ctx.booking.createBooking(shows->currentData().toString().toStdString(),
+                                       items, memberId, age->isChecked(),
+                                       cash->isChecked(), invoiceId)) {
+            bookingInProgress = false;
+            setStep(3);
+            notice->setText("Không thể hoàn tất giao dịch. Vui lòng kiểm tra thông tin và thử lại.");
+            return;
+        }
+        bookingInProgress = false;
+        clearChoices();
+        setStep(0);
+        notice->setText("Giao dịch thành công. Mã hóa đơn: " + QString::fromStdString(invoiceId));
+    } catch (const std::exception& ex) {
+        bookingInProgress = false;
+        bookingStorageError = true;
+        next->setEnabled(false);
+        notice->setText("Lỗi lưu giao dịch: " + QString::fromUtf8(ex.what()));
+    } catch (...) {
+        bookingInProgress = false;
+        bookingStorageError = true;
+        next->setEnabled(false);
+        notice->setText("Lỗi lưu giao dịch không xác định.");
+    }
 }

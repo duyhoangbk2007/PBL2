@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.21)
 project(PBL2Cinema LANGUAGES CXX)
 
@@ -11,7 +12,12 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_library(pbl2_auth STATIC
     src/business/PricingService.cpp
+    src/business/BookingService.cpp
+    src/business/InvoiceService.cpp
+    src/business/ReportService.cpp
     src/data_access/PricingRepository.cpp
+    src/data_access/InvoiceRepository.cpp
+    src/data_access/TicketRepository.cpp
     src/models/Pricing.cpp
     src/business/ShowtimeService.cpp
     src/business/MemberService.cpp
@@ -63,6 +69,7 @@ set(gui_sources
     src/gui/MainWindow.h
     src/gui/resources/gui.qrc
 )
+
 qt_add_executable(pbl2_gui WIN32 src/gui/main.cpp ${gui_sources})
 target_link_libraries(pbl2_gui PRIVATE pbl2_auth Qt6::Widgets)
 

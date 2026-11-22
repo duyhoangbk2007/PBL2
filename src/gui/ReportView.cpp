@@ -63,7 +63,7 @@ void plot(QTableWidget* table, const QList<SalesHistory::ChartEntry>& rows, bool
     }
     for (const auto& item : rows) {
         QStringList values{item.label, {}, formatVnd(item.amount)};
-        if (ranking) { values.append(QString::number(item.tickets)); }
+        if (ranking) { values.append(item.tickets < 0 ? QString("—") : QString::number(item.tickets)); }
         const int row = HistoryUi::append(table, values);
         table->item(row, 1)->setData(Qt::UserRole, item.amount / scale);
         table->item(row, 1)->setData(Qt::UserRole + 1, signedAxis);
@@ -71,8 +71,8 @@ void plot(QTableWidget* table, const QList<SalesHistory::ChartEntry>& rows, bool
 }
 }
 
-ReportView::ReportView(AuthService& auth)
-    : auth(auth), dates(new HistoryUi::Dates), preview(new QCheckBox("Xem dữ liệu DEMO")),
+ReportView::ReportView(ReportService& service, AuthService& auth)
+    : auth(auth), service(service), dates(new HistoryUi::Dates), preview(new QCheckBox("Xem dữ liệu DEMO")),
       status(HistoryUi::label({}, "demoNotice")), daily(chart("Ngày", false)), movies(chart("Phim", true)),
       timer(new QTimer(this))
 {
@@ -162,7 +162,7 @@ void ReportView::load()
 
 void ReportView::display()
 {
-    const auto data = SalesHistory::report(auth, dates->period(), preview->isChecked());
+    const auto data = SalesHistory::report(service, auth, dates->period(), preview->isChecked());
     HistoryUi::showStatus(status, data.status, data.daily.isEmpty() && data.movies.isEmpty());
     if (data.status.state != SalesHistory::State::Available && data.status.state != SalesHistory::State::Preview) {
         return;

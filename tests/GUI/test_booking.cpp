@@ -109,6 +109,11 @@ void run()
         show("SHW0003","MOV0002","ROM0002",future,"09:00:00","10:30:00","SCHEDULED") +
         show("SHW0004","MOV0001","ROM0001",past,"09:00:00","10:30:00","SCHEDULED") +
         show("SHW0005","MOV0001","ROM0001",future,"17:00:00","18:30:00","CANCELLED"));
+    writeFile(files.filePath("invoices.txt"), "INV0001|SHW0001|USR0001||" +
+              QDate::currentDate().toString(Qt::ISODate).toUtf8() + "T09:00:00|75000\n");
+    writeFile(files.filePath("tickets.txt"), "TKT0001|INV0001|SHW0001|A02|REGULAR|75000|0|75000|0|SOLD||||0\n");
+    const auto initialInvoices = readFile(files.filePath("invoices.txt"));
+    const auto initialTickets = readFile(files.filePath("tickets.txt"));
     QFile extraMembers(files.filePath("members.txt"));
     require(extraMembers.open(QIODevice::Append), "member search fixture");
     for (int n = 10; n < 20; ++n) {
@@ -168,8 +173,13 @@ void run()
     choose(shows, "SHW0001");
     proceed();
     require(grid->model()->rowCount() == 5 && grid->model()->columnCount() == 8, "room dimensions");
-    require(BookingAdapter::seatStatus("SHW0001","A01") == BookingAdapter::SeatStatus::Unknown &&
-            grid->model()->index(0,0).data(Qt::ToolTipRole).toString().contains("Chưa xác minh"), "unknown availability");
+    const auto availability = BookingAdapter::loadAvailability(ctx.booking, "SHW0001");
+    require(availability.verified && availability.status("A01") == BookingAdapter::SeatStatus::Available &&
+            availability.status("A02") == BookingAdapter::SeatStatus::Sold &&
+            grid->model()->index(0,0).data(Qt::ToolTipRole).toString().contains("còn trống") &&
+            grid->model()->index(0,1).data(Qt::ToolTipRole).toString().contains("đã bán"), "backend availability");
+    cell(0, 1);
+    require(types->rowCount() == 0, "sold seat selected");
     cell(0, 6);
     require(types->rowCount() == 0, "selected missing seat");
     cell(0, 0);
@@ -209,22 +219,27 @@ void run()
     }
     choose(member, "MEM0001");
     proceed();
-    require(quote->rowCount() == 2 && quote->item(1,1)->text() == "COUPLE" &&
-            quote->item(1,4)->text() == formatVnd(15500) && quote->item(0,4)->text() == formatVnd(4450.025) &&
-            quote->item(0,6)->text() == "8" && quote->item(1,6)->text() == "13" &&
-            total->text().contains(formatVnd(224050.475)) && total->text().contains("21 điểm"), "per-ticket quote");
+    BookingSummary summary;
+    require(ctx.booking.calculateBooking("SHW0001", {{"A01", TicketType::REGULAR}, {"E04", TicketType::STUDENT}},
+                                         "MEM0001", summary) &&
+            quote->rowCount() == 2 && quote->item(1,1)->text() == "COUPLE" &&
+            quote->item(0,5)->text() == formatVnd(summary.ticketPrices[0]) &&
+            quote->item(1,5)->text() == formatVnd(summary.ticketPrices[1]) &&
+            total->text().contains(formatVnd(summary.totalAmount)), "per-ticket quote");
     bool coupleProof = false;
     for (auto* check : booking->findChildren<QCheckBox*>()) {
         check->setChecked(true);
         coupleProof |= check->isVisible() && check->text().contains("hai người");
     }
-    require(coupleProof && !button(booking, "Hoàn tất giao dịch")->isEnabled(), "checkout guard");
+    require(coupleProof && button(booking, "Hoàn tất giao dịch")->isEnabled(), "checkout confirmations");
     capture(window, "ban-ve-xem-lai");
     prices = navigate(window, "PRICING_VIEW");
     fields[0]->setValue(90000);
     button(prices, "Lưu thay đổi")->click();
     navigate(window, "TICKET_SELL");
-    require(quote->rowCount() == 2 && quote->item(0,3)->text() == formatVnd(90000), "stale quote");
+    require(ctx.booking.calculateBooking("SHW0001", {{"A01", TicketType::REGULAR}, {"E04", TicketType::STUDENT}},
+                                         "MEM0001", summary) && quote->rowCount() == 2 &&
+            quote->item(0,5)->text() == formatVnd(summary.ticketPrices[0]), "stale quote");
     choose(shows, "SHW0002");
     require(grid->model()->rowCount() == 3 && grid->model()->columnCount() == 5 && types->rowCount() == 0 &&
             !button(booking, "Hoàn tác chọn ghế")->isEnabled() && member->currentIndex() == 0, "show reset");
@@ -240,9 +255,33 @@ void run()
     cell(0,0);
     button(booking, "Bỏ giao dịch")->click();
     require(movies->currentIndex() == 0 && types->rowCount() == 0 && quote->rowCount() == 0, "discard");
-    require(!QFile::exists(files.filePath("tickets.txt")) && !QFile::exists(files.filePath("invoices.txt")) &&
+    require(readFile(files.filePath("tickets.txt")) == initialTickets &&
+            readFile(files.filePath("invoices.txt")) == initialInvoices &&
             memberData == readFile(files.filePath("members.txt")) && ctx.members.findMemberById("MEM0001")->getPoints() == 18,
             "preview affected sales data");
+    choose(movies, "MOV0001");
+    choose(shows, "SHW0001");
+    proceed();
+    cell(0, 0);
+    proceed();
+    proceed();
+    auto* checkout = button(booking, "Hoàn tất giao dịch");
+    require(!checkout->isEnabled(), "checkout allowed without confirmations");
+    for (auto* check : booking->findChildren<QCheckBox*>()) { check->setChecked(true); }
+    require(checkout->isEnabled(), "checkout remains disabled after confirmations");
+    checkout->click();
+    QApplication::processEvents();
+    const auto savedInvoices = readFile(files.filePath("invoices.txt"));
+    const auto savedTickets = readFile(files.filePath("tickets.txt"));
+    require(savedInvoices != initialInvoices && savedTickets != initialTickets &&
+            savedInvoices.trimmed().split('\n').size() == 2 &&
+            savedTickets.trimmed().split('\n').size() == 2 &&
+            !checkout->isEnabled(), "checkout did not lock after sale");
+    checkout->click();
+    QApplication::processEvents();
+    require(readFile(files.filePath("invoices.txt")) == savedInvoices &&
+            readFile(files.filePath("tickets.txt")) == savedTickets,
+            "duplicate checkout submitted");
     window.findChild<QPushButton*>("logout")->click();
     QApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     login(window, "cashier", secret);

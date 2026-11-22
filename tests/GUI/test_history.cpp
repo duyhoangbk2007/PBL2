@@ -1,6 +1,9 @@
 #include "ApplicationContext.h"
 #include "MainWindow.h"
 #include "HistoryWidgets.h"
+#include "InvoiceHistoryView.h"
+#include "TicketCancellationView.h"
+#include "ReportView.h"
 #include "PricingManagementView.h"
 #include <QApplication>
 #include <QButtonGroup>
@@ -32,6 +35,102 @@ QPushButton* button(QWidget* parent, const QString& text)
         if (item->text() == text) { return item; }
     }
     throw std::runtime_error("missing button");
+}
+
+void exerciseLiveInvoices()
+{
+    QTemporaryDir data;
+    check(data.isValid(), "live history tempdir");
+    for (const QString name : {"movies", "rooms", "seats", "pricing", "members", "role_permissions"}) {
+        const QString file = name + ".txt";
+        check(QFile::copy(QString(PBL2_GUI_FIXTURES) + "/" + file, data.filePath(file)), "live fixture copy");
+    }
+    auto write = [&](const QString& name, const QByteArray& bytes) {
+        QFile file(data.filePath(name));
+        check(file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size(), "live fixture write");
+    };
+    const auto secret = QUuid::createUuid().toByteArray(QUuid::WithoutBraces);
+    write("users.txt", "USR0001|admin|" + secret + "|Quan ly|ADMIN|1\n"
+                       "USR0002|staff|" + secret + "|Nhan vien|STAFF|1\n");
+    const auto today = QDate::currentDate().toString(Qt::ISODate).toUtf8();
+    const auto yesterday = QDate::currentDate().addDays(-1).toString(Qt::ISODate).toUtf8();
+    const auto future = QDate::currentDate().addDays(5).toString(Qt::ISODate).toUtf8();
+    write("showtimes.txt", "SHW0001|MOV0002|ROM0002|" + future + "T10:00:00|" + future + "T12:00:00|SCHEDULED\n");
+    write("invoices.txt", "INV0001|SHW0001|USR0001||" + today + "T00:00:00|150000\n"
+                          "INV0002|SHW0001|USR0002||" + today + "T00:00:00|75000\n"
+                          "INV0003|SHW0001|USR0002||" + yesterday + "T08:00:00|75000\n");
+    write("tickets.txt", "TKT0001|INV0001|SHW0001|A01|REGULAR|75000|0|75000|0|SOLD||||0\n"
+                         "TKT0002|INV0001|SHW0001|A02|REGULAR|75000|0|75000|0|CANCELLED|" + today + "T10:00:00|USR0001|Doi lich|75000\n"
+                         "TKT0003|INV0002|SHW0001|C04|REGULAR|75000|0|75000|0|SOLD||||0\n"
+                         "TKT0004|INV0003|SHW0001|A02|REGULAR|75000|0|75000|0|SOLD||||0\n");
+    ApplicationContext context(data.path());
+    check(context.load().isEmpty(), "live context load");
+    if (!context.transactionError.isEmpty()) {
+        throw std::runtime_error(("live transaction fixture load: " + context.transactionError).toStdString());
+    }
+    check(context.auth.login("admin", secret.toStdString()), "live admin login");
+    InvoiceHistoryView admin(context.invoices, context.auth);
+    auto* table = admin.findChild<QTableWidget*>();
+    check(table && table->rowCount() == 3 && table->item(0, 11)->text() == "PARTIALLY_CANCELLED" &&
+          table->item(0, 8)->text() == formatVnd(150000) &&
+          table->item(0, 9)->text() == formatVnd(75000) &&
+          table->item(0, 10)->text() == formatVnd(75000), "live invoice amounts and status");
+    ReportView report(context.reports, context.auth);
+    report.findChild<QDateEdit*>("fromDate")->setDate(QDate::currentDate());
+    report.findChild<QDateEdit*>("toDate")->setDate(QDate::currentDate());
+    button(&report, "Áp dụng")->click();
+    QApplication::processEvents();
+    const auto metrics = report.findChildren<QLabel*>("priceValue");
+    const auto charts = report.findChildren<QTableWidget*>();
+    check(metrics.size() == 5 && metrics[0]->text() == formatVnd(225000) &&
+          metrics[1]->text() == formatVnd(75000) &&
+          metrics[2]->text() == formatVnd(150000) &&
+          metrics[3]->text() == "3" && metrics[4]->text() == "1" &&
+          charts.size() == 2 && charts[0]->rowCount() == 1 &&
+          charts[1]->rowCount() == 1 && charts[1]->item(0, 2)->text() == formatVnd(150000) &&
+          charts[1]->item(0, 3)->text() == "—", "partial refund report totals");
+    TicketCancellationView cancellation(context.booking, context.invoices, context.auth);
+    auto* search = cancellation.findChild<QLineEdit*>();
+    search->setText("TKT0001");
+    check(cancellation.findChild<QLabel*>("demoNotice")->text().contains("BLOCKED"), "ticket lookup API gap");
+    search->setText("INV9999");
+    check(cancellation.findChild<QTableWidget*>()->rowCount() == 0, "missing invoice lookup");
+    search->setText("INV0001");
+    auto* saleLines = cancellation.findChild<QTableWidget*>();
+    check(saleLines->rowCount() == 2 && saleLines->item(0, 5)->text() == "SOLD" &&
+          saleLines->item(1, 5)->text() == "CANCELLED" &&
+          saleLines->cellWidget(0, 6) && !saleLines->cellWidget(1, 6), "live cancellation rows");
+    bool opened = false;
+    QTimer::singleShot(0, [&] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        if (!dialog) { return; }
+        opened = true;
+        dialog->findChild<QPlainTextEdit*>()->setPlainText("Khach doi lich");
+        dialog->findChild<QCheckBox*>()->setChecked(true);
+        button(dialog, "Xác nhận hủy vé")->click();
+        QTimer::singleShot(0, dialog, &QDialog::reject);
+    });
+    button(&cancellation, "Hủy vé")->click();
+    check(opened && context.invoices.getInvoiceStatus("INV0001") == InvoiceStatus::CANCELLED &&
+          context.invoices.getRefundAmount("INV0001") == 150000 &&
+          !saleLines->cellWidget(0, 6), "cancelTicket did not persist and refresh");
+    context.auth.logout();
+    check(context.auth.login("staff", secret.toStdString()), "live staff login");
+    InvoiceHistoryView staff(context.invoices, context.auth);
+    auto* own = staff.findChild<QTableWidget*>();
+    check(own && own->rowCount() == 1 && own->item(0, 0)->text() == "INV0002", "staff today scope");
+    staff.findChild<QLineEdit*>("invoiceCode")->setText("INV0003");
+    button(&staff, "Tra cứu")->click();
+    check(own->rowCount() == 1 && own->item(0, 0)->text() == "INV0003", "staff own old invoice lookup");
+    staff.findChild<QLineEdit*>("invoiceCode")->setText("INV0001");
+    button(&staff, "Tra cứu")->click();
+    check(own->rowCount() == 0, "staff accessed admin invoice");
+    check(SalesHistory::report(context.reports, context.auth,
+          {QDate::currentDate().startOfDay(), QDate::currentDate().addDays(1).startOfDay()}, false)
+          .status.state == SalesHistory::State::Error, "staff report access");
+    TicketCancellationView denied(context.booking, context.invoices, context.auth);
+    denied.findChild<QLineEdit*>()->setText("INV0002");
+    check(denied.findChild<QTableWidget*>()->rowCount() == 0, "staff cancellation access");
 }
 
 void capture(QWidget& window, const QString& name)
@@ -165,7 +264,7 @@ int exercise()
     check(reports, "admin report");
     auto* banner = reports->findChild<QLabel*>("demoNotice");
     auto cards = reports->findChildren<QLabel*>("priceValue");
-    check(cards.size() == 5 && cards[2]->text() == "—" && banner->text().contains("Đang chờ"), "live report");
+    check(cards.size() == 5 && cards[2]->text() == "—" && banner->text().contains("Chọn ngày"), "live report");
     auto* demo = reports->findChild<QCheckBox*>();
     demo->click();
     check(banner->text().contains("Đang tải"), "report loading");
@@ -213,7 +312,10 @@ int exercise()
 
 int testHistory()
 {
-    try { return exercise(); }
+    try {
+        exerciseLiveInvoices();
+        return exercise();
+    }
     catch (const std::exception& error) {
         qCritical("%s", error.what());
         return 1;

@@ -2,6 +2,8 @@
 #include "HistoryWidgets.h"
 #include "PricingManagementView.h"
 #include "../business/AuthService.h"
+#include "../business/BookingService.h"
+#include "../business/InvoiceService.h"
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -12,9 +14,10 @@
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
+#include <exception>
 
-TicketCancellationView::TicketCancellationView(AuthService& auth)
-    : auth(auth), preview(new QCheckBox("Xem dữ liệu DEMO")), query(new QLineEdit),
+TicketCancellationView::TicketCancellationView(BookingService& booking, InvoiceService& invoices, AuthService& auth)
+    : auth(auth), booking(booking), invoices(invoices), preview(new QCheckBox("Xem dữ liệu DEMO")), query(new QLineEdit),
       status(HistoryUi::label({}, "demoNotice")), invoiceInfo(HistoryUi::label({})),
       tickets(HistoryUi::table({"Mã vé", "Ghế", "Suất chiếu", "Bắt đầu", "Thực trả", "Trạng thái", "Thao tác"}))
 {
@@ -46,16 +49,18 @@ TicketCancellationView::TicketCancellationView(AuthService& auth)
 
 void TicketCancellationView::lookup()
 {
-    const auto result = SalesHistory::cancellationLookup(auth, query->text(), preview->isChecked());
+    const auto result = SalesHistory::cancellationLookup(invoices, auth, query->text(), preview->isChecked());
     tickets->setRowCount(0);
     invoiceInfo->setText("Chưa chọn hóa đơn.");
     for (const auto& invoice : result.invoices) {
-        invoiceInfo->setText(HistoryUi::summary(invoice));
+        invoiceInfo->setText(HistoryUi::summary(invoice) +
+            "\nĐã hoàn: " + formatVnd(invoice.refunded) +
+            "   Còn lại: " + formatVnd(invoice.remaining));
         for (const auto& ticket : invoice.tickets) {
             const int row = HistoryUi::append(tickets, {ticket.id, ticket.seat, invoice.show,
                 HistoryUi::timestamp(invoice.starts), formatVnd(ticket.paid), ticket.status,
                 ticket.canCancel ? QString() : QString("—")});
-            if (ticket.canCancel) {
+            if (ticket.canCancel && !storageError) {
                 auto* action = new QPushButton("Hủy vé");
                 action->setAccessibleName("Hủy vé " + ticket.id);
                 tickets->setCellWidget(row, 6, action);
@@ -69,23 +74,54 @@ void TicketCancellationView::lookup()
 
 void TicketCancellationView::confirm(const SalesHistory::Invoice& invoice, const SalesHistory::TicketLine& ticket)
 {
-    if (!auth.isAdmin() || !auth.hasPermission("TICKET_CANCEL")) { return; }
+    if (!auth.isAdmin() || !auth.hasPermission("TICKET_CANCEL") || storageError) { return; }
     QDialog dialog(this);
     dialog.setWindowTitle("Hủy vé " + ticket.id);
     auto* form = new QVBoxLayout(&dialog);
-    form->addWidget(HistoryUi::label("DEMO · Xem trước phiếu hủy vé", "demoNotice"));
-    form->addWidget(HistoryUi::label(QString("%1  ·  Ghế %2  ·  %3\nSố tiền dự kiến hoàn  %4")
-        .arg(invoice.id, ticket.seat, HistoryUi::timestamp(invoice.starts), formatVnd(ticket.proposedRefund))));
+    if (preview->isChecked()) {
+        form->addWidget(HistoryUi::label("DEMO · Xem trước phiếu hủy vé", "demoNotice"));
+    }
+    form->addWidget(HistoryUi::label(QString("%1  ·  Ghế %2  ·  %3")
+        .arg(invoice.id, ticket.seat, HistoryUi::timestamp(invoice.starts))));
+    if (preview->isChecked()) {
+        form->addWidget(HistoryUi::label("Số tiền dự kiến hoàn  " + formatVnd(ticket.proposedRefund)));
+    } else {
+        form->addWidget(HistoryUi::label("Báo giá hoàn đang BLOCKED: thiếu API Service.", "description"));
+    }
     form->addWidget(new QLabel("Lý do hủy"));
     auto* reason = new QPlainTextEdit;
     reason->setAccessibleName("Lý do hủy");
     reason->setPlaceholderText("Nhập lý do hủy vé");
     form->addWidget(reason);
-    form->addWidget(new QCheckBox("Đã đối chiếu tiền hoàn tại quầy (DEMO)"));
-    form->addWidget(HistoryUi::label("Đang chờ dịch vụ hủy vé. Chưa thể ghi nhận hoàn tiền.", "description"));
+    auto* refund = new QCheckBox("Đã xác nhận hoàn tiền tại quầy");
+    form->addWidget(refund);
+    auto* message = HistoryUi::label({}, "description");
+    form->addWidget(message);
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close);
-    // TODO: BACKEND INTEGRATION — submit ticket ID, reason and confirmation to a verified transaction.
-    buttons->addButton("Xác nhận hủy vé", QDialogButtonBox::AcceptRole)->setEnabled(false);
+    auto* submit = buttons->addButton("Xác nhận hủy vé", QDialogButtonBox::AcceptRole);
+    submit->setEnabled(false);
+    const auto update = [=] {
+        submit->setEnabled(!preview->isChecked() && !reason->toPlainText().trimmed().isEmpty() && refund->isChecked());
+    };
+    connect(reason, &QPlainTextEdit::textChanged, this, update);
+    connect(refund, &QCheckBox::toggled, this, update);
+    connect(submit, &QPushButton::clicked, this, [this, &dialog, ticket, reason, refund, submit, message] {
+        submit->setEnabled(false);
+        try {
+            if (!booking.cancelTicket(ticket.id.toStdString(), reason->toPlainText().trimmed().toStdString(),
+                                      refund->isChecked())) {
+                message->setText("Không thể hủy vé. Kiểm tra mã vé, trạng thái và điều kiện giao dịch.");
+                return;
+            }
+            dialog.accept();
+            lookup();
+        } catch (const std::exception& error) {
+            storageError = true;
+            message->setText("Lỗi giao dịch: " + QString::fromUtf8(error.what()));
+            status->setText(message->text());
+            submit->setEnabled(false);
+        }
+    });
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     form->addWidget(buttons);
     dialog.resize(470, 310);

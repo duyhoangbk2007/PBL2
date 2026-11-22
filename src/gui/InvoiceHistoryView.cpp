@@ -12,8 +12,8 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 
-InvoiceHistoryView::InvoiceHistoryView(AuthService& auth)
-    : auth(auth), dates(new HistoryUi::Dates), code(new QLineEdit), staff(new QLineEdit),
+InvoiceHistoryView::InvoiceHistoryView(InvoiceService& service, AuthService& auth)
+    : auth(auth), service(service), dates(new HistoryUi::Dates), code(new QLineEdit), staff(new QLineEdit),
       movie(new QLineEdit), show(new QLineEdit), invoices(HistoryUi::table({"Mã hóa đơn", "Thời điểm lập",
       "Nhân viên", "Phim", "Suất chiếu", "Phòng", "Thành viên", "Số vé", "Tổng ban đầu", "Đã hoàn",
       "Còn lại", "Trạng thái"})), details(new QPushButton("Xem chi tiết")), status(HistoryUi::label({}, "demoNotice")),
@@ -73,7 +73,7 @@ InvoiceHistoryView::InvoiceHistoryView(AuthService& auth)
 
 void InvoiceHistoryView::search()
 {
-    result = SalesHistory::history(auth, {dates->period(), code->text(), staff->text(), movie->text(), show->text()},
+    result = SalesHistory::history(service, auth, {dates->period(), code->text(), staff->text(), movie->text(), show->text()},
                                    preview->isChecked());
     invoices->setRowCount(0);
     details->setEnabled(false);
@@ -91,7 +91,7 @@ void InvoiceHistoryView::detail()
     if (row < 0 || row >= result.invoices.size()) { return; }
     const auto& i = result.invoices[row];
     // Re-query by ID so a future detail service can enforce access at open time.
-    const auto fresh = SalesHistory::history(auth, {{}, i.id, {}, {}, {}}, preview->isChecked());
+    const auto fresh = SalesHistory::history(service, auth, {{}, i.id, {}, {}, {}}, preview->isChecked());
     if (fresh.invoices.size() != 1 || fresh.invoices.first().id != i.id) { search(); return; }
     const auto& invoice = fresh.invoices.first();
     QDialog dialog(this);

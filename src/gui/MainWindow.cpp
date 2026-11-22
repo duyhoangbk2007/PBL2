@@ -265,11 +265,11 @@ QWidget* MainWindow::createSidebar()
                 content = label(context.pricingError, "description");
             }
         } else if (page.permission == "INVOICE_VIEW_OWN") {
-            content = new InvoiceHistoryView(auth);
+            content = new InvoiceHistoryView(context.invoices, auth);
         } else if (page.permission == "TICKET_CANCEL") {
-            content = new TicketCancellationView(auth);
+            content = new TicketCancellationView(context.booking, context.invoices, auth);
         } else if (page.permission == "REPORT_VIEW") {
-            content = new ReportView(auth);
+            content = new ReportView(context.reports, auth);
         } else if (page.permission == "TICKET_SELL") {
             if (context.catalogError.isEmpty()) {
                 content = new BookingView(context);

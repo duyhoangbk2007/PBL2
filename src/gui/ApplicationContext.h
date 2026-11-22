@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "../business/AuthService.h"
@@ -8,6 +9,11 @@
 #include "../business/StaffService.h"
 #include "../business/MemberService.h"
 #include "../business/PricingService.h"
+
+#include "../business/BookingService.h"
+#include "../business/InvoiceService.h"
+#include "../business/ReportService.h"
+
 #include <QString>
 
 class ApplicationContext
@@ -23,9 +29,14 @@ private:
     MemberRepository memberRepo;
     PricingRepository pricingRepo;
 
+    InvoiceRepository invoiceRepo;
+    TicketRepository ticketRepo;
+
 public:
     explicit ApplicationContext(const QString& dataDirectory);
+
     QString load();
+
     AuthService auth;
     MovieService movies;
     RoomService rooms;
@@ -34,7 +45,13 @@ public:
     StaffService staff;
     MemberService members;
     PricingService pricing;
+
+    BookingService booking;
+    InvoiceService invoices;
+    ReportService reports;
+
     QString pricingError;
     QString memberError;
     QString catalogError;
+    QString transactionError;
 };

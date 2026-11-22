@@ -4,6 +4,8 @@
 #include <QString>
 
 class AuthService;
+class InvoiceService;
+class ReportService;
 
 // Presentation data. Amounts, rankings and eligibility come from the source.
 namespace SalesHistory {
@@ -51,6 +53,9 @@ struct Report {
     int issued = 0, cancelled = 0;
 };
 InvoiceResult history(const AuthService& auth, const InvoiceFilter& filter, bool preview);
+InvoiceResult history(InvoiceService& service, const AuthService& auth, const InvoiceFilter& filter, bool preview);
 InvoiceResult cancellationLookup(const AuthService& auth, const QString& code, bool preview);
+InvoiceResult cancellationLookup(InvoiceService& service, const AuthService& auth, const QString& code, bool preview);
 Report report(const AuthService& auth, const Period& period, bool preview);
+Report report(ReportService& service, const AuthService& auth, const Period& period, bool preview);
 }

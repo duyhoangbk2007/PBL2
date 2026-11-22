@@ -1,5 +1,18 @@
 #include "SalesHistoryAdapter.h"
 #include "../business/AuthService.h"
+#include "../business/InvoiceService.h"
+#include "../business/ReportService.h"
+#include "../models/Invoice.h"
+#include "../models/Ticket.h"
+#include "../models/Showtime.h"
+#include "../models/Movie.h"
+#include "../models/Room.h"
+#include "../models/Seat.h"
+#include "../models/User.h"
+#include "../models/Member.h"
+#include <exception>
+#include <stdexcept>
+#include <limits>
 
 namespace SalesHistory {
 bool Period::valid() const
@@ -75,6 +88,83 @@ InvoiceResult history(const AuthService& auth, const InvoiceFilter& filter, bool
     return result;
 }
 
+InvoiceResult history(InvoiceService& service, const AuthService& auth, const InvoiceFilter& filter, bool preview)
+{
+    if (preview) { return history(auth, filter, true); }
+    if (!filter.period.valid()) { return {invalidDates(), {}}; }
+
+    InvoiceResult result{{State::Available, {}}, {}};
+    try {
+        const bool admin = auth.isAdmin();
+        const QDate today = QDate::currentDate();
+        const QDateTime from = filter.period.from.isValid() ? filter.period.from :
+            admin ? QDate(1900, 1, 1).startOfDay() : today.startOfDay();
+        const QDateTime until = filter.period.until.isValid() ? filter.period.until :
+            admin ? QDate(9999, 12, 31).startOfDay() : today.addDays(1).startOfDay();
+        if (from >= until) { return {invalidDates(), {}}; }
+
+        std::vector<::Invoice*> source;
+        const QString key = filter.code.trimmed();
+        if (!admin && !key.isEmpty()) {
+            ::Invoice* invoice = service.findInvoiceById(key.toStdString());
+            if (invoice) { source.push_back(invoice); }
+        } else {
+            source = service.getInvoiceHistory(from.toString(Qt::ISODate).toStdString(),
+                                               until.toString(Qt::ISODate).toStdString());
+        }
+
+        for (::Invoice* record : source) {
+            const ::Showtime* show = record->getShowtime();
+            const ::User* seller = record->getSeller();
+            if (!show || !seller || !show->getMovie() || !show->getRoom()) {
+                throw std::runtime_error("Lien ket hoa don khong day du");
+            }
+            Invoice item;
+            item.id = QString::fromStdString(record->getInvoiceId());
+            item.staff = QString::fromStdString(seller->getFullName());
+            item.movie = QString::fromStdString(show->getMovie()->getTitle());
+            item.show = QString::fromStdString(show->getShowtimeId());
+            item.room = QString::fromStdString(show->getRoom()->getName());
+            item.member = record->getMember() ?
+                QString::fromStdString(record->getMember()->getFullName()) : "Khách vãng lai";
+            item.created = QDateTime::fromString(QString::fromStdString(record->getCreatedAt()), Qt::ISODate);
+            item.starts = QDateTime::fromString(QString::fromStdString(show->getStartAt()), Qt::ISODate);
+            const auto state = service.getInvoiceStatus(record->getInvoiceId());
+            item.status = state == InvoiceStatus::ACTIVE ? "ACTIVE" :
+                state == InvoiceStatus::PARTIALLY_CANCELLED ? "PARTIALLY_CANCELLED" : "CANCELLED";
+            item.original = record->getTotalAmount();
+            item.refunded = service.getRefundAmount(record->getInvoiceId());
+            item.remaining = service.getRemainingAmount(record->getInvoiceId());
+            for (int index = 0; index < record->getTicketCount(); ++index) {
+                ::Ticket* ticket = record->getTicketAt(index);
+                if (!ticket || !ticket->getSeat()) {
+                    throw std::runtime_error("Lien ket ve khong day du");
+                }
+                const SeatType kind = ticket->getSeat()->getSeatType();
+                item.tickets.append({
+                    QString::fromStdString(ticket->getTicketId()),
+                    QString::fromStdString(ticket->getSeatId()),
+                    kind == SeatType::STANDARD ? "STANDARD" : kind == SeatType::VIP ? "VIP" : "COUPLE",
+                    ticket->getTicketType() == TicketType::REGULAR ? "REGULAR" : "STUDENT",
+                    ticket->getStatus() == TicketStatus::SOLD ? "SOLD" : "CANCELLED",
+                    ticket->getBasePrice(), ticket->getDiscountAmount(), ticket->getPaidAmount(),
+                    QString::fromStdString(ticket->getCancelledAt()),
+                    QString::fromStdString(ticket->getCancelledBy()),
+                    QString::fromStdString(ticket->getCancelReason()), ticket->getRefundAmount(), false, 0
+                });
+            }
+            if (filter.period.contains(item.created) && matches(item.id, filter.code) &&
+                matches(item.staff, filter.staff) && matches(item.movie, filter.movie) &&
+                matches(item.show, filter.show)) {
+                result.invoices.append(item);
+            }
+        }
+    } catch (const std::exception& error) {
+        return {{State::Error, QString::fromUtf8(error.what())}, {}};
+    }
+    return result;
+}
+
 InvoiceResult cancellationLookup(const AuthService& auth, const QString& code, bool preview)
 {
     if (!auth.isAdmin() || !auth.hasPermission("TICKET_CANCEL")) {
@@ -99,6 +189,37 @@ InvoiceResult cancellationLookup(const AuthService& auth, const QString& code, b
         }
     }
     return result;
+}
+
+InvoiceResult cancellationLookup(InvoiceService& service, const AuthService& auth, const QString& code, bool preview)
+{
+    if (preview) { return cancellationLookup(auth, code, true); }
+    if (!auth.isAdmin() || !auth.hasPermission("TICKET_CANCEL")) { return {denied(), {}}; }
+    const QString key = code.trimmed();
+    if (key.isEmpty()) {
+        return {{State::Available, "Nhập mã hóa đơn để tra cứu. Tra cứu theo mã vé đang BLOCKED: thiếu API Service."}, {}};
+    }
+    if (!key.startsWith("INV", Qt::CaseInsensitive)) {
+        return {{State::NotImplemented, "Tra cứu theo mã vé đang BLOCKED: thiếu API Service."}, {}};
+    }
+    try {
+        const auto result = history(service, auth, {{}, key, {}, {}, {}}, false);
+        if (result.status.state != State::Available) { return result; }
+        if (result.invoices.size() != 1 || result.invoices.first().id.compare(key, Qt::CaseInsensitive) != 0) {
+            return {{State::Available, "Không tìm thấy hóa đơn."}, {}};
+        }
+        InvoiceResult visible = result;
+        visible.status.message = "Báo giá hoàn trước khi hủy đang BLOCKED: thiếu API Service. "
+                                 "Service sẽ kiểm tra điều kiện hủy khi xác nhận.";
+        for (auto& invoice : visible.invoices) {
+            for (auto& ticket : invoice.tickets) {
+                ticket.canCancel = ticket.status == "SOLD";
+            }
+        }
+        return visible;
+    } catch (const std::exception& error) {
+        return {{State::Error, QString::fromUtf8(error.what())}, {}};
+    }
 }
 
 Report report(const AuthService& auth, const Period& period, bool preview)
@@ -131,5 +252,42 @@ Report report(const AuthService& auth, const Period& period, bool preview)
     result.issued = last ? 2 : 0;
     result.cancelled = int(first) + int(last);
     return result;
+}
+
+Report report(ReportService& service, const AuthService& auth, const Period& period, bool preview)
+{
+    if (preview) { return report(auth, period, true); }
+    if (!auth.isAdmin() || !auth.hasPermission("REPORT_VIEW")) { return {denied()}; }
+    if (!period.valid()) { return {invalidDates()}; }
+    if (!period.from.isValid() || !period.until.isValid()) {
+        return {{State::NotImplemented, "Chọn ngày bắt đầu và ngày kết thúc để tải báo cáo thật."}};
+    }
+    if (period.from.daysTo(period.until) > 366) {
+        return {{State::NotImplemented, "NEEDS_VERIFICATION: biểu đồ theo ngày chỉ hỗ trợ kỳ tối đa 366 ngày."}};
+    }
+    try {
+        const std::string from = period.from.toString(Qt::ISODate).toStdString();
+        const std::string until = period.until.toString(Qt::ISODate).toStdString();
+        Report result{{State::Available, "NEEDS_VERIFICATION: ReportService chưa cung cấp số vé theo từng phim; cột này hiển thị —."}};
+        result.sold = service.getTotalSales(from, until);
+        result.refunded = service.getTotalRefund(from, until);
+        result.net = service.getActualRevenue(from, until);
+        result.issued = service.getSoldTicketCount(from, until);
+        result.cancelled = service.getCancelledTicketCount(from, until);
+        for (QDateTime day = period.from; day < period.until; day = day.addDays(1)) {
+            const QDateTime next = day.addDays(1) < period.until ? day.addDays(1) : period.until;
+            result.daily.append({day.date().toString("dd/MM/yyyy"),
+                service.getActualRevenue(day.toString(Qt::ISODate).toStdString(),
+                                         next.toString(Qt::ISODate).toStdString())});
+        }
+        for (const Movie* movie : service.getTopMovies(from, until, std::numeric_limits<int>::max())) {
+            if (!movie) { throw std::runtime_error("Du lieu phim bao cao khong hop le"); }
+            result.movies.append({QString::fromStdString(movie->getTitle()),
+                service.getMovieRevenue(movie->getMovieId(), from, until), -1});
+        }
+        return result;
+    } catch (const std::exception& error) {
+        return {{State::Error, QString::fromUtf8(error.what())}};
+    }
 }
 }
