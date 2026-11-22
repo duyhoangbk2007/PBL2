@@ -1,0 +1,2 @@
+ROM0001|Phòng Ánh Dương|5|8|1
+ROM0002|Phòng Sao Mai|3|5|1

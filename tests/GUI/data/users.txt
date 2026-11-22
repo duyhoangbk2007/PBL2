@@ -1,0 +1,2 @@
+USR0001|quanly_test|RapTest01|Quản lý thử nghiệm|ADMIN|1
+USR0002|nhanvien_test|RapTest02|Nhân viên thử nghiệm|STAFF|1

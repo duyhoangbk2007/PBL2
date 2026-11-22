@@ -1,0 +1,70 @@
+QWidget {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 14px;
+    color: #18243a;
+}
+QWidget#shell { background: #f4f6fa; }
+QFrame#sidebar, #sidebar QScrollArea, #sidebar QScrollArea QWidget {
+    background-color: #152038;
+}
+QLabel { background: transparent; }
+QLabel#logo { background: #536de3; color: white; border-radius: 12px; font-size: 23px; }
+QLabel#brand { color: white; font-size: 18px; font-weight: bold; }
+QLabel#brandCaption { color: #a0aec9; font-size: 10px; letter-spacing: 2px; }
+QLabel#group { color: #9caac3; font-size: 10px; font-weight: bold; letter-spacing: 1px; padding: 3px 12px; }
+QPushButton {
+    color: #34415c;
+    background: white;
+    border: 1px solid #d5dce8;
+    border-radius: 9px;
+    font-weight: bold;
+    padding: 7px 12px;
+}
+QPushButton:hover { background: #f7f8fd; }
+QPushButton:disabled { background: #f5f6f9; color: #8894a7; border-color: #e1e6ee; }
+#sidebar QPushButton#nav {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    min-height: 38px;
+    padding: 0;
+}
+#sidebar QPushButton#nav:hover { background: #23314b; }
+#sidebar QPushButton#nav:checked { background: #394b7c; border-color: #50649d; }
+#sidebar QPushButton#nav:focus { border-color: #aab8ff; }
+#sidebar #nav QLabel { background: transparent; color: #d6deef; font-weight: 600; }
+#sidebar #nav QLabel#navIcon { font-family: "Segoe UI Symbol"; font-size: 17px; }
+#sidebar QScrollBar:vertical { background: #152038; width: 5px; }
+#sidebar QScrollBar::handle:vertical { background: #415173; min-height: 25px; border-radius: 2px; }
+#sidebar QScrollBar::add-line:vertical, #sidebar QScrollBar::sub-line:vertical { height: 0; }
+QFrame#header { background: white; border-bottom: 1px solid #e1e6ee; }
+QLabel#crumb, QLabel#description { color: #657389; }
+QLabel#crumbTitle, QLabel#account { font-size: 13px; font-weight: bold; }
+QLabel#accountStatus { color: #778397; font-size: 11px; }
+QLabel#avatar { background: #e7ebfb; color: #334cc4; border-radius: 18px; font-weight: bold; }
+QLabel#kicker { color: #455fe1; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; }
+QLabel#pageTitle { font-size: 29px; font-weight: bold; }
+QFrame#panel { background: white; border: 1px solid #e1e6ee; border-radius: 14px; }
+QLabel#panelHeading { font-size: 15px; font-weight: bold; padding: 18px 20px; border-bottom: 1px solid #e1e6ee; }
+QLabel#empty { color: #778397; }
+QTableView { background: white; gridline-color: #edf0f5; selection-background-color: #edf0ff; selection-color: #18243a; }
+QHeaderView::section { background: #fbfcfe; color: #657389; font-size: 12px; font-weight: bold; border: 0; border-bottom: 1px solid #edf0f5; padding: 10px 4px; }
+QDialog { background: white; }
+QDialog QPushButton:default { background: #455fe1; color: white; }
+QLineEdit, QComboBox, QAbstractSpinBox { background: white; color: #18243a; border: 1px solid #d8deec; border-radius: 8px; padding: 7px 10px; }
+QLineEdit:focus, QComboBox:focus, QAbstractSpinBox:focus, QPushButton:focus { border-color: #667ce0; }
+QLineEdit:disabled, QComboBox:disabled, QAbstractSpinBox:disabled { background: #f1f4fa; color: #778397; }
+QWidget#loginView { background: qradialgradient(cx:0.15, cy:0.05, radius:0.55, fx:0.15, fy:0.05, stop:0 #e9edff, stop:1 #f3f5fa); }
+QFrame#loginCard { background: white; border: 1px solid #e1e6ee; border-radius: 20px; }
+QPushButton#signIn { background: #455fe1; border-color: #455fe1; color: white; padding: 11px; }
+QPushButton#signIn:hover { background: #364ebf; }
+QPushButton#signIn:disabled { background: #e4e8f2; color: #62708a; border-color: #d8deec; }
+QLabel#loginError { color: #a33040; }
+QLabel#cinemaScreen { background: #edf0fa; color: #627293; border-top: 3px solid #b6c2dc; border-radius: 8px; padding: 6px; margin: 4px 36px 14px; }
+QLabel#legend { background: #e6eaf1; color: #43516f; border: 1px solid #cbd4e0; border-radius: 6px; padding: 5px 9px; }
+QLabel#legend[kind="VIP"] { background: #eceaff; color: #5547a7; }
+QLabel#legend[kind="COUPLE"] { background: #fcecf4; color: #934a73; }
+QLabel#legend[kind="Ô trống (+)"] { background: white; border-style: dashed; }
+QLabel#demoNotice { background: #fff4e5; color: #805115; border: 1px solid #eed9b7; border-radius: 9px; padding: 9px 12px; }
+QLabel#priceValue { color: #455fe1; font-size: 21px; font-weight: bold; }
+QLabel#priceRules { background: #fff; border: 1px solid #e1e6ee; border-radius: 14px; padding: 18px; }
