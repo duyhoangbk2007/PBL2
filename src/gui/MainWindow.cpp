@@ -294,7 +294,8 @@ QWidget* MainWindow::createSidebar()
                 content = label(context.catalogError, "description");
             }
         } else if (page.permission == "SHOWTIME_VIEW") {
-            content = new ShowtimeManagementView(context.showtimes, context.movies, context.rooms, auth);
+            content = new ShowtimeManagementView(context.showtimes, context.movies, context.rooms, auth,
+                                                 context.transactionError.isEmpty());
         } else if (page.permission == "STAFF_VIEW") {
             content = new StaffManagementView(context.staff, auth);
         } else if (page.permission == "MEMBER_VIEW") {
@@ -314,7 +315,8 @@ QWidget* MainWindow::createSidebar()
                 }
             });
         } else if (page.permission == "SEAT_VIEW") {
-            auto* map = new SeatMapView(context.rooms, context.seats, auth);
+            auto* map = new SeatMapView(context.rooms, context.seats, auth,
+                                        context.transactionError.isEmpty());
             map->setObjectName("seatMap");
             content = map;
         }

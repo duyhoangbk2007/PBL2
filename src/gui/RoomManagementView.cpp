@@ -13,11 +13,54 @@ RoomManagementView::RoomManagementView(RoomService& service, AuthService& auth)
     : CatalogView({"Mã phòng", "Tên phòng", "Hàng", "Cột", "Trạng thái", "Sơ đồ"}),
       service(service), auth(auth)
 {
-    pending("Thêm phòng", auth.hasPermission("ROOM_ADD"), "Service đã cấp mã. Đang chờ tích hợp lưu phòng mới.");
+    action("Thêm phòng", auth.hasPermission("ROOM_ADD"), [this] { add(); });
+    action("Chi tiết", auth.hasPermission("ROOM_VIEW"), [this] { detail(); });
     action("Sửa", auth.hasPermission("ROOM_UPDATE"), [this] { edit(); });
     pending("Bật / tắt", auth.hasPermission("ROOM_UPDATE"), "Chưa có API thay đổi trạng thái phòng trên nhánh này.");
     action("Xóa", auth.hasPermission("ROOM_DELETE"), [this] { remove(); });
     refresh();
+}
+
+void RoomManagementView::add()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Thêm phòng");
+    QFormLayout form(&dialog);
+    QLineEdit name;
+    form.addRow("Tên phòng", &name);
+    auto* rows = CatalogUi::number(form, "Số hàng", 1, 1);
+    auto* columns = CatalogUi::number(form, "Số cột", 1, 1);
+    QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    form.addRow(&buttons);
+    connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() != QDialog::Accepted) { return; }
+    Room values("", name.text().toStdString(), rows->value(), columns->value(), true);
+    const bool added = service.addRoom(&values);
+    CatalogUi::result(status, added);
+    if (added) { refresh(); }
+}
+
+void RoomManagementView::detail()
+{
+    const auto* item = service.findRoomById(selectedId().toStdString());
+    if (!item) {
+        status->setText("Hãy chọn một phòng còn tồn tại trong danh sách.");
+        refresh();
+        return;
+    }
+    QDialog dialog(this);
+    dialog.setWindowTitle("Chi tiết phòng");
+    QFormLayout form(&dialog);
+    form.addRow("Mã phòng", new QLabel(QString::fromStdString(item->getRoomId())));
+    form.addRow("Tên phòng", new QLabel(QString::fromStdString(item->getName())));
+    form.addRow("Số hàng", new QLabel(QString::number(item->getRowCount())));
+    form.addRow("Số cột", new QLabel(QString::number(item->getColumnCount())));
+    form.addRow("Trạng thái", new QLabel(item->isActive() ? "Hoạt động" : "Ngừng hoạt động"));
+    QDialogButtonBox buttons(QDialogButtonBox::Close);
+    form.addRow(&buttons);
+    connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    dialog.exec();
 }
 
 void RoomManagementView::refresh()

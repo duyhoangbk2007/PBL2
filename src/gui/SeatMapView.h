@@ -12,7 +12,7 @@ class SeatMapView : public QWidget
 {
     Q_OBJECT
 public:
-    SeatMapView(RoomService& rooms, SeatService& seats, AuthService& auth);
+    SeatMapView(RoomService& rooms, SeatService& seats, AuthService& auth, bool transactionReady);
     void refresh(const QString& preferredRoom = {});
 private:
     void loadRoom();
@@ -20,6 +20,7 @@ private:
     RoomService& rooms;
     SeatService& seats;
     AuthService& auth;
+    bool transactionReady;
     QComboBox* picker;
     SeatGrid* grid;
     QLabel* status;

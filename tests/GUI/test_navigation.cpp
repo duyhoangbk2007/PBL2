@@ -4,6 +4,7 @@
 
 #include <QFile>
 #include <QLineEdit>
+#include <QMap>
 #include <QPushButton>
 #include <QTemporaryDir>
 #include <QUuid>
@@ -50,6 +51,10 @@ int main(int argc, char* argv[])
         if (!QFile::copy(QString(PBL2_GUI_FIXTURES) + "/" + file, data.filePath(file))) {
             return 1;
         }
+    }
+    for (const QString file : {"invoices.txt", "tickets.txt"}) {
+        QFile empty(data.filePath(file));
+        if (!empty.open(QIODevice::WriteOnly)) { return 1; }
     }
     ApplicationContext context(data.path());
     const auto error = context.load();
@@ -121,8 +126,32 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+    const QStringList catalogFiles = {"users.txt", "members.txt", "movies.txt", "rooms.txt",
+                                      "seats.txt", "showtimes.txt"};
+    QMap<QString, QByteArray> catalogBefore;
+    for (const auto& file : catalogFiles) {
+        QFile source(data.filePath(file));
+        if (!source.open(QIODevice::ReadOnly)) { return 1; }
+        catalogBefore.insert(file, source.readAll());
+    }
     if (!testCatalog(window, context)) {
         qCritical("Catalog interaction failed");
+        return 1;
+    }
+    for (const auto& file : catalogFiles) {
+        QFile source(data.filePath(file));
+        if (!source.open(QIODevice::ReadOnly) || source.readAll() != catalogBefore.value(file)) {
+            qCritical("Catalog unexpectedly persisted: %s", qPrintable(file));
+            return 1;
+        }
+    }
+    ApplicationContext reopened(data.path());
+    if (!reopened.load().isEmpty() || !reopened.auth.login("manager", secret.toStdString()) ||
+        reopened.staff.findStaffByUsername("cashier2") ||
+        reopened.members.findMemberByPhone("0900000009") ||
+        reopened.movies.findMovieById("MOV0001")->getTitle() ==
+            context.movies.findMovieById("MOV0001")->getTitle()) {
+        qCritical("Catalog restart did not reload the original files");
         return 1;
     }
     auto logout = [&] {

@@ -194,7 +194,7 @@ xóa suất có giao dịch.
 ## GAP-05: An toàn dữ liệu khi chỉnh sơ đồ ghế
 
 **Ưu tiên:** P1
-**Trạng thái:** NEEDS_VERIFICATION
+**Trạng thái:** BLOCKED cho phòng đã có suất chiếu
 
 ### Màn hình ảnh hưởng
 - SeatMapView
@@ -205,6 +205,8 @@ removeSeat().
 
 Contract ghi nhận chưa có kiểm tra đầy đủ
 Ticket tham chiếu ghế khi sửa/xóa sơ đồ.
+
+SeatMapView hiện cho thêm/sửa/xóa qua SeatService chỉ khi phòng chưa có suất chiếu và dữ liệu giao dịch đã nạp. Phòng có suất chiếu chỉ xem; GUI kiểm tra lại điều kiện này ngay trước khi ghi để chặn thay đổi trong lúc dialog mở. Repository kiểm tra phòng, tọa độ, khóa ghép và vị trí trùng, nhưng không thay thế được kiểm tra lịch sử Ticket ở Service.
 
 ### Đề xuất
 Backend bổ sung kiểm tra liên kết giao dịch vào
@@ -233,9 +235,7 @@ hỏng dữ liệu Ticket đã phát hành.
 - RoomManagementView
 
 ### Hiện trạng
-RoomService có updateRoom(), nhưng contract ghi nhận
-không cho đổi active qua API này khi phòng đã có
-suất chiếu.
+RoomService có updateRoom() nhưng từ chối mọi thay đổi active qua API này, không phụ thuộc phòng đã có suất chiếu hay chưa. GUI để nút bật/tắt ở trạng thái khóa.
 
 Chưa có API riêng để kích hoạt/vô hiệu hóa phòng.
 
@@ -253,6 +253,29 @@ Chưa có API riêng để kích hoạt/vô hiệu hóa phòng.
 
 ### Điều kiện mở khóa
 Backend xác nhận quy tắc và triển khai API phù hợp.
+
+---
+
+## GAP-09: Lưu và khôi phục danh mục GUI
+
+**Ưu tiên:** P1
+**Trạng thái:** NEEDS_VERIFICATION
+
+### Màn hình ảnh hưởng
+- MovieManagementView
+- RoomManagementView
+- SeatMapView
+- ShowtimeManagementView
+- StaffManagementView
+- MemberManagementView
+
+### Hiện trạng
+MovieService, RoomService và SeatService đều có save(). GUI đã thêm/sửa/xóa qua Service và cập nhật dữ liệu trong bộ nhớ, nhưng chưa có luồng gọi save() theo quy ước lưu riêng của dự án. Test GUI hiện xác minh thao tác trong bộ nhớ; chưa xác minh lỗi ghi TXT và dữ liệu sau khởi động lại cho ba danh mục này.
+
+ShowtimeService, StaffService và MemberService cũng có save() nhưng GUI chưa gọi sau thao tác danh mục. Test `gui_navigation` bước 4.7 so sánh file tạm trước/sau chỉnh sửa sáu danh mục và nạp ApplicationContext mới: file không đổi, phiên mới nạp dữ liệu cũ. Vì vậy tính bền vững của thay đổi GUI hiện **chưa đạt**; cần thống nhất thời điểm lưu theo quy ước dự án. Test `gui_restart` hiện chỉ kiểm tra cấu hình giá, không chứng minh khôi phục sáu danh mục này.
+
+### Điều kiện xác minh
+Thống nhất thời điểm gọi save() với nhóm, kiểm thử ghi thành công/thất bại bằng file tạm và nạp lại trên tiến trình mới. Không đánh dấu DONE trước khi có kết quả thực tế.
 
 ---
 
@@ -330,6 +353,19 @@ GUI nhận biết được lỗi và có quy trình xử lý an toàn.
 
 ---
 
+## GAP-10: Thao tác còn thiếu cho Staff và Member
+
+**Ưu tiên:** P2
+**Trạng thái:** BLOCKED
+
+StaffService có `addStaff()`, `updateStaff()`, `deactivateStaff()` nhưng không có API mở khóa hoặc xóa tài khoản. MemberService có `addMember()`, `updateMember()` nhưng không có API xóa/ngừng hoạt động; Model/Service cũng không có trường email. GUI giữ các thao tác này ở trạng thái chưa hỗ trợ, không sửa điểm hoặc lịch sử giao dịch trực tiếp. Backend cần xác nhận quy tắc tham chiếu hóa đơn và quyền tương ứng trước khi mở khóa.
+
+### NEEDS_VERIFICATION sau kiểm thử 4.7
+
+- `gui_history` kiểm tra hiển thị hóa đơn hoàn một phần và số liệu báo cáo; GAP-07 còn mở vì chưa có kết quả xác minh lại ca Backend từng FAIL và toàn bộ tập dữ liệu biên.
+- `gui_booking` kiểm tra ghi Invoice/Ticket và chặn gửi trùng. `gui_history` kiểm tra hủy vé và hoàn tiền. GAP-08 còn mở vì chưa có API công khai cho trạng thái `storageFailed` và quy trình phục hồi khi ghi file lỗi.
+- Chưa có test khởi động lại sau bán/hủy vé; khả năng khôi phục giao dịch và điểm thành viên trên tiến trình mới vẫn NEEDS_VERIFICATION.
+
 ## 3. Tổng hợp
 
 | ID | Vấn đề | Ưu tiên | Trạng thái |
@@ -338,10 +374,12 @@ GUI nhận biết được lỗi và có quy trình xử lý an toàn.
 | GAP-02 | Điều kiện hủy/tiền hoàn | P0 | BLOCKED |
 | GAP-03 | Hủy suất chiếu | P1 | BLOCKED |
 | GAP-04 | Xóa suất chiếu | P1 | BLOCKED |
-| GAP-05 | An toàn sửa/xóa ghế | P1 | NEEDS_VERIFICATION |
+| GAP-05 | An toàn sửa/xóa ghế | P1 | BLOCKED |
 | GAP-06 | Đổi active phòng | P1 | BLOCKED |
 | GAP-07 | Tính nhất quán báo cáo | P0 | NEEDS_VERIFICATION |
 | GAP-08 | Trạng thái lỗi lưu giao dịch | P0 | NEEDS_VERIFICATION |
+| GAP-09 | Lưu/khôi phục phim, phòng, ghế, suất chiếu, Staff, Member | P1 | NEEDS_VERIFICATION |
+| GAP-10 | Mở khóa/xóa Staff; xóa/ngừng hoạt động Member; email | P2 | BLOCKED |
 
 ## 4. Quy trình xử lý API Gap
 

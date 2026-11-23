@@ -1,6 +1,7 @@
 #include "StaffManagementView.h"
 #include "../business/StaffService.h"
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -84,7 +85,11 @@ void StaffManagementView::form(bool creating)
     }
     fields.addRow("Vai trò", new QLabel("STAFF"));
     fields.addRow("Trạng thái", new QLabel(!current || current->isActive() ? "Hoạt động" : "Đã vô hiệu hóa"));
-    if (!CatalogUi::confirmForm(dialog, fields, creating)) {
+    QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    fields.addRow(&buttons);
+    connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() != QDialog::Accepted) {
         return;
     }
     const auto login = username.text().toStdString();
@@ -93,7 +98,15 @@ void StaffManagementView::form(bool creating)
         status->setText("Username đã được sử dụng.");
         return;
     }
-    CatalogUi::result(status, updateProfile(service, id, login, name.text().toStdString()));
+    bool changed = false;
+    if (creating) {
+        User candidate("", login, password.text().toStdString(), name.text().toStdString(),
+                       UserRole::STAFF, true);
+        changed = service.addStaff(&candidate);
+    } else {
+        changed = updateProfile(service, id, login, name.text().toStdString());
+    }
+    CatalogUi::result(status, changed);
     refresh();
 }
 

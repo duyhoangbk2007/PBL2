@@ -18,7 +18,9 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QTableWidget>
+#include <QTableView>
 #include <QTemporaryDir>
+#include <QTest>
 #include <QTimer>
 #include <QUuid>
 #include <stdexcept>
@@ -197,6 +199,21 @@ int exercise()
         return nullptr;
     };
     login("admin");
+    check(!context.transactionError.isEmpty(), "corrupt transaction fixture");
+    auto* seatMap = page("SEAT_VIEW", "seatMap");
+    auto* matrix = seatMap ? seatMap->findChild<QTableView*>("seatMatrix") : nullptr;
+    check(matrix && matrix->model()->rowCount() > 0, "seat map unavailable with transaction error");
+    const auto emptySeat = matrix->model()->index(0, 3);
+    matrix->scrollTo(emptySeat);
+    QTest::mouseClick(matrix->viewport(), Qt::LeftButton, Qt::NoModifier,
+                      matrix->visualRect(emptySeat).center());
+    check(!QApplication::activeModalWidget() && !context.seats.findSeatById("ROM0001", "A04"),
+          "seat edit allowed with unverified transaction data");
+    page("SHOWTIME_VIEW", "");
+    auto* shows = window.findChild<QStackedWidget*>("pages")->currentWidget();
+    check(shows && shows->findChild<QTableWidget*>()->rowCount() == 3 &&
+          !button(shows, "Thêm suất chiếu")->isEnabled() &&
+          !button(shows, "Sửa")->isEnabled(), "showtime edits allowed with transaction error");
     auto* history = page("INVOICE_VIEW_OWN", "invoiceHistory");
     check(history, "admin history");
     auto* invoices = history->findChild<QTableWidget*>();

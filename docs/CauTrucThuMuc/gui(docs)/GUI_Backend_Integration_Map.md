@@ -69,7 +69,7 @@ GUI:
 
 ### 3.2. MovieManagementView
 
-Service: MovieService
+Service: MovieService; quyền thực tế MOVIE_VIEW, MOVIE_ADD, MOVIE_UPDATE, MOVIE_DELETE (không có MOVIE_CREATE).
 
 API:
 - getMovieCount()
@@ -78,16 +78,19 @@ API:
 - addMovie()
 - updateMovie()
 - removeMovie()
-- save()
+- setMovieActive()
+- save() (có API, GUI chưa gọi)
 
 GUI:
-- Hiển thị danh sách phim.
-- Nhập dữ liệu và gọi Service.
-- Làm mới danh sách sau thao tác.
+- Hiển thị danh sách, tìm theo mã/tên và mở chi tiết chỉ đọc.
+- Thêm, sửa, xóa, bật/ngừng hoạt động qua Service; Service cấp mã MOV và kiểm tra ràng buộc suất chiếu.
+- Làm mới bảng sau thao tác; test kiểm tra tên vừa sửa và phim vừa thêm.
+
+NEEDS_VERIFICATION: Chưa kiểm thử luồng save(), lỗi ghi file và nạp lại sau khởi động.
 
 ### 3.3. RoomManagementView
 
-Service: RoomService
+Service: RoomService; quyền thực tế ROOM_VIEW, ROOM_ADD, ROOM_UPDATE, ROOM_DELETE.
 
 API:
 - getRoomCount()
@@ -96,14 +99,20 @@ API:
 - addRoom()
 - updateRoom()
 - removeRoom()
-- save()
+- save() (có API, GUI chưa gọi)
+
+GUI:
+- Hiển thị danh sách, tìm theo mã/tên và mở chi tiết chỉ đọc.
+- Thêm/sửa/xóa qua Service; mã ROM do Service cấp.
+- Service chặn thu nhỏ làm ghế vượt kích thước và xóa phòng còn ghế/suất chiếu; GUI cập nhật bảng sau thao tác.
 
 Giới hạn:
-- Chưa có API riêng để đổi trạng thái active của phòng.
+- BLOCKED: RoomService không có API đổi active; updateRoom() từ chối đổi active.
+- NEEDS_VERIFICATION: Chưa kiểm thử save(), lỗi ghi file và nạp lại sau khởi động.
 
 ### 3.4. SeatMapView
 
-Service: SeatService
+Service: SeatService, RoomService; quyền thực tế SEAT_VIEW, SEAT_ADD, SEAT_UPDATE, SEAT_DELETE.
 
 API:
 - getSeatCount()
@@ -112,15 +121,20 @@ API:
 - addSeat()
 - updateSeat()
 - removeSeat()
-- save()
+- save() (có API, GUI chưa gọi)
+
+GUI:
+- Lọc phòng bằng RoomService, hiển thị sơ đồ và chi tiết ghế; thao tác ghi qua SeatService.
+- Chỉ cho thêm/sửa/xóa khi phòng chưa có suất chiếu và dữ liệu giao dịch đã nạp; kiểm tra lại phòng trước khi ghi nếu dữ liệu đổi lúc dialog mở.
+- Tải lại sơ đồ sau thao tác; Staff chỉ xem.
 
 Giới hạn:
-- Backend chưa kiểm tra đầy đủ vé tham chiếu
-  khi chỉnh sửa/xóa sơ đồ ghế.
+- BLOCKED: SeatService chưa kiểm tra đầy đủ vé tham chiếu khi chỉnh sửa/xóa ghế của phòng có suất chiếu (GAP-05).
+- NEEDS_VERIFICATION: Chưa kiểm thử save(), lỗi ghi file và nạp lại sau khởi động.
 
 ### 3.5. ShowtimeManagementView
 
-Service: ShowtimeService
+Service: ShowtimeService, MovieService, RoomService; quyền thực tế SHOWTIME_VIEW, SHOWTIME_ADD, SHOWTIME_UPDATE, SHOWTIME_CANCEL, SHOWTIME_DELETE.
 
 API:
 - getShowtimeCount()
@@ -128,18 +142,18 @@ API:
 - findShowtimeById()
 - addShowtime()
 - updateShowtime()
-- save()
+- save() (có API, GUI chưa gọi)
 
 PENDING:
-- cancelShowtime()
-- removeShowtime()
+- updateShowtime(), cancelShowtime(), removeShowtime() trên GUI
 
 Lý do:
-- Backend chưa hoàn thiện kiểm tra liên kết vé.
+- Backend có chữ ký API nhưng chưa xác minh an toàn với vé đã bán. GUI khóa sửa/hủy/xóa; thêm suất chiếu đi qua Service và kiểm tra lại xung đột lịch lúc gửi.
+- NEEDS_VERIFICATION: suất chiếu thêm qua GUI chưa được lưu/khôi phục.
 
 ### 3.6. StaffManagementView
 
-Service: StaffService
+Service: StaffService; quyền thực tế STAFF_VIEW, STAFF_ADD, STAFF_UPDATE, STAFF_DEACTIVATE (chỉ Admin trong role_permissions).
 
 API:
 - getStaffCount()
@@ -149,13 +163,15 @@ API:
 - addStaff()
 - updateStaff()
 - deactivateStaff()
-- save()
+- save() (có API, GUI chưa gọi)
 
-GUI không hiển thị mật khẩu đã lưu.
+GUI hiển thị danh sách, tìm kiếm, xem thông tin, thêm/sửa và vô hiệu hóa qua Service; không hiển thị mật khẩu đã lưu. Service kiểm tra lại quyền khi gửi form, nên phiên bị thu hồi giữa lúc dialog mở không ghi dữ liệu.
+
+BLOCKED: Chưa có API mở khóa/xóa Staff. NEEDS_VERIFICATION: Chưa lưu/khôi phục thay đổi GUI sau khởi động lại.
 
 ### 3.7. MemberManagementView
 
-Service: MemberService
+Service: MemberService; quyền thực tế MEMBER_VIEW, MEMBER_ADD, MEMBER_UPDATE (Admin và Staff).
 
 API:
 - getMemberCount()
@@ -164,9 +180,11 @@ API:
 - findMemberByPhone()
 - addMember()
 - updateMember()
-- save()
+- save() (có API, GUI chưa gọi)
 
-GUI không tự thay đổi điểm thành viên.
+GUI hiển thị danh sách, tìm theo ID/tên/số điện thoại, xem thông tin và thêm/sửa qua Service. Khi đóng dialog sửa, GUI tra lại Member để lấy điểm hiện tại; không tự thay đổi điểm. BookingService xử lý cộng/trừ điểm khi bán/hủy vé.
+
+BLOCKED: Chưa có API xóa/ngừng hoạt động Member hoặc trường email. NEEDS_VERIFICATION: Chưa lưu/khôi phục thay đổi GUI sau khởi động lại.
 
 ### 3.8. PricingManagementView
 
@@ -179,7 +197,7 @@ GUI:
 
 ### 3.9. BookingView
 
-Service: BookingService
+Service: BookingService, MovieService, ShowtimeService, MemberService; quyền giao dịch TICKET_SELL, tra cứu thành viên MEMBER_VIEW.
 
 API:
 - getAvailableSeats()
@@ -192,6 +210,7 @@ GUI:
 - Xác nhận tuổi và thanh toán.
 - Gọi createBooking().
 - Hiển thị invoiceId khi thành công.
+- Tải lại trạng thái ghế Sold/Available từ Service; khóa nút khi giao dịch đang xử lý hoặc lỗi lưu không rõ kết quả.
 
 Không được:
 - Tự xác định ghế đã bán bằng dữ liệu giả.
@@ -201,7 +220,7 @@ Không được:
 
 ### 3.10. InvoiceHistoryView
 
-Service: InvoiceService
+Service: InvoiceService; quyền thực tế INVOICE_VIEW_ALL cho Admin, INVOICE_VIEW_OWN cho Staff.
 
 API:
 - findInvoiceById()
@@ -219,7 +238,7 @@ Không truy cập InvoiceRepository trực tiếp.
 
 ### 3.11. TicketCancellationView
 
-Service: BookingService
+Service: BookingService, InvoiceService; quyền giao dịch TICKET_CANCEL (Admin trong role_permissions).
 
 API:
 - cancelTicket()
@@ -238,7 +257,7 @@ Không tự quyết định vé có đủ điều kiện hủy.
 
 ### 3.12. ReportView
 
-Service: ReportService
+Service: ReportService; quyền REPORT_VIEW (Admin trong role_permissions).
 
 API:
 - getTotalSales()
@@ -253,6 +272,7 @@ GUI:
 - Chọn khoảng thời gian.
 - Gọi Service.
 - Hiển thị chỉ số và biểu đồ.
+- `gui_history` kiểm tra hóa đơn hoàn một phần; tính nhất quán Backend toàn diện vẫn NEEDS_VERIFICATION (GAP-07).
 
 Không tự tổng hợp doanh thu từ Repository.
 
@@ -272,13 +292,23 @@ BookingService tự điều phối lưu giao dịch.
 
 - API tra cứu vé trực tiếp theo ticketId.
 - Kiểm tra liên kết vé khi sửa/xóa sơ đồ ghế.
+- API đổi active của phòng và lưu/khôi phục danh mục phim, phòng, ghế (GAP-06, GAP-09).
+- Lưu/khôi phục suất chiếu, Staff, Member cũng thuộc GAP-09; GUI không gọi save() cho các danh mục này.
+- Mở khóa/xóa Staff, xóa/ngừng hoạt động Member và trường email còn BLOCKED (GAP-10).
 - Hoàn thiện hủy/xóa suất chiếu.
 - Xác minh lỗi test ReportService.
-- Xử lý transactionError trong MainWindow.
+- Xác minh khôi phục giao dịch và điểm thành viên trên tiến trình mới sau bán/hủy vé; MainWindow đã xử lý `transactionError` khi mở màn hình.
 
 Chi tiết theo dõi tại BACKEND_API_GAPS.md.
 
 ## 6. Tiêu chí hoàn thành
+
+### Đối chiếu liên thông bước 4.7
+
+- Màn hình nghiệp vụ truy cập qua Business Service; Repository trong `ApplicationContext` chỉ được dùng để khởi tạo và nạp dữ liệu theo thứ tự phụ thuộc. Không phát hiện màn hình gọi Repository trực tiếp hoặc tự tính giá/hoàn tiền/doanh thu.
+- Test GUI: `gui_navigation` bao phủ danh mục và quyền; `gui_booking` bao phủ báo giá, bán vé, ghế Sold, chặn giao dịch lặp; `gui_history` bao phủ hóa đơn, hủy vé, báo cáo hoàn một phần và phân quyền. Build toàn bộ và 4/4 CTest PASS ở bước 4.7.
+- Sau các thao tác GUI với phim, phòng, ghế, suất chiếu, Staff, Member, test mở `ApplicationContext` mới trên cùng file tạm: TXT không đổi và dữ liệu mới không xuất hiện. Các thay đổi này chỉ ở bộ nhớ. BookingService ghi Invoice/Ticket khi bán; khôi phục giao dịch sau khởi động lại và lỗi ghi file còn NEEDS_VERIFICATION. `gui_restart` hiện xác minh cấu hình giá.
+- Các thao tác BLOCKED theo GAP-01–06 và GAP-10 chưa được coi là hoàn thành. GAP-07–09 còn NEEDS_VERIFICATION.
 
 - Tất cả màn hình gọi đúng Service.
 - Không có nghiệp vụ trong GUI.

@@ -1,6 +1,8 @@
 #include "test_catalog.h"
 #include "MainWindow.h"
 #include "MovieManagementView.h"
+#include "MemberManagementView.h"
+#include "SeatMapView.h"
 #include "ApplicationContext.h"
 
 #include <QApplication>
@@ -12,10 +14,12 @@
 #include <QDateTimeEdit>
 #include <memory>
 #include <QLineEdit>
+#include <QLabel>
 #include <QMessageBox>
 #include <QMap>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QSpinBox>
 #include <QTableWidget>
 #include <QTest>
 #include <QTimer>
@@ -109,7 +113,67 @@ bool testPeople(MainWindow& window, ApplicationContext& context)
 {
     auto* staff = page(window, "STAFF_VIEW");
     auto* table = staff->findChild<QTableWidget*>();
-    if (table->rowCount() != 3 || !snapshot(window, "nhan-vien") || !pendingForm(staff, "Thêm nhân viên")) {
+    if (table->rowCount() != 3 || !snapshot(window, "nhan-vien")) {
+        return false;
+    }
+    if (!modalAction(staff, "Thêm nhân viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        if (fields.size() != 3 || fields[2]->echoMode() != QLineEdit::Password) {
+            return false;
+        }
+        fields[0]->setText("Nhan vien moi");
+        fields[1]->setText("newcashier");
+        fields[2]->setText("private-test-password");
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 4 ||
+        !context.staff.findStaffByUsername("newcashier") ||
+        table->item(3, 2)->text() != "newcashier") {
+        return false;
+    }
+    for (int row = 0; row < table->rowCount(); ++row) {
+        for (int column = 0; column < table->columnCount(); ++column) {
+            if (table->item(row, column)->text().contains("private-test-password")) {
+                return false;
+            }
+        }
+    }
+    if (!modalAction(staff, "Thêm nhân viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        fields[0]->setText("Duplicate");
+        fields[1]->setText("newcashier");
+        fields[2]->setText("another-password");
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 4) {
+        return false;
+    }
+    if (!modalAction(staff, "Thêm nhân viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        fields[0]->setText("Invalid password");
+        fields[1]->setText("invalidcashier");
+        fields[2]->clear();
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 4 || context.staff.findStaffByUsername("invalidcashier")) {
+        return false;
+    }
+    const auto* admin = context.auth.getCurrentUser();
+    if (!admin) { return false; }
+    const std::string adminLogin = admin->getUsername();
+    const std::string adminPassword = admin->getPassword();
+    const bool revoked = modalAction(staff, "Thêm nhân viên", [&](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        fields[0]->setText("Revoked session");
+        fields[1]->setText("revokedcashier");
+        fields[2]->setText("private-password");
+        context.auth.logout();
+        dialog->accept();
+        return true;
+    });
+    const bool denied = table->rowCount() == 4;
+    if (!context.auth.login(adminLogin, adminPassword) || !revoked || !denied ||
+        context.staff.findStaffByUsername("revokedcashier")) {
         return false;
     }
     auto* query = staff->findChild<QLineEdit*>();
@@ -144,7 +208,36 @@ bool testPeople(MainWindow& window, ApplicationContext& context)
     }
     auto* members = page(window, "MEMBER_VIEW");
     table = members->findChild<QTableWidget*>();
-    if (!table || table->rowCount() != 2 || !snapshot(window, "thanh-vien") || !pendingForm(members, "Thêm thành viên")) {
+    if (!table || table->rowCount() != 2 || !snapshot(window, "thanh-vien")) {
+        return false;
+    }
+    if (!modalAction(members, "Thêm thành viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        if (fields.size() != 2) { return false; }
+        fields[0]->setText("Thanh vien them");
+        fields[1]->setText("0900000009");
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 3 || !context.members.findMemberByPhone("0900000009") ||
+        context.members.findMemberByPhone("0900000009")->getPoints() != 0) {
+        return false;
+    }
+    if (!modalAction(members, "Thêm thành viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        fields[0]->setText("Trung dien thoai");
+        fields[1]->setText("0900000009");
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 3) {
+        return false;
+    }
+    if (!modalAction(members, "Thêm thành viên", [](QDialog* dialog) {
+        const auto fields = dialog->findChildren<QLineEdit*>();
+        fields[0]->setText("Sai dien thoai");
+        fields[1]->setText("123");
+        dialog->accept();
+        return true;
+    }) || table->rowCount() != 3) {
         return false;
     }
     query = members->findChild<QLineEdit*>();
@@ -177,7 +270,22 @@ bool testPeople(MainWindow& window, ApplicationContext& context)
         return false;
     }
     const auto* updated = context.members.findMemberByPhone("0900000008");
-    return updated && updated->getFullName() == "Thanh vien moi" && updated->getPoints() == 18;
+    if (!updated || updated->getFullName() != "Thanh vien moi" || updated->getPoints() != 18) {
+        return false;
+    }
+    // Simulate a concurrent sale changing points while the edit dialog is open.
+    auto* changing = const_cast<Member*>(updated);
+    table->selectRow(0);
+    const bool refreshedPoints = modalAction(members, "Sửa", [&](QDialog* dialog) {
+        changing->setPoints(25);
+        dialog->findChildren<QLineEdit*>().at(0)->setText("Thanh vien sau giao dich");
+        dialog->accept();
+        return true;
+    }) && changing->getPoints() == 25 && changing->getFullName() == "Thanh vien sau giao dich" &&
+        table->item(0, 3)->text() == "25";
+    changing->setPoints(18);
+    members->findChild<MemberManagementView*>()->refresh();
+    return refreshedPoints;
 }
 
 bool testSchedule(MainWindow& window, ApplicationContext& context)
@@ -212,7 +320,8 @@ bool testSchedule(MainWindow& window, ApplicationContext& context)
     if (!context.movies.findMovieById(movieId)->isActive()) { return false; }
     auto* view = page(window, "SHOWTIME_VIEW");
     auto* table = view->findChild<QTableWidget*>();
-    if (!table || table->rowCount() != 4 || !snapshot(window, "suat-chieu") || !pendingForm(view, "Thêm suất chiếu") ||
+    if (!table || table->rowCount() != 4 || !snapshot(window, "suat-chieu") ||
+        !button(view, "Thêm suất chiếu")->isEnabled() || button(view, "Sửa")->isEnabled() ||
         button(view, "Hủy suất")->isEnabled() || button(view, "Xóa suất")->isEnabled()) {
         return false;
     }
@@ -230,41 +339,59 @@ bool testSchedule(MainWindow& window, ApplicationContext& context)
             return false;
         }
     }
-    for (int row : {1, 2}) {
-        table->selectRow(row);
-        if (modalAction(view, "Sửa", [](QDialog*) { return true; })) {
-            return false;
-        }
-    }
-    table->selectRow(3);
-    auto editTime = [&](const QDateTime& value) {
-        return modalAction(view, "Sửa", [&](QDialog* dialog) {
-            for (auto* box : dialog->findChildren<QComboBox*>()) {
-                if (box->isEnabled()) {
-                    return false;
-                }
-            }
-            dialog->findChild<QDateTimeEdit*>()->setDateTime(value);
-            dialog->accept();
-            return true;
-        });
-    };
-    if (!editTime(start.addYears(-25)) || context.showtimes.findShowtimeById(showId)->getStartAt() != start.toString(format).toStdString()) {
+    const bool invalidDialog = modalAction(view, "Thêm suất chiếu", [&](QDialog* dialog) {
+        const auto boxes = dialog->findChildren<QComboBox*>();
+        boxes[0]->setCurrentIndex(boxes[0]->findData(QString::fromStdString(movieId)));
+        boxes[1]->setCurrentIndex(boxes[1]->findData("ROM0001"));
+        dialog->findChild<QDateTimeEdit*>()->setDateTime(start.addYears(-25));
+        dialog->accept();
+        return true;
+    });
+    if (!invalidDialog || table->rowCount() != 4 || context.showtimes.getShowtimeCount() != 4) {
         return false;
     }
-    // A second show starts two hours after the first. Moving by 20 minutes
-    // leaves only 10 minutes between shows; moving by 15 leaves the allowed gap.
     const auto next = start.addSecs(7200);
-    auto second = std::make_unique<Showtime>("", movieId, "ROM0001", next.toString(format).toStdString(),
-        next.addSecs(5400).toString(format).toStdString(), ShowtimeStatus::SCHEDULED);
-    if (!context.showtimes.addShowtime(second.get())) {
-        return false;
-    }
-    if (!editTime(start.addSecs(1200)) || context.showtimes.findShowtimeById(showId)->getStartAt() != start.toString(format).toStdString()) {
-        return false;
-    }
-    const auto later = start.addSecs(900);
-    return editTime(later) && context.showtimes.findShowtimeById(showId)->getEndAt() == later.addSecs(5400).toString(format).toStdString();
+    const bool opened = modalAction(view, "Thêm suất chiếu", [&](QDialog* dialog) {
+        const auto boxes = dialog->findChildren<QComboBox*>();
+        boxes[0]->setCurrentIndex(boxes[0]->findData(QString::fromStdString(movieId)));
+        boxes[1]->setCurrentIndex(boxes[1]->findData("ROM0001"));
+        dialog->findChild<QDateTimeEdit*>()->setDateTime(next);
+        dialog->accept();
+        return true;
+    });
+    if (!opened || table->rowCount() != 5 ||
+        table->item(4, 3)->text() != next.toString("yyyy-MM-dd HH:mm:ss")) { return false; }
+    bool detailShown = false;
+    table->selectRow(4);
+    QTimer::singleShot(0, [&] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        detailShown = dialog && dialog->windowTitle() == "Chi tiết suất chiếu" &&
+                      dialog->findChildren<QLabel*>().size() >= 6;
+        if (detailShown) {
+            bool correctTime = false;
+            for (const auto* label : dialog->findChildren<QLabel*>()) {
+                correctTime |= label->text() == next.toString(format);
+            }
+            detailShown = correctTime;
+        }
+        if (dialog) { dialog->reject(); }
+    });
+    button(view, "Chi tiết")->click();
+    if (!detailShown) { return false; }
+    const auto conflicting = next.addSecs(7200);
+    const bool conflictDialog = modalAction(view, "Thêm suất chiếu", [&](QDialog* dialog) {
+        const auto boxes = dialog->findChildren<QComboBox*>();
+        boxes[0]->setCurrentIndex(boxes[0]->findData(QString::fromStdString(movieId)));
+        boxes[1]->setCurrentIndex(boxes[1]->findData("ROM0001"));
+        dialog->findChild<QDateTimeEdit*>()->setDateTime(conflicting);
+        Showtime concurrent("", movieId, "ROM0001", conflicting.toString(format).toStdString(),
+                            conflicting.addSecs(5400).toString(format).toStdString(), ShowtimeStatus::SCHEDULED);
+        if (!context.showtimes.addShowtime(&concurrent)) { return false; }
+        dialog->accept();
+        return true;
+    });
+    return conflictDialog && context.showtimes.findShowtimeById(showId)->getStartAt() == start.toString(format).toStdString() &&
+           context.showtimes.getShowtimeCount() == 6 && table->rowCount() == 6;
 }
 }
 
@@ -295,7 +422,8 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
         dialog->accept();
     });
     button(movies, "Sửa")->click();
-    if (context.movies.findMovieById("MOV0001")->getTitle() != "Phim sau cập nhật") {
+    if (context.movies.findMovieById("MOV0001")->getTitle() != "Phim sau cập nhật" ||
+        table->item(0, 1)->text() != "Phim sau cập nhật") {
         return false;
     }
     table->selectRow(1);
@@ -316,6 +444,39 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
     if (context.movies.findMovieById("MOV0003") || table->rowCount() != 2) {
         return false;
     }
+    QTimer::singleShot(0, [] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        dialog->accept();
+    });
+    button(movies, "Thêm phim")->click();
+    if (table->rowCount() != 2) { return false; }
+    QTimer::singleShot(0, [] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        const auto fields = dialog->findChildren<QLineEdit*>(QString(), Qt::FindDirectChildrenOnly);
+        fields[0]->setText("Phim mới");
+        fields[1]->setText("Tâm lý");
+        fields[2]->setText("2026-01-01");
+        fields[3]->setText("2099-12-31");
+        dialog->accept();
+    });
+    button(movies, "Thêm phim")->click();
+    if (table->rowCount() != 3 || table->item(2, 1)->text() != "Phim mới" ||
+        !context.movies.findMovieById(table->item(2, 0)->text().toStdString())) {
+        return false;
+    }
+    search->setText("Phim mới");
+    if (!table->isRowHidden(0) || table->isRowHidden(2)) { return false; }
+    search->clear();
+    bool detailShown = false;
+    table->selectRow(2);
+    QTimer::singleShot(0, [&] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        detailShown = dialog && dialog->windowTitle() == "Chi tiết phim" &&
+                      dialog->findChildren<QLabel*>().size() >= 8;
+        if (dialog) { dialog->reject(); }
+    });
+    button(movies, "Chi tiết")->click();
+    if (!detailShown) { return false; }
     auto* rooms = page(window, "ROOM_VIEW");
     table = rooms->findChild<QTableWidget*>();
     if (!table || table->rowCount() != 2 || !snapshot(window, "phong")) {
@@ -334,7 +495,8 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
         dialog->accept();
     });
     button(rooms, "Sửa")->click();
-    if (context.rooms.findRoomById("ROM0001")->getName() != "Phòng sau cập nhật") {
+    if (context.rooms.findRoomById("ROM0001")->getName() != "Phòng sau cập nhật" ||
+        table->item(0, 1)->text() != "Phòng sau cập nhật") {
         return false;
     }
     table->selectRow(0);
@@ -343,6 +505,51 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
     if (table->rowCount() != 2) {
         return false;
     }
+    table->selectRow(0);
+    QTimer::singleShot(0, [] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        const auto dimensions = dialog->findChildren<QSpinBox*>();
+        dimensions[0]->setValue(1);
+        dimensions[1]->setValue(1);
+        dialog->accept();
+    });
+    button(rooms, "Sửa")->click();
+    if (context.rooms.findRoomById("ROM0001")->getRowCount() != 5 ||
+        context.rooms.findRoomById("ROM0001")->getColumnCount() != 8 ||
+        table->item(0, 2)->text() != "5" || table->item(0, 3)->text() != "8") { return false; }
+    QTimer::singleShot(0, [] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        dialog->accept();
+    });
+    button(rooms, "Thêm phòng")->click();
+    if (table->rowCount() != 2) { return false; }
+    QTimer::singleShot(0, [] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        dialog->findChild<QLineEdit*>(QString(), Qt::FindDirectChildrenOnly)->setText("Phòng mới");
+        const auto dimensions = dialog->findChildren<QSpinBox*>();
+        dimensions[0]->setValue(4);
+        dimensions[1]->setValue(6);
+        dialog->accept();
+    });
+    button(rooms, "Thêm phòng")->click();
+    if (table->rowCount() != 3 || table->item(2, 1)->text() != "Phòng mới" ||
+        table->item(2, 2)->text() != "4" || table->item(2, 3)->text() != "6" ||
+        !context.rooms.findRoomById(table->item(2, 0)->text().toStdString())) {
+        return false;
+    }
+    roomSearch->setText("Phòng mới");
+    if (!table->isRowHidden(0) || table->isRowHidden(2)) { return false; }
+    roomSearch->clear();
+    bool roomDetail = false;
+    table->selectRow(2);
+    QTimer::singleShot(0, [&] {
+        auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        roomDetail = dialog && dialog->windowTitle() == "Chi tiết phòng" &&
+                     dialog->findChildren<QLabel*>().size() >= 5;
+        if (dialog) { dialog->reject(); }
+    });
+    button(rooms, "Chi tiết")->click();
+    if (!roomDetail) { return false; }
     qobject_cast<QPushButton*>(table->cellWidget(1, table->columnCount()-1))->click();
     auto* view = pages->currentWidget();
     auto* picker = view->findChild<QComboBox*>();
@@ -351,6 +558,13 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
         grid->model()->rowCount() != 3 || grid->model()->columnCount() != 5) {
         return false;
     }
+    bool showtimeProtected = false;
+    editSeat(grid, 0, 0, [&](QDialog* dialog) {
+        auto* type = dialog->findChild<QComboBox*>();
+        showtimeProtected = type && !type->isEnabled() && !button(dialog, "Xóa ghế");
+        dialog->reject();
+    });
+    if (!showtimeProtected) { return false; }
     picker->setCurrentIndex(picker->findData("ROM0001"));
     QApplication::processEvents();
     if (grid->model()->rowCount() != 5 || grid->model()->columnCount() != 8 ||
@@ -388,15 +602,35 @@ bool testCatalog(MainWindow& window, ApplicationContext& context)
         confirmDeletion(QMessageBox::Yes);
         button(dialog, "Xóa ghế")->click();
     });
-    return !context.seats.findSeatById("ROM0001", "A04") && grid->model()->index(0, 3).data() == "+"
-        && testPeople(window, context) && testSchedule(window, context);
+    if (context.seats.findSeatById("ROM0001", "A04") || grid->model()->index(0, 3).data() != "+") {
+        return false;
+    }
+    if (!testPeople(window, context) || !testSchedule(window, context)) { return false; }
+    auto* seatPage = page(window, "SEAT_VIEW");
+    auto* seatMap = seatPage->findChild<SeatMapView*>("seatMap");
+    if (!seatMap || !context.rooms.findRoomById("ROM0003")) { return false; }
+    seatMap->refresh("ROM0003");
+    auto* newGrid = seatPage->findChild<QTableView*>("seatMatrix");
+    if (newGrid->model()->index(0, 0).data() != "+") { return false; }
+    const auto start = QDateTime(QDate::currentDate().addDays(10), QTime(12, 0));
+    const auto format = QString("yyyy-MM-dd'T'HH:mm:ss");
+    bool showAdded = false;
+    editSeat(newGrid, 0, 0, [&](QDialog* dialog) {
+        Showtime show("", "MOV0001", "ROM0003", start.toString(format).toStdString(),
+                      start.addSecs(105 * 60).toString(format).toStdString(), ShowtimeStatus::SCHEDULED);
+        showAdded = context.showtimes.addShowtime(&show);
+        dialog->accept();
+    });
+    return showAdded && !context.seats.findSeatById("ROM0003", "A01") &&
+        newGrid->model()->index(0, 0).data() == "+";
 }
 
 bool testReadOnlyCatalog(MainWindow& window)
 {
     for (const QString permission : {"MOVIE_VIEW", "ROOM_VIEW"}) {
         auto* view = page(window, permission);
-        if (!view || button(view, "Sửa") || button(view, "Xóa")) {
+        if (!view || button(view, "Sửa") || button(view, "Xóa") ||
+            button(view, permission == "MOVIE_VIEW" ? "Thêm phim" : "Thêm phòng")) {
             return false;
         }
     }

@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -55,15 +56,20 @@ QString caption(QComboBox* box, const QString& id)
 }
 }
 
-ShowtimeManagementView::ShowtimeManagementView(ShowtimeService& service, MovieService& movies, RoomService& rooms, AuthService& auth)
+ShowtimeManagementView::ShowtimeManagementView(ShowtimeService& service, MovieService& movies, RoomService& rooms,
+                                               AuthService& auth, bool transactionReady)
     : CatalogView({"Mã suất", "Phim", "Phòng", "Bắt đầu", "Kết thúc", "Trạng thái"}),
-      service(service), movies(movies), rooms(rooms), auth(auth),
+      service(service), movies(movies), rooms(rooms), auth(auth), transactionReady(transactionReady),
       byMovie(new QComboBox), byRoom(new QComboBox), byDate(new QComboBox), byStatus(new QComboBox)
 {
-    action("Thêm suất chiếu", auth.hasPermission("SHOWTIME_ADD"), [this] { form(true); });
-    action("Sửa", auth.hasPermission("SHOWTIME_UPDATE"), [this] { form(false); });
-    pending("Hủy suất", auth.hasPermission("SHOWTIME_CANCEL"), "Chờ kiểm tra vé đã bán.");
-    pending("Xóa suất", auth.hasPermission("SHOWTIME_DELETE"), "Chờ kiểm tra lịch sử vé.");
+    action("Thêm suất chiếu", auth.hasPermission("SHOWTIME_ADD") && transactionReady,
+           [this] { form(true); });
+    pending("Thêm suất chiếu", auth.hasPermission("SHOWTIME_ADD") && !transactionReady,
+            "Dữ liệu giao dịch chưa sẵn sàng; không thể thêm suất chiếu.");
+    pending("Sửa", auth.hasPermission("SHOWTIME_UPDATE"), "BLOCKED: Backend chưa xác minh vé đã bán khi sửa lịch.");
+    pending("Hủy suất", auth.hasPermission("SHOWTIME_CANCEL"), "BLOCKED: Backend chưa xác minh vé đã bán.");
+    pending("Xóa suất", auth.hasPermission("SHOWTIME_DELETE"), "BLOCKED: Backend chưa xác minh lịch sử vé.");
+    action("Chi tiết", auth.hasPermission("SHOWTIME_VIEW"), [this] { detail(); });
     auto* filters = new QHBoxLayout;
     auto addFilter = [&](const QString& title, QComboBox* box) {
         auto* stack = new QVBoxLayout;
@@ -92,6 +98,29 @@ ShowtimeManagementView::ShowtimeManagementView(ShowtimeService& service, MovieSe
         }
     });
     static_cast<QVBoxLayout*>(layout())->insertLayout(1, filters);
+}
+
+void ShowtimeManagementView::detail()
+{
+    const auto* show = service.findShowtimeById(selectedId().toStdString());
+    if (!show) {
+        status->setText("Hãy chọn một suất chiếu còn tồn tại trong danh sách.");
+        refresh();
+        return;
+    }
+    QDialog dialog(this);
+    dialog.setWindowTitle("Chi tiết suất chiếu");
+    QFormLayout fields(&dialog);
+    fields.addRow("Mã suất", new QLabel(QString::fromStdString(show->getShowtimeId())));
+    fields.addRow("Phim", new QLabel(QString::fromStdString(show->getMovieId())));
+    fields.addRow("Phòng", new QLabel(QString::fromStdString(show->getRoomId())));
+    fields.addRow("Bắt đầu", new QLabel(QString::fromStdString(show->getStartAt())));
+    fields.addRow("Kết thúc", new QLabel(QString::fromStdString(show->getEndAt())));
+    fields.addRow("Trạng thái", new QLabel(show->getStatus() == ShowtimeStatus::SCHEDULED ? "SCHEDULED" : "CANCELLED"));
+    QDialogButtonBox buttons(QDialogButtonBox::Close);
+    fields.addRow(&buttons);
+    connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    dialog.exec();
 }
 
 void ShowtimeManagementView::refresh(const QString& movieId)
@@ -158,6 +187,10 @@ void ShowtimeManagementView::filter()
 
 void ShowtimeManagementView::form(bool creating)
 {
+    if (!transactionReady) {
+        status->setText("Dữ liệu giao dịch chưa sẵn sàng; chỉ được xem suất chiếu.");
+        return;
+    }
     const auto id = selectedId().toStdString();
     const auto* show = creating ? nullptr : service.findShowtimeById(id);
     if (!creating && (!show || show->getStatus() != ShowtimeStatus::SCHEDULED ||
@@ -222,16 +255,24 @@ void ShowtimeManagementView::form(bool creating)
     preview();
     fields.addRow("Kết thúc", &end);
     fields.addRow("Trạng thái", new QLabel("SCHEDULED"));
-    if (!CatalogUi::confirmForm(dialog, fields, creating)) {
+    if (creating) {
+        QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+        fields.addRow(&buttons);
+        connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        if (dialog.exec() != QDialog::Accepted) { return; }
+    } else if (!CatalogUi::confirmForm(dialog, fields, false)) {
         return;
     }
-    const Showtime values(id, movie.currentData().toString().toStdString(), room.currentData().toString().toStdString(),
+    Showtime values(id, movie.currentData().toString().toStdString(), room.currentData().toString().toStdString(),
                           start.dateTime().toString(isoFormat).toStdString(), endAt, ShowtimeStatus::SCHEDULED);
-    const bool changed = service.updateShowtime(values);
+    const bool changed = creating ? service.addShowtime(&values)
+                                  : service.updateShowtime(values);
     CatalogUi::result(status, changed);
     if (changed) {
         refresh(byMovie->currentData().toString());
     } else {
-        status->setText("Không thể đổi lịch. Kiểm tra thời điểm bắt đầu, khoảng phát hành và khoảng nghỉ 15 phút trong phòng.");
+        status->setText("Không thể lưu suất chiếu. Kiểm tra phim/phòng, thời gian, thời lượng và lịch trong phòng.");
+        refresh(byMovie->currentData().toString());
     }
 }

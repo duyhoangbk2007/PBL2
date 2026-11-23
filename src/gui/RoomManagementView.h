@@ -12,6 +12,8 @@ public:
 private:
     RoomService& service;
     AuthService& auth;
+    void add();
+    void detail();
     void edit();
     void remove();
 };

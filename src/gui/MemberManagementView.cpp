@@ -1,6 +1,7 @@
 #include "MemberManagementView.h"
 #include "../business/MemberService.h"
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -74,13 +75,31 @@ void MemberManagementView::form(bool creating)
     fields.addRow("Số điện thoại", &phone);
     const int points = current ? current->getPoints() : 0;
     fields.addRow("Điểm tích lũy", new QLabel(QString::number(points)));
-    if (!CatalogUi::confirmForm(dialog, fields, creating)) {
+    QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    fields.addRow(&buttons);
+    connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if (dialog.exec() != QDialog::Accepted) {
         return;
     }
     if (!phone.hasAcceptableInput()) {
         status->setText("Số điện thoại cần đúng 10 chữ số và bắt đầu bằng 0.");
         return;
     }
-    CatalogUi::result(status, service.updateMember(Member(id, name.text().toStdString(), phone.text().toStdString(), points)));
+    bool changed = false;
+    if (creating) {
+        Member candidate("", name.text().toStdString(), phone.text().toStdString(), 0);
+        changed = service.addMember(&candidate);
+    } else {
+        const auto* latest = service.findMemberById(id);
+        if (!latest) {
+            status->setText("Thành viên không còn tồn tại. Danh sách đã được cập nhật.");
+            refresh();
+            return;
+        }
+        changed = service.updateMember(Member(id, name.text().toStdString(),
+                                              phone.text().toStdString(), latest->getPoints()));
+    }
+    CatalogUi::result(status, changed);
     refresh();
 }

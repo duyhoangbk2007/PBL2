@@ -113,8 +113,9 @@ public:
     }
 };
 
-SeatMapView::SeatMapView(RoomService& rooms, SeatService& seats, AuthService& auth)
-    : rooms(rooms), seats(seats), auth(auth), picker(new QComboBox), grid(new SeatGrid(this)), status(new QLabel)
+SeatMapView::SeatMapView(RoomService& rooms, SeatService& seats, AuthService& auth, bool transactionReady)
+    : rooms(rooms), seats(seats), auth(auth), transactionReady(transactionReady),
+      picker(new QComboBox), grid(new SeatGrid(this)), status(new QLabel)
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -237,11 +238,13 @@ void SeatMapView::openCell(int row, int column)
     const auto pos = grid->cells.find({row, column});
     const bool empty = pos == grid->cells.end();
     // TODO: BACKEND INTEGRATION — SeatService cannot check historical ticket references.
-    const bool editableLayout = room->getShowtimeCount() == 0;
+    const bool editableLayout = transactionReady && room->getShowtimeCount() == 0;
     const bool edit = editableLayout && auth.hasPermission(empty ? "SEAT_ADD" : "SEAT_UPDATE");
     const bool remove = editableLayout && !empty && auth.hasPermission("SEAT_DELETE");
     if (empty && !edit) {
-        status->setText(editableLayout ? "Bạn chỉ được xem ô trống." : "Phòng đã có suất chiếu. Đang chờ Service kiểm tra vé.");
+        status->setText(!transactionReady ? "Dữ liệu giao dịch chưa sẵn sàng; chỉ được xem sơ đồ ghế." :
+                        editableLayout ? "Bạn chỉ được xem ô trống." :
+                        "Phòng đã có suất chiếu. Đang chờ Service kiểm tra vé.");
         return;
     }
     const QString id = empty ? rowName(row) + QString("%1").arg(column, 2, 10, QChar('0')) : pos->second.id;
@@ -266,7 +269,8 @@ void SeatMapView::openCell(int row, int column)
     type.setEnabled(edit);
     form.addRow("Loại ghế", &type);
     if (!editableLayout) {
-        form.addRow(new QLabel("Chờ kiểm tra vé của phòng đã có suất chiếu."));
+        form.addRow(new QLabel(!transactionReady ? "Dữ liệu giao dịch chưa sẵn sàng; không thể sửa ghế." :
+                               "Chờ kiểm tra vé của phòng đã có suất chiếu."));
     }
     QDialogButtonBox buttons(QDialogButtonBox::Close);
     if (edit) {
@@ -288,6 +292,12 @@ void SeatMapView::openCell(int row, int column)
     connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+    const auto* currentRoom = rooms.findRoomById(key);
+    if (!transactionReady || !currentRoom || currentRoom->getShowtimeCount() > 0) {
+        status->setText("Phòng đã thay đổi hoặc đã có suất chiếu. Không thể sửa sơ đồ ghế.");
+        loadRoom();
         return;
     }
     const auto newType = static_cast<SeatType>(type.currentIndex());

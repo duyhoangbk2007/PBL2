@@ -12,6 +12,8 @@ public:
 private:
     MovieService& service;
     AuthService& auth;
+    void add();
+    void detail();
     void edit();
     void remove();
 };
