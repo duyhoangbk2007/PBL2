@@ -1,4 +1,4 @@
-﻿
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -42,6 +42,13 @@ void write(const string& name, const string& contents)
     {
         throw runtime_error("Khong ghi file test: " + name);
     }
+}
+
+string read(const string& name)
+{
+    ifstream in(name, ios::binary);
+    if (!in) throw runtime_error("Khong doc file test: " + name);
+    return string(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
 }
 
 struct Fixture
@@ -217,6 +224,8 @@ void testCreateBooking()
         check(f.auth.login("staff", "123456"),
               "Dang nhap nhan vien");
 
+        const string originalMembers = read("members.txt");
+
         vector<BookingItem> items = {
             {"A01", TicketType::REGULAR},
             {"A02", TicketType::REGULAR}
@@ -251,6 +260,10 @@ void testCreateBooking()
 
         check(f.members.findById("MEM0001")->getPoints() == 14,
               "Cong diem thanh vien");
+
+        check(read("invoices.txt").empty() && read("tickets.txt").empty() &&
+              read("members.txt") == originalMembers,
+              "Ban ve chi cap nhat RAM");
 
         Invoice* invoice = f.invoices.findById(invoiceId);
 
@@ -301,19 +314,19 @@ void testCreateBooking()
         check(denied, "Chua dang nhap khong duoc ban ve");
     }
 
-    // Kiem tra du lieu sau khi load lai
+    // Chua save nen context moi doc lai du lieu ban dau.
     {
         Fixture f;
         f.load();
 
-        check(f.invoices.count() == 1 &&
-              f.tickets.count() == 2 &&
-              f.members.findById("MEM0001")->getPoints() == 14,
-              "Load lai giao dich thanh cong");
+        check(f.invoices.count() == 0 &&
+              f.tickets.count() == 0 &&
+              f.members.findById("MEM0001")->getPoints() == 0,
+              "Context moi chua thay giao dich RAM");
 
         check(!f.tickets.rollbackPending("TKT0001") &&
               !f.invoices.rollbackPending("INV0001"),
-              "Khong rollback du lieu da luu");
+              "Khong co du lieu pending o context moi");
 
         check(f.auth.login("admin", "123456"),
               "Dang nhap Admin");
@@ -326,7 +339,7 @@ void testCreateBooking()
 
         check(f.booking.createBooking("SHW0001", items,
                                       "", true, true, invoiceId) &&
-              invoiceId == "INV0002",
+              invoiceId == "INV0001",
               "Admin ban ve khong co thanh vien");
     }
 }
@@ -441,143 +454,33 @@ void testRollbackMultipleTickets()
           "Danh sach ghe trong duoc khoi phuc");
 }
 
-// TEST 5: LOI LUU INVOICE
-void testInvoiceSaveFailure()
+// TEST 5: BAN VE CHI CAP NHAT RAM
+void testSaleWithoutWritableFiles()
 {
     prepare();
-
     Fixture f;
     f.load();
-
-    f.auth.login("staff", "123456");
-
-    fs::remove("invoices.txt");
-    fs::create_directory("invoices.txt");
-
-    vector<BookingItem> items = {
-        {"A01", TicketType::REGULAR}
-    };
-
+    check(f.auth.login("staff", "123456"), "Login Staff");
+    for (const string& name : {"invoices.txt", "tickets.txt", "members.txt"})
+    {
+        fs::remove(name);
+        fs::create_directory(name);
+    }
     string invoiceId;
-    bool storageError = false;
-
-    try
+    check(f.booking.createBooking("SHW0001", {{"A01", TicketType::REGULAR}},
+                                  "MEM0001", true, true, invoiceId) &&
+          invoiceId == "INV0001", "Ban ve khong can ghi TXT");
+    check(f.invoices.count() == 1 && f.tickets.count() == 1 &&
+          f.members.findById("MEM0001")->getPoints() == 7,
+          "Invoice Ticket Member cap nhat RAM");
+    check(f.booking.createBooking("SHW0001", {{"A02", TicketType::REGULAR}},
+                                  "", true, true, invoiceId) &&
+          invoiceId == "INV0002", "Giao dich tiep theo khong bi chan");
+    for (const string& name : {"invoices.txt", "tickets.txt", "members.txt"})
     {
-        f.booking.createBooking("SHW0001", items,
-                                "MEM0001", true, true,
-                                invoiceId);
+        fs::remove(name);
     }
-    catch (const exception&)
-    {
-        storageError = true;
-    }
-
-    check(storageError && invoiceId.empty(),
-          "Loi luu Invoice nem exception");
-
-    check(f.invoices.count() == 1 &&
-          f.tickets.count() == 1,
-          "RAM duoc giu sau loi luu Invoice");
-
-    bool blocked = false;
-
-    try
-    {
-        f.booking.createBooking("SHW0001", items,
-                                "", true, true, invoiceId);
-    }
-    catch (const exception&)
-    {
-        blocked = true;
-    }
-
-    check(blocked,
-          "Chan ban tiep sau loi luu file");
-
-    fs::remove("invoices.txt");
 }
-
-// TEST 6: LOI LUU TICKET
-void testTicketSaveFailure()
-{
-    prepare();
-
-    Fixture f;
-    f.load();
-
-    f.auth.login("staff", "123456");
-
-    fs::remove("tickets.txt");
-    fs::create_directory("tickets.txt");
-
-    vector<BookingItem> items = {
-        {"A01", TicketType::REGULAR}
-    };
-
-    string invoiceId;
-    bool storageError = false;
-
-    try
-    {
-        f.booking.createBooking("SHW0001", items,
-                                "", true, true, invoiceId);
-    }
-    catch (const exception&)
-    {
-        storageError = true;
-    }
-
-    check(storageError && invoiceId.empty(),
-          "Loi luu Ticket nem exception");
-
-    check(f.invoices.count() == 1 &&
-          f.tickets.count() == 1,
-          "RAM duoc giu sau loi luu Ticket");
-
-    fs::remove("tickets.txt");
-}
-
-// TEST 7: LOI LUU MEMBER
-void testMemberSaveFailure()
-{
-    prepare();
-
-    Fixture f;
-    f.load();
-
-    f.auth.login("staff", "123456");
-
-    fs::remove("members.txt");
-    fs::create_directory("members.txt");
-
-    vector<BookingItem> items = {
-        {"A01", TicketType::REGULAR}
-    };
-
-    string invoiceId;
-    bool storageError = false;
-
-    try
-    {
-        f.booking.createBooking("SHW0001", items,
-                                "MEM0001", true, true,
-                                invoiceId);
-    }
-    catch (const exception&)
-    {
-        storageError = true;
-    }
-
-    check(storageError && invoiceId.empty(),
-          "Loi luu Member nem exception");
-
-    check(f.members.findById("MEM0001")->getPoints() == 7 &&
-          f.tickets.count() == 1,
-          "RAM duoc giu sau loi luu Member");
-
-    fs::remove("members.txt");
-}
-
 int main()
 {
     fs::path old = fs::current_path();
@@ -596,9 +499,7 @@ int main()
         testCreateBooking();
         testRollbackSingleTicket();
         testRollbackMultipleTickets();
-        testInvoiceSaveFailure();
-        testTicketSaveFailure();
-        testMemberSaveFailure();
+        testSaleWithoutWritableFiles();
     }
     catch (const exception& e)
     {

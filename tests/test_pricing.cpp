@@ -151,6 +151,12 @@ void testRepository(const string& path)
     Pricing newPricing(70000, 120000, 160000, 15, 5);
 
     check(repo.update(newPricing), "Update pricing");
+    PricingRepository beforeSave(path);
+    check(beforeSave.load() &&
+          equalDouble(repo.getPricing()->getVipPrice(), 120000) &&
+          equalDouble(beforeSave.getPricing()->getVipPrice(), 100000) &&
+          equalDouble(beforeSave.getPricing()->getStudentDiscount(), 10),
+          "Update changes RAM without writing TXT");
     check(repo.save(), "Save pricing");
 
     // Kiem tra du lieu sau khi luu

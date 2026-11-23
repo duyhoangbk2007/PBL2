@@ -23,6 +23,7 @@
 #include <QTest>
 #include <QUuid>
 #include <stdexcept>
+#include <cstdio>
 
 namespace {
 void require(bool ok, const char* message)
@@ -122,6 +123,7 @@ void run()
     }
     extraMembers.close();
     const auto memberData = readFile(files.filePath("members.txt"));
+    const auto originalPricing = readFile(files.filePath("pricing.txt"));
     ApplicationContext ctx(files.path());
     const auto error = ctx.load();
     require(error.isEmpty() && ctx.pricingError.isEmpty() && ctx.catalogError.isEmpty(), "startup");
@@ -141,15 +143,15 @@ void run()
     fields[3]->setValue(10);
     button(prices, "Lưu thay đổi")->click();
     const auto stored = readFile(files.filePath("pricing.txt"));
-    require(stored.contains("STANDARD|89000.500000") && stored.contains("COUPLE|155000.") &&
-            stored.contains("STUDENT_DISCOUNT|10."), "prices not persisted");
+    require(stored == originalPricing && ctx.pricing.getBasePrice(SeatType::STANDARD) == 89000.5 &&
+            ctx.pricing.getPricing()->getCouplePrice() == 155000, "price update did not stay in RAM");
     const auto path = files.filePath("pricing.txt");
     const auto backup = files.filePath("held-prices.txt");
     require(QFile::rename(path, backup) && QDir().mkdir(path), "prepare simulated write failure");
     fields[0]->setValue(88000);
     button(prices, "Lưu thay đổi")->click();
-    require(ctx.pricing.getBasePrice(SeatType::STANDARD) == 89000.5 && fields[0]->value() == 89000.5,
-            "failed write changed displayed or in-memory price");
+    require(ctx.pricing.getBasePrice(SeatType::STANDARD) == 88000 && fields[0]->value() == 88000,
+            "price update depended on writable TXT");
     require(QDir().rmdir(path) && QFile::rename(backup, path), "restore temporary pricing file");
     button(prices, "Khôi phục biểu mẫu")->click();
     capture(window, "gia-ve");
@@ -274,10 +276,9 @@ void run()
     QApplication::processEvents();
     const auto savedInvoices = readFile(files.filePath("invoices.txt"));
     const auto savedTickets = readFile(files.filePath("tickets.txt"));
-    require(savedInvoices != initialInvoices && savedTickets != initialTickets &&
-            savedInvoices.trimmed().split('\n').size() == 2 &&
-            savedTickets.trimmed().split('\n').size() == 2 &&
-            !checkout->isEnabled(), "checkout did not lock after sale");
+    require(savedInvoices == initialInvoices && savedTickets == initialTickets &&
+            ctx.booking.getAvailableSeats("SHW0001").size() == 4 &&
+            !checkout->isEnabled(), "checkout did not update RAM or lock after sale");
     checkout->click();
     QApplication::processEvents();
     require(readFile(files.filePath("invoices.txt")) == savedInvoices &&
@@ -340,8 +341,14 @@ void restartChild(const QString& mode)
         editors[3]->setValue(17.125);
         button(prices, "Lưu thay đổi")->click();
     }
-    require(ctx.pricing.getBasePrice(SeatType::STANDARD) == 123456789012.5 &&
-            editors[0]->value() == 123456789012.5 && editors[3]->value() == 17.125, "restart price mismatch");
+    if (mode == "--write-price") {
+        require(ctx.pricing.getBasePrice(SeatType::STANDARD) == 123456789012.5 &&
+                editors[0]->value() == 123456789012.5 && editors[3]->value() == 17.125,
+                "RAM price update mismatch");
+    } else {
+        require(ctx.pricing.getBasePrice(SeatType::STANDARD) == 80000,
+                "unsaved price survived restart");
+    }
     window.close();
 }
 
@@ -372,8 +379,7 @@ void testRestart()
     child("--write-price");
     const auto path = target.filePath("pricing.txt");
     const auto saved = readFile(path);
-    require(saved.trimmed().split('\n').size() == 5 && saved.contains("STANDARD|123456789012.500000") &&
-            saved.contains("STUDENT_DISCOUNT|17.125000"), "incomplete persistent pricing");
+    require(saved == readFile(fixtures.filePath("pricing.txt")), "RAM price update changed TXT");
     child("--read-price");
     require(readFile(path) == saved, "read-only restart changed prices");
     for (const auto& name : names) {
@@ -383,7 +389,7 @@ void testRestart()
     }
     const QByteArray damaged = "STANDARD|70000\nSTANDARD|9\n";
     auto precise = saved;
-    precise.replace("STANDARD|123456789012.500000", "STANDARD|0.0000001");
+    precise.replace("STANDARD|80000", "STANDARD|0.0000001");
     writeFile(path, precise);
     child("--precise-price");
     require(readFile(path) == precise, "high-precision source overwritten");
@@ -408,6 +414,7 @@ int main(int argc, char* argv[])
         }
     }
     catch (const std::exception& error) {
+        std::fprintf(stderr, "Booking GUI test failed: %s\n", error.what());
         qCritical("Booking GUI test failed: %s", error.what());
         return 1;
     }

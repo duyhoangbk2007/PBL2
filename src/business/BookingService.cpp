@@ -175,10 +175,6 @@ bool BookingService::createBooking(const string& showtimeId,
 {
     invoiceId = "";
     const User& staff = authService.requirePermission("TICKET_SELL");
-    if (storageFailed)
-    {
-        throw runtime_error("Giao dich truoc ghi TXT loi; can kiem tra du lieu truoc khi ban tiep");
-    }
     if (!ageConfirmed || !paymentConfirmed)
     {
         return false;
@@ -332,27 +328,6 @@ bool BookingService::createBooking(const string& showtimeId,
         return false;
     }
 
-    // Tu lan ghi dau tien, file co the da thay doi du save() tra false.
-    try
-    {
-        if (!invoiceRepo.save())
-        {
-            throw runtime_error("Khong the ghi file Invoice");
-        }
-        if (!ticketRepo.save())
-        {
-            throw runtime_error("Khong the ghi file Ticket; Invoice co the da duoc luu");
-        }
-        if (member != nullptr && !memberRepo.save())
-        {
-            throw runtime_error("Khong the ghi file Member; Invoice/Ticket co the da duoc luu");
-        }
-    }
-    catch (...)
-    {
-        storageFailed = true;
-        throw;
-    }
     invoiceId = newInvoiceId;
     return true;
 }
@@ -387,10 +362,6 @@ bool BookingService::cancelTicket(const string& ticketId, const string& reason, 
 {
     const User& admin = authService.requireAdmin();
     authService.requirePermission("TICKET_CANCEL");
-    if (storageFailed)
-    {
-        throw runtime_error("Giao dich truoc ghi TXT loi; can kiem tra du lieu truoc khi huy tiep");
-    }
     if (!showtimeRepo.isLoaded() || !seatRepo.isLoaded() ||
         !ticketRepo.isLoaded() || !invoiceRepo.isLoaded() ||
         !memberRepo.isLoaded())
@@ -457,22 +428,6 @@ bool BookingService::cancelTicket(const string& ticketId, const string& reason, 
         member->setPoints(member->getPoints() - ticket->getPointsEarned());
     }
 
-    try
-    {
-        if (!ticketRepo.save())
-        {
-            throw runtime_error("Khong the ghi file Ticket khi huy ve");
-        }
-        if (member != nullptr && !memberRepo.save())
-        {
-            throw runtime_error("Khong the ghi file Member sau khi huy ve; Ticket co the da duoc luu");
-        }
-    }
-    catch (...)
-    {
-        storageFailed = true;
-        throw;
-    }
     return true;
 }
 

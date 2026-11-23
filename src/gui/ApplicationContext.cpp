@@ -2,7 +2,10 @@
 #include "ApplicationContext.h"
 
 #include <QDir>
+#include <QStringList>
 #include <exception>
+#include <functional>
+#include <vector>
 
 ApplicationContext::ApplicationContext(
     const QString& dataDirectory)
@@ -163,5 +166,54 @@ QString ApplicationContext::load()
         transactionError = error();
     }
 
+    return {};
+}
+
+QString ApplicationContext::saveAll()
+{
+    struct SaveStep {
+        QString fileName;
+        bool loaded;
+        std::function<bool()> save;
+    };
+
+    // Dependencies are written before the records that refer to them.
+    const std::vector<SaveStep> steps = {
+        {"users.txt", users.isLoaded(), [this] { return users.save(); }},
+        {"movies.txt", movieRepo.isLoaded(), [this] { return movieRepo.save(); }},
+        {"rooms.txt", roomRepo.isLoaded(), [this] { return roomRepo.save(); }},
+        {"seats.txt", seatRepo.isLoaded(), [this] { return seatRepo.save(); }},
+        {"showtimes.txt", showtimeRepo.isLoaded(), [this] { return showtimeRepo.save(); }},
+        {"pricing.txt", pricingRepo.isLoaded(), [this] { return pricingRepo.save(); }},
+        {"members.txt", memberRepo.isLoaded(), [this] { return memberRepo.save(); }},
+        {"invoices.txt", invoiceRepo.isLoaded(), [this] { return invoiceRepo.save(); }},
+        {"tickets.txt", ticketRepo.isLoaded(), [this] { return ticketRepo.save(); }}
+    };
+
+    QStringList missing;
+    for (const SaveStep& step : steps) {
+        if (!step.loaded) {
+            missing << step.fileName;
+        }
+    }
+    if (!missing.isEmpty()) {
+        return "Chua nap du lieu: " + missing.join(", ") + ". Chua ghi file nao.";
+    }
+
+    QStringList saved;
+    for (const SaveStep& step : steps) {
+        try {
+            if (step.save()) {
+                saved << step.fileName;
+                continue;
+            }
+        } catch (const std::exception& error) {
+            return "Luu " + step.fileName + " that bai: " +
+                   QString::fromUtf8(error.what()) + ". Da ghi: " + saved.join(", ") + ".";
+        } catch (...) {
+            return "Luu " + step.fileName + " that bai. Da ghi: " + saved.join(", ") + ".";
+        }
+        return "Luu " + step.fileName + " that bai. Da ghi: " + saved.join(", ") + ".";
+    }
     return {};
 }

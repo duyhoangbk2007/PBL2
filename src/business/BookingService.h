@@ -41,7 +41,6 @@ private:
     PricingService& pricingService;
     AuthService& authService;
     
-    bool storageFailed = false;
     void rollbackBooking(const std::vector<std::string>& addedTicketIds,
                          const std::string& invoiceId,
                          bool invoiceAdded,

@@ -130,19 +130,6 @@ bool PricingRepository::update(const Pricing& newPricing)
     {
         return false;
     }
-    // Luu cau hinh moi xuong file truoc
-    vector<string> lines = {
-        "STANDARD|" + to_string(newPricing.getStandardPrice()),
-        "VIP|" + to_string(newPricing.getVipPrice()),
-        "COUPLE|" + to_string(newPricing.getCouplePrice()),
-        "STUDENT_DISCOUNT|" + to_string(newPricing.getStudentDiscount()),
-        "MEMBER_DISCOUNT|" + to_string(newPricing.getMemberDiscount())
-    };
-    if (!FileIO::writeLines(filePath, lines))
-    {
-        return false;
-    }
-    // Chi cap nhat bo nho khi ghi thanh cong
     pricing = newPricing;
     return true;
 }

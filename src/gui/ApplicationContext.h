@@ -36,6 +36,8 @@ public:
     explicit ApplicationContext(const QString& dataDirectory);
 
     QString load();
+    // Empty on success; otherwise describes the file that blocked saving.
+    QString saveAll();
 
     AuthService auth;
     MovieService movies;

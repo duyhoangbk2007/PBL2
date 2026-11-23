@@ -237,73 +237,36 @@ void testTimeAndLinks()
     }
 }
 
-void testReloadAndNoMember()
+void testCancelOnlyInRam()
 {
     prepare();
-    {
-        Fixture f;
-        f.load();
-        sell(f, {{"A01", TicketType::REGULAR}}, "");
-        f.auth.login("admin", "123456");
-        check(f.booking.cancelTicket("TKT0001", "Khach doi lich", true), "Cancel without member");
-    }
-    {
-        Fixture f;
-        f.load();
-        Ticket* ticket = f.tickets.findById("TKT0001");
-        check(ticket && ticket->getStatus() == TicketStatus::CANCELLED &&
-              ticket->getCancelReason() == "Khach doi lich" &&
-              ticket->getRefundAmount() == ticket->getPaidAmount(), "Reload cancelled ticket");
-        check(!f.tickets.isSeatSold("SHW0001", "A01"), "Reloaded seat available");
-    }
+    std::ifstream originalFile("members.txt", std::ios::binary);
+    const std::string originalMembers((std::istreambuf_iterator<char>(originalFile)), std::istreambuf_iterator<char>());
+    Fixture f;
+    f.load();
+    sell(f, {{"A01", TicketType::REGULAR}}, "MEM0001");
+    f.auth.login("admin", "123456");
+    check(f.booking.cancelTicket("TKT0001", "Khach doi lich", true), "Huy ve trong RAM");
+    Ticket* ticket = f.tickets.findById("TKT0001");
+    check(ticket && ticket->getStatus() == TicketStatus::CANCELLED &&
+          ticket->getCancelReason() == "Khach doi lich" &&
+          f.members.findById("MEM0001")->getPoints() == 0 &&
+          !f.tickets.isSeatSold("SHW0001", "A01"), "RAM cap nhat sau khi huy");
+    std::ifstream ticketFile("tickets.txt", std::ios::binary);
+    std::ifstream invoiceFile("invoices.txt", std::ios::binary);
+    std::ifstream memberFile("members.txt", std::ios::binary);
+    const std::string storedTickets((std::istreambuf_iterator<char>(ticketFile)), std::istreambuf_iterator<char>());
+    const std::string storedInvoices((std::istreambuf_iterator<char>(invoiceFile)), std::istreambuf_iterator<char>());
+    const std::string storedMembers((std::istreambuf_iterator<char>(memberFile)), std::istreambuf_iterator<char>());
+    check(storedTickets.empty() && storedInvoices.empty() &&
+          storedMembers == originalMembers, "Ban va huy khong doi TXT");
+    string invoiceId;
+    f.auth.logout();
+    f.auth.login("staff", "123456");
+    check(f.booking.createBooking("SHW0001", {{"A01", TicketType::REGULAR}},
+                                  "", true, true, invoiceId) && invoiceId == "INV0002",
+          "Co the ban lai ghe da huy trong RAM");
 }
-
-void testSaveFailures()
-{
-    prepare();
-    {
-        Fixture f;
-        f.load();
-        sell(f, {{"A01", TicketType::REGULAR}}, "");
-        f.auth.login("admin", "123456");
-        fs::remove("tickets.txt");
-        fs::create_directory("tickets.txt");
-        bool threw = false;
-        try { f.booking.cancelTicket("TKT0001", "Khach huy", true); }
-        catch (const exception&) { threw = true; }
-        check(threw, "Ticket save failure throws");
-        check(f.tickets.findById("TKT0001")->getStatus() == TicketStatus::CANCELLED,
-              "RAM retained after Ticket write failure");
-        bool blocked = false;
-        try { f.booking.cancelTicket("TKT0001", "Again", true); }
-        catch (const exception&) { blocked = true; }
-        check(blocked, "Further cancellation blocked after write failure");
-        string id;
-        blocked = false;
-        try { f.booking.createBooking("SHW0001", {{"A02", TicketType::REGULAR}}, "", true, true, id); }
-        catch (const exception&) { blocked = true; }
-        check(blocked, "Further sale blocked after write failure");
-        fs::remove("tickets.txt");
-    }
-    prepare();
-    {
-        Fixture f;
-        f.load();
-        sell(f, {{"A01", TicketType::REGULAR}}, "MEM0001");
-        f.auth.login("admin", "123456");
-        fs::remove("members.txt");
-        fs::create_directory("members.txt");
-        bool threw = false;
-        try { f.booking.cancelTicket("TKT0001", "Khach huy", true); }
-        catch (const exception&) { threw = true; }
-        check(threw, "Member save failure throws");
-        check(f.tickets.findById("TKT0001")->getStatus() == TicketStatus::CANCELLED &&
-              f.members.findById("MEM0001")->getPoints() == 0,
-              "RAM retained after Member write failure");
-        fs::remove("members.txt");
-    }
-}
-
 int main()
 {
     fs::path old = fs::current_path();
@@ -318,8 +281,7 @@ int main()
         testGuards();
         testMissingPermission();
         testTimeAndLinks();
-        testReloadAndNoMember();
-        testSaveFailures();
+        testCancelOnlyInRam();
     }
     catch (const exception& e)
     {
