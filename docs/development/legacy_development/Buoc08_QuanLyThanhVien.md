@@ -11,9 +11,9 @@
 - `update(const Member&)` chỉ sửa họ tên và số điện thoại; không đổi ID hoặc điểm. Chỉ mục điện thoại được cập nhật cùng dữ liệu.
 - `findById()`, `findByPhone()`, `getAt()`, `count()`, `isLoaded()` cung cấp tra cứu và trạng thái trong RAM.
 
-ID dùng tiền tố `MEM` theo `Validator::isValidId`; số điện thoại có đúng 10 chữ số và bắt đầu bằng `0`; điểm không âm. Chi tiết API và các trường hợp lỗi ở [MemberRepository](<../CauTrucThuMuc/data_acess(docs)/MemberRepository.md>).
+ID dùng tiền tố `MEM` theo `Validator::isValidId`; số điện thoại có đúng 10 chữ số và bắt đầu bằng `0`; điểm không âm. Chi tiết API và các trường hợp lỗi ở [MemberRepository](<../src/data_access/MemberRepository.md>).
 
-`src/business/MemberService.h/.cpp` nhận `MemberRepository&` và `AuthService&`. Constructor không tự nạp dữ liệu. `load()`/`save()` chuyển tiếp đến Repository và không kiểm tra quyền; sáu phương thức nghiệp vụ/tra cứu kiểm tra RBAC trước khi gọi Repository: `addMember()` dùng `MEMBER_ADD`, `updateMember()` dùng `MEMBER_UPDATE`, còn `findMemberById()`, `findMemberByPhone()`, `getMemberAt()`, `getMemberCount()` dùng `MEMBER_VIEW`. Các hàm tra cứu trả `const Member*`. Xem [MemberService](<../CauTrucThuMuc/business(docs)/MemberService.md>) và [Business–UI Contract](../Business_UI_Contract.md#8-memberservice--quản-lý-thành-viên).
+`src/business/MemberService.h/.cpp` nhận `MemberRepository&` và `AuthService&`. Constructor không tự nạp dữ liệu. `load()`/`save()` chuyển tiếp đến Repository và không kiểm tra quyền; sáu phương thức nghiệp vụ/tra cứu kiểm tra RBAC trước khi gọi Repository: `addMember()` dùng `MEMBER_ADD`, `updateMember()` dùng `MEMBER_UPDATE`, còn `findMemberById()`, `findMemberByPhone()`, `getMemberAt()`, `getMemberCount()` dùng `MEMBER_VIEW`. Các hàm tra cứu trả `const Member*`. Xem [MemberService](<../src/business/MemberService.md>) và [Business–UI Contract](../architecture/Business_UI_Contract.md#8-memberservice--quản-lý-thành-viên).
 
 ## Checklist
 

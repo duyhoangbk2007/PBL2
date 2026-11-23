@@ -8,7 +8,7 @@
 - `src/data_access/PricingRepository.h/.cpp` giữ một `Pricing`, đọc/ghi năm dòng `KEY|VALUE` trong file do constructor nhận; không dùng `Repository<T>` vì cấu hình không có ID. `load()` chỉ thay cấu hình và trạng thái nạp sau khi kiểm tra toàn file thành công, giữ cấu hình cũ nếu reload lỗi. `update()` ghi file rồi mới thay cấu hình RAM khi ghi báo thành công.
 - `src/business/PricingService.h/.cpp` nhận Repository/AuthService bằng tham chiếu. Xem giá dùng `PRICING_VIEW`, sửa giá/tỷ lệ dùng `PRICING_UPDATE`; ba hàm tính giảm, tiền trả, điểm hiện chỉ gọi `requireLogin()`.
 
-Xem [Pricing trong models.md](../CauTrucThuMuc/models.md#pricing--cấu-hình-giá-và-ưu-đãi), [PricingRepository](<../CauTrucThuMuc/data_acess(docs)/PricingRepository.md>), [PricingService](<../CauTrucThuMuc/business(docs)/PricingService.md>) và [định dạng TXT](../TongQuan/data_format.md#pricingtxt).
+Xem [Pricing trong models.md](../src/models/models.md#pricing--cấu-hình-giá-và-ưu-đãi), [PricingRepository](<../src/data_access/PricingRepository.md>), [PricingService](<../src/business/PricingService.md>) và [định dạng TXT](../overview/data_format.md#pricingtxt).
 
 ## 2. Quy tắc giá và dữ liệu
 

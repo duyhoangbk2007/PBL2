@@ -34,7 +34,7 @@ public:
 };
 ```
 
-Danh sách sở hữu **node** nhưng không mặc nhiên sở hữu đối tượng được giữ qua `T*`. Cấm sao chép danh sách theo giá trị: lớp chưa vô hiệu hóa copy constructor/copy assignment, nên bản sao mặc định có thể cùng sở hữu node và giải phóng lặp. Chỉ số `getAt(k)` bắt đầu từ 0 và trả `nullptr` khi ngoài phạm vi. Xem [DLL.md](../DS/DLL.md) để biết các thao tác và độ phức tạp.
+Danh sách sở hữu **node** nhưng không mặc nhiên sở hữu đối tượng được giữ qua `T*`. Cấm sao chép danh sách theo giá trị: lớp chưa vô hiệu hóa copy constructor/copy assignment, nên bản sao mặc định có thể cùng sở hữu node và giải phóng lặp. Chỉ số `getAt(k)` bắt đầu từ 0 và trả `nullptr` khi ngoài phạm vi. Tài liệu `DLL.md` hiện không có trong cây làm việc; cần khôi phục từ lịch sử nếu muốn xem các thao tác và độ phức tạp.
 
 ## Ranh giới sau Bước 03
 

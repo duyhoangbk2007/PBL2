@@ -4,10 +4,10 @@
 
 ## 1. Quyền và phạm vi
 
-- Admin quản lý danh mục, nhân viên, toàn bộ lịch sử, báo cáo, bán và hủy vé.
-- Staff bán vé, quản lý thông tin liên hệ thành viên, xem hóa đơn của mình trong ngày và tra cứu hóa đơn cũ của mình theo mã.
-- Mọi tài khoản dùng chung mô hình User với role ADMIN/STAFF; không cần lớp con Admin/Staff. Service kiểm tra quyền mỗi nghiệp vụ. Tài khoản vô hiệu hóa không được đăng nhập. Chức năng sửa Staff không được đổi vai trò.
-- Theo thiết kế RBAC, quyền thao tác được tra từ `role_permissions.txt` bằng cặp `(role, permissionCode)`. Backend kiểm tra quyền qua `AuthService` mỗi lần thực hiện nghiệp vụ; GUI có thể dùng quyền để điều chỉnh hiển thị nhưng không thay thế kiểm tra ở Backend. Vai trò `ADMIN` không tự động có mọi quyền nếu file thiếu bản ghi. Các giới hạn nghiệp vụ và phạm vi dữ liệu ở các mục dưới vẫn bắt buộc, kể cả khi có mã quyền tương ứng.
+- Mọi tài khoản dùng chung Model `User` với role `ADMIN`/`STAFF`; không cần lớp con. Role là khóa tra bảng quyền và thuộc tính dữ liệu, **không tự cấp quyền nghiệp vụ**. Tài khoản vô hiệu hóa không được đăng nhập; sửa tài khoản nhân viên không được đổi role.
+- Quyền thao tác được tra từ `role_permissions.txt` bằng cặp `(role, permissionCode)`. Service dùng `AuthService::requirePermission()` trước mỗi nghiệp vụ được bảo vệ; GUI có thể dùng `hasPermission()` để điều chỉnh hiển thị nhưng không thay thế kiểm tra ở Service. Không dùng `requireAdmin()` hoặc so role cứng để cấp quyền. Không có cặp quyền thì từ chối, kể cả với tài khoản `ADMIN`.
+- `INVOICE_VIEW_OWN` chỉ cho xem hóa đơn do chính tài khoản lập và vẫn áp dụng giới hạn ngày/mã. `INVOICE_VIEW_ALL` cho phạm vi rộng khi bảng quyền cấp. Quyền `TICKET_CANCEL` không miễn các điều kiện về vé, suất, hoàn tiền và điểm.
+- Service kiểm tra Permission, quy tắc nghiệp vụ và điều phối nhiều nguồn dữ liệu. Repository xử lý CRUD, parse/serialize, lưu trữ, liên kết đối tượng và tính toàn vẹn dữ liệu; không phân quyền người dùng. Model giữ trạng thái và quan hệ; GUI không tự quyết định hợp lệ nghiệp vụ.
 - Không quản lý ca, online, thanh toán điện tử, hạng thẻ hoặc đổi điểm.
 - Bản PBL2 chạy như ứng dụng tại quầy trên một bộ dữ liệu TXT. Nếu sau này cho phép nhiều tiến trình cùng ghi, cần thiết kế cơ chế đồng bộ riêng trước khi sử dụng.
 
@@ -47,16 +47,16 @@
 | `PRICING_VIEW` | Có | Có |
 | `PRICING_UPDATE` | Có | Không |
 
-Bảng hiện gồm 31 mã quyền; `role_permissions.txt` mặc định có 31 cặp cho Admin và 10 cặp cho Staff. `PRICING_VIEW` cho xem bảng giá/giá gốc, `PRICING_UPDATE` cho sửa giá ghế và tỷ lệ ưu đãi. Bảng mô tả quyền được thống nhất, không xác nhận mọi nghiệp vụ tương ứng đã có code. Quyền thao tác được quyết định bởi các cặp hợp lệ đang nạp, không tự thêm cặp còn thiếu. `INVOICE_VIEW_OWN` vẫn phải giới hạn hóa đơn theo người lập và điều kiện ngày/mã ở mục lịch sử; `TICKET_CANCEL` vẫn phải tuân thủ quy tắc chỉ Admin ở mục hủy vé.
+Bảng hiện gồm 31 mã quyền; file `data/role_permissions.txt` hiện có 31 cặp cho `ADMIN` và 10 cặp cho `STAFF`. Hai cột role chỉ mô tả **dữ liệu mặc định**, không phải điều kiện quyền viết cứng. `PRICING_VIEW` cho xem bảng giá/giá gốc, `PRICING_UPDATE` cho sửa giá ghế và tỷ lệ ưu đãi. Có mã quyền không có nghĩa mọi nghiệp vụ tương ứng đã hoàn thiện.
 
-Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ chối nghiệp vụ được bảo vệ; `AuthService` cần tra lại trạng thái tài khoản khi kiểm tra quyền. Nếu thiếu file quyền, file sai định dạng, chứa cặp trùng hoặc mã quyền không tồn tại, phải báo lỗi và từ chối truy cập, không dùng bảng quyền nạp dở hay cấp quyền dự phòng. File quyền rỗng không cấp quyền nào. Phiên bản này chỉ đọc bảng quyền; **chưa triển khai Admin cấp/thu hồi quyền qua GUI hoặc API**, và thay đổi file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại. Chữ ký API và loại ngoại lệ cụ thể được chốt khi triển khai code.
+Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ chối nghiệp vụ được bảo vệ; `AuthService` tra lại trạng thái tài khoản khi kiểm tra quyền. Thiếu file quyền, sai định dạng hoặc cặp trùng phải từ chối truy cập, không dùng bảng nạp dở hay cấp quyền dự phòng; file rỗng không cấp quyền nào. **Khoảng trống hiện tại:** `RolePermissionRepository::load()` chưa kiểm tra mã quyền có thuộc danh mục 31 mã; quy tắc từ chối mã lạ cần được triển khai và kiểm thử sau khi nhóm chốt nguồn danh mục. Phiên bản này chỉ đọc bảng quyền; chưa có API/GUI cấp hoặc thu hồi quyền, thay đổi file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại.
 
 ## 2. Phim, phòng và suất chiếu
 
 - Phim có tên, thể loại, thời lượng phút dương, độ tuổi tối thiểu không âm, ngày bắt đầu/kết thúc chiếu và cờ hoạt động.
 - Ngày bắt đầu không lớn hơn ngày kết thúc. Trước khoảng ngày là sắp chiếu; trong khoảng bao gồm hai đầu là đang chiếu; sau khoảng hoặc bị vô hiệu hóa là ngừng chiếu.
 - Nhân viên xác nhận khách đủ tuổi tại quầy trước thanh toán; không lưu ngày sinh khách trong bản PBL2.
-- Phòng dùng mảng hai chiều, ô không có ghế là ô rỗng. Ghế có mã duy nhất trong phòng, hàng, cột và loại STANDARD/VIP/COUPLE; không lưu trạng thái đã bán.
+- Sơ đồ phòng biểu diễn theo hàng/cột; ô không có ghế là ô rỗng về mặt nghiệp vụ. Model `Room` hiện giữ danh sách liên kết ghế, không lưu mảng hai chiều. Ghế có mã duy nhất trong phòng, hàng, cột và loại STANDARD/VIP/COUPLE; không lưu trạng thái đã bán.
 - Ghế đôi là một vị trí cho hai người, một vé nguyên cặp. Số vị trí bán vé khác số chỗ ngồi thực tế.
 - Trong dữ liệu, ghế đôi có đúng một seatId và một vị trí logic `(row, column)`; không tách thành hai mã ghế. UI hiển thị ô ghế đôi rộng hơn. Một vé ghế đôi được tính là một vé nhưng hai người khi thống kê số người.
 - Suất có trạng thái SCHEDULED/CANCELLED; trạng thái đã kết thúc suy ra từ thời gian.
@@ -64,7 +64,7 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 - Kết thúc = bắt đầu + thời lượng phim khi tạo/sửa suất. Lưu thời điểm kết thúc riêng; đổi thời lượng phim không tự đổi lịch cũ.
 - Khoảng nghỉ tối thiểu 15 phút; code hiện tại khai báo `DateTime::BREAK_MINUTES = 15`. Hai suất cùng phòng trùng nếu các khoảng `[bắt đầu, kết thúc + khoảng nghỉ)` giao nhau. Bỏ qua suất hủy và chính suất đang sửa.
 - Không sửa phim/phòng/thời gian của suất đã từng có vé, kể cả vé hủy; không sửa suất đã bắt đầu.
-- Chỉ hủy suất chưa bắt đầu và không còn vé SOLD. Admin phải xử lý vé trước, không ngầm hủy hàng loạt.
+- Chỉ hủy suất chưa bắt đầu và không còn vé SOLD. Người có Permission hủy suất phải xử lý vé trước, không ngầm hủy hàng loạt.
 - Chặn đổi sơ đồ phòng nếu có suất tương lai chưa hủy đã từng phát sinh vé. Không đổi/xóa mã ghế từng xuất hiện trong vé; sơ đồ mới không tương thích cần tạo phòng mới.
 
 ## 3. Giá, ưu đãi và thành viên
@@ -105,12 +105,14 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 
 ## 5. Hủy vé
 
-- Chỉ Admin, chỉ vé SOLD, trước giờ bắt đầu suất.
+- Chỉ tài khoản có `TICKET_CANCEL`, chỉ vé SOLD, trước giờ bắt đầu suất. Bảng quyền hiện chỉ cấp mã này cho `ADMIN`; role không phải điều kiện cấp quyền viết cứng.
 - Cho phép hủy từng vé trong hóa đơn. Hoàn toàn bộ giá thực trả; lưu thời điểm, người hủy, lý do và tiền hoàn.
 - Chuyển vé sang CANCELLED, trả ghế cho suất đó và thu hồi đúng điểm đã cộng; kiểm tra từng lần ghi liên quan và báo lỗi nếu lưu chưa hoàn tất.
 - Không xóa vé, không đổi tổng tiền ban đầu của hóa đơn, không hủy lần hai.
 - Trạng thái hóa đơn không lưu lặp mà suy ra bằng một hàm nghiệp vụ dùng chung: ACTIVE nếu mọi vé còn SOLD, PARTIALLY_CANCELLED nếu có cả SOLD và CANCELLED, CANCELLED nếu mọi vé đã hủy. Tiền còn lại = tổng tiền ban đầu − tổng tiền hoàn.
 - Giữ pointsEarned ban đầu trên vé để đối chiếu dù đã thu hồi điểm. Nếu điểm thành viên không đủ thu hồi, chặn và báo dữ liệu không nhất quán, không ép về 0.
+
+**Hiện trạng chưa đạt Permission-only:** `BookingService::cancelTicket()` còn gọi `requireAdmin()` trước `requirePermission("TICKET_CANCEL")`; `TicketRepository` chỉ kiểm tra `cancelledBy` có **định dạng** ID `USR`, không tự cấp quyền hoặc tra User người hủy. Nhóm cần xác nhận việc thay gate role cứng bằng Permission có giữ đúng ý nghĩa nghiệp vụ khi bảng quyền được chỉnh về sau.
 
 ## 6. Lịch sử và báo cáo
 
@@ -121,13 +123,13 @@ Ghế đang chọn chỉ nằm trong bộ nhớ. Bỏ giao dịch trước thanh
 - Top phim theo kỳ bán: chỉ lấy vé thuộc hóa đơn lập trong kỳ còn SOLD tại lúc xem; cộng giá thực trả hoặc đếm vé. Chỉ tiêu này có thể khác doanh thu dòng tiền nếu hoàn ở kỳ khác.
 - Xếp hạng phim giảm dần theo chỉ tiêu; bằng nhau thì mã phim tăng dần. Có thể dùng `std::sort` trên kết quả đã lọc.
 
-**Triển khai hiện tại của Bước 11:** `InvoiceService` cho Admin có `INVOICE_VIEW_ALL` xem mọi hóa đơn; Staff có `INVOICE_VIEW_OWN` chỉ xem hóa đơn của mình, tra hóa đơn cũ theo mã nhưng chỉ liệt kê lịch sử trong ngày hiện tại. Trạng thái `ACTIVE`/`PARTIALLY_CANCELLED`/`CANCELLED` suy từ Ticket; tiền hoàn cộng trên vé đã hủy, tiền còn lại bằng tổng gốc trừ tiền hoàn. `ReportService` chỉ cho Admin có `REPORT_VIEW`: tổng bán theo `Invoice::createdAt`, tổng hoàn theo `Ticket::cancelledAt`, doanh thu thuần là hiệu hai tổng; đếm vé bán theo ngày lập hóa đơn kể cả vé sau đó hủy, đếm vé hủy theo ngày hủy. `getMovieRevenue()` và `getTopMovies()` chỉ cộng `paidAmount` của vé còn `SOLD` có hóa đơn lập trong kỳ. `getTopMovies()` gọi `calculateMovieRevenue()` cho từng phim rồi dùng `std::sort()` theo doanh thu giảm dần, hòa theo `movieId` tăng dần; chỉ đưa phim có vé phù hợp vào kết quả.
+**Triển khai hiện tại của Bước 11:** `InvoiceService` hiện chọn `INVOICE_VIEW_ALL` hoặc `INVOICE_VIEW_OWN` theo role cứng: phạm vi OWN chỉ xem hóa đơn do mình lập, tra hóa đơn cũ theo mã nhưng chỉ liệt kê lịch sử trong ngày hiện tại. Đây là chỗ chưa đạt Permission-only; thiết kế đích chọn phạm vi theo Permission đang có và vẫn kiểm tra người lập/ngày trong Service. Trạng thái `ACTIVE`/`PARTIALLY_CANCELLED`/`CANCELLED` suy từ Ticket; tiền hoàn cộng trên vé đã hủy, tiền còn lại bằng tổng gốc trừ tiền hoàn. `ReportService` hiện gọi cả `requireAdmin()` và `REPORT_VIEW`; thiết kế đích chỉ cấp quyền qua `REPORT_VIEW`. Cách tính vẫn giữ: tổng bán theo `Invoice::createdAt`, tổng hoàn theo `Ticket::cancelledAt`, doanh thu thuần là hiệu hai tổng; đếm vé bán theo ngày lập hóa đơn kể cả vé sau đó hủy, đếm vé hủy theo ngày hủy. `getMovieRevenue()` và `getTopMovies()` chỉ cộng `paidAmount` của vé còn `SOLD` có hóa đơn lập trong kỳ. `getTopMovies()` gọi `calculateMovieRevenue()` cho từng phim rồi dùng `std::sort()` theo doanh thu giảm dần, hòa theo `movieId` tăng dần; chỉ đưa phim có vé phù hợp vào kết quả.
 
 Các API báo cáo yêu cầu khoảng DateTime hợp lệ `[from, to)`; mã phim không tồn tại hoặc `limit <= 0` là đầu vào sai. Thiếu quyền, Repository chưa load, con trỏ/liên kết vé–hóa đơn–suất sai, tiền từng bản ghi không hợp lệ hoặc dữ liệu hủy sai phải báo ngoại lệ, không trả số liệu giả. **Giới hạn cần xử lý:** code `ReportService` hiện chưa đối chiếu tổng `paidAmount` của toàn bộ Ticket với `Invoice::totalAmount`; test tương ứng đang FAIL. Không coi kiểm thử ReportService hoặc toàn Bước 11 đã hoàn tất.
 
 ## 7. Sửa/xóa và toàn vẹn
 
-- Mã bất biến, duy nhất, không tái sử dụng. Chỉ xóa hẳn dữ liệu chưa được tham chiếu; vé/hóa đơn không xóa.
+- Mã của một bản ghi là bất biến và duy nhất trong dữ liệu đang nạp. **Chờ nhóm xác nhận:** quy tắc nghiệp vụ “không tái sử dụng mã đã xóa” chưa được `IdGenerator` bảo đảm vì nó lấy số lớn nhất của các ID còn tồn tại rồi cộng một; xóa bản ghi có số lớn nhất có thể khiến mã đó được cấp lại. Chỉ xóa hẳn dữ liệu chưa được tham chiếu; vé/hóa đơn không xóa.
 - Phim/phòng còn suất tương lai chưa hủy thì chưa được ngừng hoạt động. Sửa ngày phát hành không được làm suất tương lai nằm ngoài khoảng mới.
 - Nhân viên đã lập hóa đơn chỉ vô hiệu hóa, giữ mã. Không xóa/vô hiệu hóa Admin cuối cùng hoạt động nếu bổ sung chức năng quản lý Admin.
 - Giá, thời gian suất và mã liên kết lịch sử được giữ nguyên. Tên phim/phòng/nhân viên hiển thị theo danh mục hiện tại; bản đầu chưa lưu lịch sử đổi tên.

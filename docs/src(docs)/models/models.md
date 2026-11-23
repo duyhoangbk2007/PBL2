@@ -1,6 +1,6 @@
 # `src/models/` — các đối tượng dữ liệu
 
-**Phạm vi tài liệu:** các Model hiện có trong `src/models/`, gồm tám thực thể ban đầu và `Pricing` của Bước 09. `.h` khai báo dữ liệu và API, `.cpp` cài đặt. Model không tự mở TXT hoặc quyết định quyền và điều kiện bán vé. [Định dạng TXT](../TongQuan/data_format.md) vẫn là hợp đồng lưu trữ, còn các con trỏ quan hệ chỉ tồn tại trong RAM.
+**Phạm vi tài liệu:** các Model hiện có trong `src/models/`, gồm tám thực thể ban đầu và `Pricing` của Bước 09. `.h` khai báo dữ liệu và API, `.cpp` cài đặt. Model không tự mở TXT hoặc quyết định quyền và điều kiện bán vé. [Định dạng TXT](../../overview/data_format.md) vẫn là hợp đồng lưu trữ, còn các con trỏ quan hệ chỉ tồn tại trong RAM.
 
 ## Từng cặp file
 
@@ -65,4 +65,4 @@ public:
 };
 ```
 
-Khi đọc một Model: xem thuộc tính và mã tham chiếu trong `.h`, xem kiểm tra/nối quan hệ trong `.cpp`, rồi đối chiếu số trường TXT ở [data_format.md](../TongQuan/data_format.md). Các bước 01–03 đã có Model và tiện ích; Repository, Service và GUI là phần triển khai chức năng sau đó.
+Khi đọc một Model: xem thuộc tính và mã tham chiếu trong `.h`, xem kiểm tra/nối quan hệ trong `.cpp`, rồi đối chiếu số trường TXT ở [data_format.md](../../overview/data_format.md). Các bước 01–03 đã có Model và tiện ích; Repository, Service và GUI là phần triển khai chức năng sau đó.

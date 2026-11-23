@@ -1,154 +1,150 @@
-# AGENTS.md — Quy ước cộng tác và viết code PBL2
+# AGENTS.md — Quy chuẩn phát triển PBL2
 
-> Áp dụng cho thành viên dự án (Hoàng, Kiệt), AI coding agents và người review. Đặt file này ở **gốc repository**. Đọc trước khi viết, sửa hoặc review code. Đây là quy ước phối hợp; không tự động thay đổi code hiện có.
+Áp dụng cho Hoàng, Kiệt và Codex khi thiết kế, viết code, kiểm thử và cập nhật tài liệu. Các quy định dưới đây là kiến trúc và quy trình mục tiêu; không mặc định code cũ đã tuân thủ.
 
-## 1. Nguyên tắc ưu tiên
+## 1. Nguồn đối chiếu và phạm vi
 
-1. **Mã nguồn thực tế trên nhánh đích và API đã thống nhất** là căn cứ để tích hợp. Đọc file `.h`, `.cpp` và các test liên quan trước khi viết code.
-2. `business_rules.md`, `data_format.md`, `README.md` mô tả nghiệp vụ và dữ liệu mục tiêu. Một số tài liệu cũ còn mô tả cấu trúc `core/repositories`, ID 6 chữ số hoặc `#schema=1`, **khác với cách triển khai hiện tại**. Không tự ý chuyển kiến trúc hoặc định dạng chỉ vì tài liệu cũ; ghi nhận khác biệt và thống nhất với nhóm trước.
-3. Khi yêu cầu, tài liệu và code mâu thuẫn, **không âm thầm đoán hoặc sửa hàng loạt**. Nêu rõ điểm mâu thuẫn, đề xuất một phương án, chờ xác nhận trước khi thay đổi hợp đồng dữ liệu/API.
-4. Ưu tiên code C++ dễ đọc, phù hợp trình độ môn học. Không thêm thư viện, template, lớp trừu tượng hoặc kiến trúc mới khi chưa cần.
-5. Chỉ sửa đúng phạm vi task; không tự ý sửa file của người khác, đổi tên public API, định dạng TXT, hoặc refactor các module không liên quan.
+- Đọc yêu cầu, code, test và tài liệu liên quan trước khi thực hiện.
+- Đối chiếu `README.md`, `docs/overview/business_rules.md` và `docs/overview/data_format.md`.
+- Phân biệt code hiện tại với thiết kế dự kiến. Không tự ý thay đổi API, schema, quy tắc nghiệp vụ hoặc cấu trúc thư mục.
+- Khi có mâu thuẫn, báo cáo và thống nhất trước khi sửa.
+- Chỉ thay đổi những file thuộc phạm vi yêu cầu.
+- Ưu tiên C++17 đơn giản, dễ đọc; tránh thêm lớp, thư viện hoặc kỹ thuật phức tạp không cần thiết.
 
-## 2. Cấu trúc dự án đang sử dụng
+## 2. Kiến trúc và trách nhiệm
 
-- `src/models/`: thực thể (`User`, `Movie`, `Room`, `Seat`, `Showtime`, ...), thuộc tính, getter/setter, liên kết giữa thực thể.
-- `src/data_structures/`: cấu trúc dữ liệu tự cài.
-- `src/data_access/`: `Repository<T>` và repository cụ thể, parse/serialize, kiểm tra dữ liệu, CRUD.
-- `src/business/`: service và nghiệp vụ, phân quyền qua `AuthService`.
-- `src/utils/`: `Validator`, `FileIO` và tiện ích chung.
-- `tests/`: các chương trình kiểm thử riêng.
-- `docs/` hoặc các file `.md` hiện có: tài liệu; xác minh vị trí thực tế trước khi sửa.
+- **Models:** Quản lý thuộc tính, trạng thái và quan hệ đối tượng; không đọc/ghi file hoặc phân quyền.
+- **Data Structures:** Chứa cấu trúc dữ liệu tự cài đặt, đặc biệt `DoublyLinkedList<T>`.
+- **Utils:** Cung cấp các tiện ích dùng chung như Validator, FileIO, IdGenerator và DateTime.
+- **Data Access:** Thực hiện CRUD, load/save, kiểm tra dữ liệu cơ bản, liên kết đối tượng và bảo đảm tính toàn vẹn dữ liệu.
+- **Business:** Service kiểm tra Permission, xử lý nghiệp vụ và điều phối Repository.
+- **GUI:** Hiển thị, tiếp nhận thao tác và gọi Service; không trực tiếp xử lý nghiệp vụ hoặc đọc/ghi TXT.
+- **Tests:** Kiểm thử các thành phần và chức năng hệ thống.
 
-**Không tạo lại `core/repositories/` hay `core/services/`** chỉ vì thấy trong tài liệu thiết kế cũ.
+**Nguyên tắc bắt buộc:**
 
-## 3. Phân chia trách nhiệm
+- **DIP:** Chỉ sử dụng một interface chung `IRepository<T>`. Concrete Repository triển khai interface này và tiếp tục sử dụng `Repository<T>` để quản lý dữ liệu. Service phụ thuộc `IRepository<T>` thông qua Dependency Injection, không phụ thuộc trực tiếp Concrete Repository.
+- **RBAC:** Kiểm tra quyền bằng `AuthService::hasPermission()` hoặc `requirePermission()` với mã Permission tương ứng. Không dùng `requireAdmin()`, `isAdmin()`, `isStaff()` hoặc kiểm tra role cứng để cấp quyền. `requireLogin()` không thay thế kiểm tra Permission. Không tự ý nuốt exception hoặc thay đổi hợp đồng trả lỗi.
+- **Phân chia trách nhiệm:** Service xử lý nghiệp vụ; Repository quản lý dữ liệu và tính toàn vẹn; Model quản lý trạng thái và quan hệ; GUI chỉ tương tác với Service.
 
-### Model
-- Lưu dữ liệu, cung cấp getter/setter và quan hệ đối tượng; không trực tiếp đọc/ghi TXT, không kiểm tra quyền người dùng.
-- ID là khóa định danh; không tự ý thêm setter đổi ID.
-- Quan hệ `Room`–`Seat`, `Room`–`Showtime` phải giữ nhất quán hai chiều; không liên kết trùng đối tượng, trùng vị trí hoặc sai phòng.
+Các thành phần chưa tuân thủ sẽ được refactor theo kế hoạch, không tự ý sửa ngoài phạm vi công việc.
 
-### Repository cụ thể
-- Chứa `Repository<T> repo` theo mẫu `MovieRepository`, `UserRepository`, `RoomRepository`.
-- Chịu trách nhiệm parse/serialize một dòng TXT, kiểm tra định dạng và tính toàn vẹn dữ liệu, CRUD, bảo vệ các ràng buộc dữ liệu cơ bản.
-- Không kiểm tra quyền Admin/Staff, không xử lý đăng nhập, không gọi giao diện.
-- Tận dụng `Repository<T>` cho `load`, `save`, `add`, `findById`, `getAt`, `count`, `removeById` khi phù hợp; không tự viết lại cơ chế đọc/ghi file.
-- `load()` không nạp lại khi đã loaded, trừ khi nhóm chủ động thống nhất cơ chế reload.
-- Không tự động `save()` sau từng thao tác nếu kiến trúc hiện tại yêu cầu gọi lưu riêng.
+## 3. Quy trình Markdown-first bắt buộc
 
-### Service
-- Nhận repository và `AuthService` bằng **tham chiếu** trong constructor (theo `MovieService`/`RoomService`).
-- Kiểm tra quyền **trước** khi thao tác; dùng `authService.requireAdmin()` cho thêm/sửa/xóa danh mục và `requireLogin()` cho truy vấn cần đăng nhập.
-- `requireAdmin()` / `requireLogin()` có thể **ném exception**; không đổi thành `false` hoặc nuốt exception nếu chưa thống nhất.
-- Kiểm tra quy tắc nghiệp vụ cần phối hợp dữ liệu, rồi gọi repository; không lặp lại mọi kiểm tra định dạng của repository.
-- Hàm chỉ đọc ưu tiên trả `const T*` như `MovieService`, `RoomService`; không cấp quyền sửa Model trực tiếp qua service.
-- Các quy tắc `active` và xóa/sửa dữ liệu đã tham chiếu phải nhất quán với service tương ứng; không tự tạo API kích hoạt mới khi chưa thống nhất.
+Áp dụng cho cả Hoàng, Kiệt và Codex khi tạo hoặc sửa lớp/hàm C++.
 
-## 4. Quy ước đặt tên và viết code
+1. **Phân tích:** Đọc code, yêu cầu, test và tài liệu liên quan.
+2. **Thiết kế:** Xác định thuộc tính, API, constructor/destructor, các hàm, dependency, Permission, xử lý lỗi và quan hệ dữ liệu.
+3. **Viết Markdown:** Ghi đầy đủ code `.h` và `.cpp` dự kiến vào Markdown trước khi sửa mã nguồn. Template được định nghĩa trong header.
+4. **Giải thích:** Mỗi hàm, kể cả constructor, destructor và helper/private, phải có:
+   - **Tổng quan:** Mục đích, tham số, giá trị trả về và điều kiện quan trọng.
+   - **Luồng hoạt động chi tiết:** Sơ đồ ASCII thể hiện đúng thứ tự và các nhánh xử lý.
+   - **Giải thích chi tiết từng đoạn code:** Giải thích đầy đủ các đoạn code liên tiếp, biến, cú pháp C++, điều kiện, con trỏ, exception, rollback và thay đổi trạng thái khi liên quan. Không bỏ sót dòng code hoặc lặp lại nguyên hàm.
+5. **Review:** Chỉnh sửa code trong Markdown đến khi nhóm xác nhận **CHỐT MARKDOWN**.
+6. **Triển khai:** Sao chép code từ Markdown sang `.h/.cpp` giống **100%**, không tự ý thay đổi.
+7. **Kiểm thử:** Biên dịch, chạy test và đối chiếu code với Markdown.
+8. **Xử lý lỗi:** Nếu phát hiện lỗi, sửa và chốt lại Markdown trước khi cập nhật code.
 
-- Lớp/file: `PascalCase` (`SeatRepository.h`, `SeatService.cpp`).
-- Hàm/biến: `camelCase` (`findSeatById`, `roomRepo`, `newValues`).
-- Getter: `getXxx()`; boolean: `isXxx()`; thao tác: `addXxx`, `updateXxx`, `removeXxx`, `findXxxById`, `getXxxAt`, `getXxxCount` ở tầng Service.
-- Repository: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded` khi nghiệp vụ cho phép.
-- Hàm chuyển đổi TXT theo mẫu đang dùng: `stringToSeat(const string&)`, `seatToString(Seat*)`; callback lấy ID đặt tên rõ nghĩa. **Lưu ý:** Seat có khóa ghép, xem mục 6.
-- Định nghĩa hàm không-template ở `.cpp`, khai báo ở `.h`; template `Repository<T>` giữ định nghĩa trong header theo code hiện tại.
-- Sử dụng `const string&` cho chuỗi đầu vào; `const T& newValues` khi cập nhật; kiểm tra `nullptr` trước khi truy cập.
-- Giữ ngoặc nhọn cho `if`, `for`, `while`; thụt lề 4 dấu cách; thông báo lỗi và comment ngắn, giải thích *vì sao* thay vì nhắc lại code.
-- Dùng `Validator::isValidId`, `Validator::isValidText`, `Validator::isValidDate` khi phù hợp; không sao chép lại thuật toán validate đã có.
-- Chỉ thêm `#include` thực sự cần thiết; không đưa `using namespace std;` vào header mới nếu có thể tránh.
+**Quy định tài liệu:**
 
-## 5. Quy tắc dữ liệu và sở hữu con trỏ
+- Markdown thiết kế trước triển khai đặt trong `docs/architecture/` hoặc `docs/development/` tùy nội dung.
+- `docs/src/` ghi nhận code đã triển khai và kiểm thử thành công.
+- Phân biệt rõ trạng thái: dự kiến, đã chốt, đã triển khai và kiểm thử.
+- Không đánh dấu hoàn thành khi chưa có kết quả kiểm thử thực tế.
 
-- TXT: một bản ghi mỗi dòng, các trường phân tách bằng `|`; parse phải kiểm tra **đúng số trường**, số nguyên phải parse hết chuỗi, boolean chỉ `0`/`1`, enum phải đúng giá trị được định nghĩa.
-- Khi dữ liệu TXT không hợp lệ, parse báo lỗi rõ ràng; không giữ lại đối tượng cấp phát lỗi.
-- Repository đang sở hữu các đối tượng `T*` được **thêm thành công** và giải phóng khi xóa/hủy; caller chịu trách nhiệm giải phóng con trỏ nếu `add()` thất bại.
-- `Room` chỉ giữ các con trỏ liên kết đến `Seat`/`Showtime`, không mặc định sở hữu chúng. Không `delete` đối tượng liên kết qua `Room`.
-- Không để con trỏ liên kết trỏ đến đối tượng đã bị xóa/reload. Trước khi xóa hoặc reload đối tượng có quan hệ, phải có chiến lược kiểm tra, tháo liên kết hoặc chặn thao tác; không âm thầm bỏ qua.
-- Khi `load()` nhiều repository, liên kết dữ liệu **sau khi các đối tượng liên quan đã được nạp**; xử lý ID tham chiếu không tồn tại một cách rõ ràng.
-- Không thay đổi quy ước ID hiện hành (ví dụ `ROM0001`, `MOV0001`, `USR0001`) hoặc tự đưa `#schema=1` vào file khi chưa có quyết định thống nhất về migration.
+## 4. Quy chuẩn tài liệu
 
-## 6. Hợp đồng bắt buộc khi làm Seat (B06)
+- `docs/architecture/`: Kiến trúc, sơ đồ và quyết định thiết kế.
+- `docs/overview/`: Tổng quan, quy tắc nghiệp vụ và định dạng dữ liệu.
+- `docs/development/`: Kế hoạch, phân công, tiến độ, nhiệm vụ và Markdown thiết kế.
+- `docs/src/`: Tài liệu code chi tiết theo module, cập nhật sau khi code được kiểm thử thành công.
 
-### Model và định dạng
-- `Seat` hiện có: `roomId`, `seatId`, `row`, `column`, `seatType`, con trỏ `Room* room`.
-- `SeatType`: `STANDARD`, `VIP`, `COUPLE`.
-- Định dạng mục tiêu `seats.txt`: `roomId|seatId|row|column|seatType`.
-- `row`/`column` bắt đầu từ 1; ghế phải nằm trong kích thước phòng.
-- Không lưu trạng thái ghế đã bán trong `Seat`: trạng thái bán phụ thuộc **suất chiếu và vé**.
-- Ghế đôi (`COUPLE`) là **một seatId, một vị trí logic**; không tách thành hai ghế/ID.
+**Yêu cầu:**
 
-### Khóa và ràng buộc
-- `seatId` chỉ duy nhất **trong một phòng**, không bắt buộc duy nhất toàn hệ thống.
-- Khóa ghế là **(`roomId`, `seatId`)**. Vị trí (`roomId`, `row`, `column`) cũng phải duy nhất.
-- **Không dùng `seatId` đơn lẻ làm ID toàn cục trong `Repository<Seat>`**. Trước khi viết `SeatRepository`, thống nhất cách biểu diễn khóa ghép (ví dụ callback `getId` tạo khóa không nhập nhằng) và chữ ký `findById`/`removeById`; không tự quyết định API một phía.
-- Khi thêm ghế, cần xác minh phòng tồn tại và tọa độ hợp lệ; khi đổi loại ghế, không thay đổi khóa hoặc vị trí nếu API không cho phép.
-- Không xóa hoặc thay đổi mã ghế đã từng xuất hiện trong vé; chặn thay đổi sơ đồ khi có suất tương lai chưa hủy từng phát sinh vé, theo `business_rules.md`. Nếu các repository vé/suất chưa hoàn thiện, ghi rõ quy tắc **chưa thể kiểm chứng đầy đủ**, không giả vờ đã bảo đảm.
-- Các thao tác liên kết `Seat::linkRoom()` và `Room::linkSeat()` phải thống nhất; tránh thêm vào danh sách hai lần và tránh liên kết nửa chừng.
+- Mỗi file có tiêu đề, bố cục rõ ràng và liên kết chính xác.
+- Không lặp nội dung hoặc tạo nhiều phiên bản code chuẩn khác nhau.
+- Tài liệu chi tiết phải bao phủ mọi hàm đã triển khai, kể cả private/helper và template.
+- Code trong tài liệu phải khớp 100% với mã nguồn tương ứng.
+- Không mô tả chức năng chưa triển khai như đã hoàn thành.
+- Khi cập nhật tài liệu cũ, giữ nội dung còn đúng và chỉnh sửa tại chỗ.
 
-### Phân quyền dự kiến
-- Admin quản lý phòng/sơ đồ ghế; Staff chỉ xem dữ liệu cần cho bán vé.
-- Service kiểm tra quyền; repository không phân quyền.
-- Trước khi code `SeatService`, thống nhất API chính thức và các trường hợp xóa/sửa ghế có vé tham chiếu.
+## 5. Quy ước C++ và API
 
-## 7. Mẫu API và quy trình tạo module mới
+- Sử dụng C++17, ưu tiên cách viết đơn giản, dễ hiểu.
+- Tên lớp và file: `PascalCase`; tên hàm và biến: `camelCase`.
+- Getter: `getXxx()`; hàm kiểm tra boolean: `isXxx()`.
+- Service ưu tiên `addXxx()`, `updateXxx()`, `removeXxx()`, `findXxxById()`, `getXxxAt()`, `getXxxCount()`.
+- Repository ưu tiên `load()`, `save()`, `add()`, `update()`, `removeById()`, `findById()`, `getAt()`, `count()`, `isLoaded()` khi phù hợp.
+- Khai báo hàm trong `.h`, định nghĩa trong `.cpp`; template định nghĩa trong header.
+- Ưu tiên `const string&` cho chuỗi đầu vào, `const T&` khi phù hợp; hạn chế cấp quyền sửa Model trực tiếp từ Service.
+- Kiểm tra `nullptr` trước khi truy cập con trỏ.
+- Sử dụng ngoặc nhọn cho `if`, `for`, `while`; thụt lề 4 dấu cách.
+- Comment ngắn gọn, giải thích mục đích hoặc lý do xử lý.
+- Chỉ `#include` thư viện cần thiết; tránh `using namespace std;` trong header mới.
+- Tái sử dụng Validator, `Repository<T>` và các tiện ích hiện có; không viết lại chức năng trùng lặp.
+- Không tự ý thêm hoặc thay đổi public API, quy tắc xóa/sửa, định dạng dữ liệu hay ID.
 
-1. Đọc Model, repository/service tương tự và tài liệu nghiệp vụ.
-2. Đề xuất `.h` **trước**: constructor, thuộc tính, chữ ký hàm, quyền, sở hữu con trỏ, khóa định danh.
-3. Đối chiếu API với module đang dùng; trao đổi với thành viên còn lại **trước khi** code `.cpp`.
-4. Triển khai lần lượt: helper validate → parse/serialize → load/save → CRUD → service/permissions → test.
-5. Không tạo API hoặc helper trùng với `Validator`/`Repository<T>` khi đã có cách dùng chung.
-6. Test trường hợp đúng, dữ liệu sai, trùng khóa/vị trí, chưa load, quyền Admin/Staff/chưa đăng nhập, lưu/đọc lại, và quan hệ liên kết.
-7. Cập nhật tài liệu mô tả **đúng code đã triển khai**, không ghi chức năng tương lai là đã hoàn thành.
+## 6. Dữ liệu, con trỏ và tính toàn vẹn
 
-## 8. Quy chuẩn bắt buộc cho tài liệu Service và Repository
+**Định dạng dữ liệu**
 
-Mỗi hàm Service hoặc Repository đã triển khai trong `.cpp` hoặc trong header (với template), kể cả hàm private/helper, constructor và destructor, phải có mục riêng trong tài liệu `*Service.md` hoặc `*Repository.md` tương ứng theo đúng ba phần:
+- Lưu trữ bằng TXT UTF-8, theo schema của từng file.
+- Kiểm tra số trường, kiểu dữ liệu, boolean `0/1` và enum hợp lệ khi parse.
+- Dữ liệu sai phải được xử lý rõ ràng; không âm thầm bỏ qua hoặc ghi đè dữ liệu lỗi.
+- Tuân thủ quy tắc ID hiện hành; không tự ý thay đổi số chữ số, khóa hoặc thêm `#schema=1`.
 
-1. **Tổng quan:** mục đích, tham số, giá trị trả về và điều kiện quan trọng (constructor ghi rõ không có giá trị trả về).
-2. **Quy trình thực hiện:** sơ đồ code block `text`, dùng `|` và `v` đi xuống, ghi các bước theo thứ tự thực thi và nhánh lỗi chính, không liệt kê từng dòng.
-3. **Giải thích chi tiết từng bước kèm code:** chia toàn bộ code gốc của hàm `.cpp` (hoặc `.h` đối với template) thành các đoạn liên tiếp theo bước, giữ nguyên 100% dòng lệnh, comment và dấu ngoặc; giải thích ngay sau mỗi đoạn. Ghép các đoạn theo thứ tự phải khôi phục được toàn bộ hàm gốc. Không chép nguyên hàm lần thứ hai.
+**Quản lý con trỏ**
 
-Phần giải thích sau code cần nói rõ đoạn code làm gì và vì sao cần bước đó; ý nghĩa của biến, đối tượng, hàm gọi và giá trị trả về; kết quả khi điều kiện đúng/sai và trạng thái dữ liệu thay đổi. Giải thích cú pháp, thư viện hoặc kỹ thuật C++ khó hiểu ngay nơi sử dụng. Với con trỏ, liên kết đối tượng, rollback, ngoại lệ và lưu file, nêu thứ tự thực hiện và lý do. Đoạn đơn giản chỉ cần giải thích ngắn gọn, tránh diễn đạt lại từng dòng mà không làm rõ bản chất.
+- Repository sở hữu đối tượng `T*` sau khi thêm thành công và chịu trách nhiệm giải phóng khi thích hợp.
+- Nếu `add()` thất bại, caller vẫn chịu trách nhiệm giải phóng con trỏ.
+- Các con trỏ liên kết không mặc định đồng nghĩa với quyền sở hữu.
+- Trước khi xóa, clear hoặc reload, phải bảo đảm không tạo con trỏ treo.
 
-Khi tạo mới hoặc sửa bất kỳ Service hay Repository nào, đồng bộ tài liệu cùng lượt thay đổi. Đối chiếu trực tiếp `.h`/`.cpp`, kiểm tra đủ mọi hàm và ghép các đoạn code để xác nhận không thiếu dòng. Giữ nguyên sơ đồ, bố cục và phần giải thích đã tốt khi cập nhật tài liệu cũ; mô tả rõ phần chưa triển khai. Giữ phần tổng quan cấp lớp và các quy tắc nghiệp vụ/phân quyền quan trọng, tránh lặp lại chúng ở từng hàm khi không cần.
+**Tính toàn vẹn dữ liệu**
 
-Khi chuẩn hóa tài liệu hiện có, **chỉnh sửa và thay thế nội dung tại chỗ**: tích hợp phần hữu ích của bản cũ vào một mục duy nhất cho mỗi hàm, xóa code/sơ đồ/giải thích trùng lặp. Tuyệt đối không nối thêm một bản tài liệu thứ hai hoặc phụ lục lặp lại toàn bộ các hàm ở cuối file.
+- Link/unlink phải nhất quán hai chiều, không trùng hoặc liên kết sai.
+- Khi thao tác thất bại, phải xử lý rollback phù hợp.
+- Load các Repository theo đúng thứ tự phụ thuộc; xử lý rõ tham chiếu bị thiếu.
+- Không tự động reload hoặc save nếu hợp đồng hiện tại không yêu cầu.
+- Kiểm tra kết quả đọc/ghi file; không coi nhiều lần ghi TXT là transaction nguyên tử.
+- Không giả định mọi đối tượng đều có một ID đơn duy nhất; các khóa ghép phải được thiết kế và thống nhất.
+- Bảo vệ dữ liệu đã được tham chiếu và lịch sử giao dịch theo quy tắc nghiệp vụ.
+- Nếu chưa bảo đảm được một ràng buộc, phải ghi rõ thay vì tự nhận đã hoàn thành.
 
-## 9. Biên dịch và kiểm thử
+## 7. Biên dịch, kiểm thử và bàn giao
 
-- Mỗi file test có `main()` riêng; **không** biên dịch nhiều file test cùng lúc.
-- Trong Git Bash, biên dịch toàn bộ `.cpp` trong `src` nhưng loại `main.cpp` để tránh `multiple definition of main`:
+- Mỗi file test có `main()` riêng; chỉ biên dịch một file test tại một thời điểm.
+- Khi biên dịch test, lấy toàn bộ `.cpp` trong `src/`, trừ `main.cpp` và các file không phù hợp với cấu hình test.
+
+Ví dụ trong Git Bash:
 
 ```bash
 g++ -std=c++17 -I src tests/test_room_service.cpp $(find src -name "*.cpp" ! -name "main.cpp") -o test_room_service.exe
+
 ./test_room_service.exe
 ```
 
-- Khi test Seat, thay đúng tên file test và tên file `.exe`.
-- Không kết luận PASS chỉ từ việc code trông đúng; cần kết quả chạy thực tế.
-- Test dùng file TXT tạm, không ghi đè dữ liệu thật; dọn file sau test.
-- Test phân quyền phải kiểm tra exception từ `requireAdmin`/`requireLogin`.
+**Yêu cầu kiểm thử:**
 
-## 10. Quy trình Git và cộng tác Hoàng–Kiệt
+- Kiểm tra trường hợp hợp lệ, không hợp lệ và các trường hợp biên.
+- Kiểm tra dữ liệu trùng, chưa load, `nullptr`, exception và rollback khi liên quan.
+- Kiểm tra Permission được cấp, bị từ chối và trạng thái chưa đăng nhập.
+- Kiểm tra load/save, link/unlink và tính toàn vẹn dữ liệu.
+- Dùng dữ liệu test riêng, không ghi đè dữ liệu thật.
+- Không xóa hoặc sửa test chỉ để tạo kết quả PASS.
+- Ghi nhận kết quả chạy thực tế và những phần chưa kiểm chứng.
 
-- Mỗi người làm trên nhánh riêng theo quy ước đang sử dụng; không commit trực tiếp vào `main` nếu chưa được thống nhất.
-- Trước khi bắt đầu: cập nhật nhánh, đọc `.h` và thay đổi mới của người kia; không code dựa trên API cũ.
-- Khi thay public API, schema TXT, quan hệ Model hoặc quy tắc nghiệp vụ: thông báo cho người kia và thống nhất trước.
-- PR ghi rõ: file đã thay đổi, API mới/đổi, ràng buộc, test đã chạy, điểm còn thiếu.
-- Không tự ý sửa code ngoài task, không thay đổi file của người khác chỉ để format, không xóa test cũ để làm test mới PASS.
-- Khi review: ưu tiên lỗi thực tế và tính tương thích; nêu file/hàm, nguyên nhân, cách sửa tối thiểu. Không biến vấn đề phong cách thành lỗi bắt buộc.
-- Trước khi merge: biên dịch, chạy test liên quan, kiểm tra xung đột, xác minh tài liệu và không làm hỏng các module đã hoàn thành.
+Chỉ bàn giao khi code khớp Markdown đã chốt, biên dịch thành công, test liên quan đạt yêu cầu và tài liệu được cập nhật.
 
-## 11. Checklist trước khi bàn giao SeatRepository/SeatService
+## 8. Git và cộng tác Hoàng–Kiệt–Codex
 
-- [ ] API `.h` đã được hai thành viên thống nhất.
-- [ ] Khóa ghép `(roomId, seatId)` hoạt động đúng.
-- [ ] Không trùng vị trí `(roomId, row, column)`.
-- [ ] Kiểm tra phòng tồn tại, giới hạn hàng/cột và loại ghế hợp lệ.
-- [ ] Parse/serialize đúng `seats.txt`; load/save theo mẫu Repository.
-- [ ] Liên kết hai chiều Room–Seat nhất quán, không tạo con trỏ treo.
-- [ ] Quyền Admin/Staff nằm trong Service.
-- [ ] Các ràng buộc cần Ticket/Showtime được kiểm chứng hoặc ghi rõ chưa hoàn thiện.
-- [ ] Test compile và PASS thực tế; không ghi đè dữ liệu thật.
-- [ ] PR mô tả thay đổi và tài liệu được cập nhật.
+- Hoàng và Kiệt cùng tuân thủ quy trình Markdown-first.
+- Làm việc trên nhánh riêng, không trực tiếp sửa `main` khi chưa thống nhất.
+- Đồng bộ code mới nhất trước khi bắt đầu công việc.
+- Chỉ sửa module và file thuộc phạm vi được giao.
+- Trước khi thay đổi API, interface, schema, Permission hoặc quan hệ Model, phải thống nhất với người còn lại.
+- Tạo Pull Request sau khi hoàn thành công việc.
+- PR cần nêu nội dung thay đổi, Markdown đã chốt, kết quả test và vấn đề còn tồn tại.
+- Người còn lại review code, tài liệu và khả năng tương thích trước khi merge.
+- Kiểm tra xung đột, biên dịch và chạy test liên quan trước khi merge vào `main`.
+- Codex không tự ý commit, push, merge hoặc sửa ngoài phạm vi khi chưa được yêu cầu.

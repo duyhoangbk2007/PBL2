@@ -11,7 +11,7 @@
 - `deactivateStaff(staffId)`: yêu cầu Admin; đổi `active` từ `true` sang `false`, từ chối Admin, ID không tồn tại và Staff đã vô hiệu hóa.
 - `findStaffById()`, `findStaffByUsername()`, `getStaffAt()`, `getStaffCount()`: yêu cầu Admin và chỉ trả/đếm role `STAFF`; kết quả tra cứu là `const User*`. Danh sách và số lượng vẫn bao gồm Staff không hoạt động.
 
-Các hàm có kiểm tra quyền gọi `requireAdmin()` trước thao tác; thiếu quyền có thể ném exception. Chi tiết API và quyền sở hữu con trỏ ở [StaffService](<../CauTrucThuMuc/business(docs)/StaffService.md>).
+Các hàm có kiểm tra quyền gọi `requireAdmin()` trước thao tác; thiếu quyền có thể ném exception. Chi tiết API và quyền sở hữu con trỏ ở [StaffService](<../src/business/StaffService.md>).
 
 ## Checklist
 

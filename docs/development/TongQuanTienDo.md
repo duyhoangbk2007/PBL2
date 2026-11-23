@@ -1,30 +1,165 @@
-# Tổng quan tiến độ PBL2 — Hoàng và Kiệt
+# Tổng quan tiến độ PBL2 – Giai đoạn Refactor
 
-Nhóm xác nhận **Bước 01–03 đã hoàn thành**. Xác nhận này là trạng thái kế hoạch hiện hành; các [nhật ký lịch sử](Buoc01_KhoiTaoDuAn.md) vẫn ghi đúng bằng chứng và giới hạn tại thời điểm thực hiện. Từ Bước 04, nhóm phát triển theo **chức năng**, mỗi chức năng gồm Repository → Service → kiểm thử C++ → cập nhật tài liệu. GUI Qt tập trung ở Bước 12. Xem [phân công](PhanCongCongViec.md), [Task Hoàng](tasks/Task_Hoang.md) và [Task Kiệt](tasks/Task_Kiet.md).
+## 1. Giới thiệu
 
-| Bước | Nội dung | Phụ trách | Trạng thái | Nhật ký |
-| --- | --- | --- | --- | --- |
-| 01 | Khởi tạo dự án | Hoàng — Backend; Kiệt tham gia theo lịch sử | **Đã hoàn thành theo xác nhận nhóm**; giữ bằng chứng và ghi chú lịch sử. | [Bước 01](Buoc01_KhoiTaoDuAn.md) |
-| 02 | Xây dựng Models và quan hệ Model | Hoàng — Backend; Kiệt tham gia theo lịch sử | **Đã hoàn thành theo xác nhận nhóm**; giữ bằng chứng và ghi chú lịch sử. | [Bước 02](Buoc02_XayDungModels.md) |
-| 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng — Backend; Kiệt tham gia theo lịch sử | **Đã hoàn thành theo xác nhận nhóm**; kết quả kiểm thử lịch sử giữ nguyên. Thiết kế mới dùng `FileIO`, `DateTime`, `IdGenerator`. | [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) |
-| 04 | Quản lý phim | Hoàng | **Đang thực hiện, tạm dừng để làm Bước 06**: `MovieRepository` đạt 40/40, `MovieService` đạt 45/45 trong phạm vi test hiện có; nghiệp vụ đổi trạng thái phim còn thiếu. | [Bước 04](Buoc04_QuanLyPhim.md) |
-| 05 | Đăng nhập và phân quyền | Hoàng | **Đang thực hiện, chưa nghiệm thu**: `UserRepository` và `AuthService` đã có; `test_auth.cpp` đạt 9/14, còn 5 ca lỗi. | [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) |
-| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | **Đang thực hiện**: RoomRepository/Service đạt 78/78 và 54/54; SeatRepository/Service đạt 85/85 và 59/59; ShowtimeRepository đạt 89/89. `ShowtimeService` có test riêng **89/89 PASS, 0 FAIL** cho phạm vi hiện có. Hủy/xóa suất vẫn trả `false` để chờ `TicketRepository`; toàn bước chưa nghiệm thu. | [Bước 06](Buoc06_QuanLyPhongVaGhe.md) |
-| 07 | Quản lý nhân viên | Hoàng | **Đang thực hiện**: `StaffService` thêm/sửa/tìm/duyệt/đếm/vô hiệu hóa Staff và kiểm tra quyền Admin đã có; test riêng từng được ghi 59/59, lần chạy hiện tại đạt **67/67 PASS, 0 FAIL**. Chưa có kích hoạt lại/xóa vật lý; phụ thuộc lịch sử hóa đơn chưa kiểm chứng. | [Bước 07](Buoc07_QuanLyNhanVien.md) |
-| 08 | Quản lý thành viên | Hoàng | **Đang thực hiện**: `MemberRepository` đạt **63 PASS, 0 FAIL**; `MemberService` đủ 8 phương thức public ngoài constructor, kiểm tra RBAC và đạt **69 PASS, 0 FAIL** khi chạy test riêng. Liên kết hóa đơn/điểm giao dịch chưa kiểm chứng; toàn bước chưa nghiệm thu. | [Bước 08](Buoc08_QuanLyThanhVien.md) |
-| 09 | Giá vé, ưu đãi và tích điểm | Hoàng | **Đang thực hiện**: `Pricing::isValid()` kiểm tra số hữu hạn cho cả năm thuộc tính; `PricingRepository::load()` giữ cấu hình cũ nếu reload lỗi. `test_pricing.cpp` chạy **69 PASS, 0 FAIL** ngày 2026-11-20 cho phạm vi Model/Repository/Service, gồm ca reload lỗi; chưa có ca `NaN`/vô cực trực tiếp. `BookingService` đã dùng giá/điểm để bán và hủy vé; chưa nghiệm thu toàn bước hoặc tích hợp GUI. | [Bước 09](Buoc09_QuanLyGiaVeUuDaiVaTichDiem.md) |
-| 10 | Bán vé tại quầy | Hoàng | **Đang thực hiện**: `BookingService` đã kiểm tra xác nhận tại quầy, tính điểm từng vé, tạo Invoice/Ticket, rollback RAM trước khi ghi và báo ngoại lệ khi lưu TXT lỗi. `test_booking_service.cpp` đạt **55 PASS, 0 FAIL** ngày 2026-11-22. Chưa kiểm thử tự động nhánh thêm Ticket thất bại giữa giao dịch; chưa có transaction đa file, chưa nghiệm thu tích hợp GUI. | [BookingService](<../CauTrucThuMuc/business(docs)/BookingService.md>) |
-| 11 | Hủy vé, lịch sử hóa đơn và thống kê | Hoàng | **Đang thực hiện, chưa hoàn thành toàn bước**: `cancelTicket()` có test riêng **32 PASS, 0 FAIL**; `InvoiceService` đã có tra cứu, trạng thái suy ra và tiền hoàn/còn lại, test riêng từng đạt **37 PASS, 0 FAIL**. `ReportService` đã có 7 API và top phim dùng `calculateMovieRevenue()` + `std::sort()`, nhưng lần chạy lại `test_report_service.cpp` đạt **31 PASS, 1 FAIL**: chưa phát hiện tổng tiền Invoice lệch tổng tiền Ticket. Chưa xác nhận tích hợp GUI. | [BookingService](<../CauTrucThuMuc/business(docs)/BookingService.md#20-hủy-vé--bước-11>), [InvoiceService](<../CauTrucThuMuc/business(docs)/InvoiceService.md>), [ReportService](<../CauTrucThuMuc/business(docs)/ReportService.md>) |
-| 12 | Xây dựng giao diện Qt | Kiệt | **Đang thực hiện theo trao đổi từ Kiệt**; API Backend cho bán/hủy vé và lịch sử hóa đơn đã có, báo cáo còn một ca test FAIL. Chưa xác minh mức độ tích hợp hoặc hoàn thành GUI từ mã nguồn trên nhánh này. | Chưa tạo |
-| 13 | Kiểm thử tích hợp và sửa lỗi | Kiệt — GUI; Hoàng — Backend | Chưa bắt đầu. | Chưa tạo |
-| 14 | Đóng gói, hoàn thiện tài liệu và bàn giao | Kiệt — GUI/bàn giao; Hoàng — hỗ trợ Backend | Chưa bắt đầu. | Chưa tạo |
+Tài liệu này theo dõi tiến độ phát triển và hoàn thiện hệ thống quản lý bán vé rạp chiếu phim PBL2 trong giai đoạn refactor.
 
-**Phân công hiện hành:** Hoàng chịu trách nhiệm toàn bộ Backend Bước 01–11; Kiệt chịu trách nhiệm GUI và tích hợp giao diện từ Bước 12. Đóng góp Backend trước đây của Kiệt ở Bước 01–03 vẫn là lịch sử, không thay đổi trạng thái hoàn thành.
+Dự án đã trải qua giai đoạn xây dựng ban đầu. Trong giai đoạn mới, nhóm tập trung vào việc chuẩn hóa kiến trúc, hoàn thiện các chức năng còn thiếu, tích hợp giao diện Qt và kiểm thử toàn bộ hệ thống.
 
-## Hiện trạng mã và cách đọc lịch sử
+Tài liệu phát triển trước refactor được lưu tại `docs/development/pre_refactor/` để tiện tra cứu.
 
-Mã hiện có chín Model ở `src/models/`, `DoublyLinkedList.h` ở `src/data_structures/`, `FileIO`, `DateTime`, `IdGenerator` ở `src/utils/` và `src/main.cpp` thử nghiệm. Đã có `MovieRepository` và `MovieService`, mỗi lớp có test riêng đạt nhưng Service còn thiếu nghiệp vụ đổi trạng thái; đã có Repository/Service phòng và ghế cùng `ShowtimeRepository` với test riêng đạt. `ShowtimeService` có test riêng đạt 89/89 cho phạm vi hiện có, nhưng chưa thực hiện hủy/xóa suất vì thiếu dữ liệu vé; chưa có GUI Qt hoặc CMake. `TransactionManager` cũ ở `tests/legacy/` chỉ để đối chiếu và giữ bài thử lịch sử.
+## 2. Mục tiêu
 
-Kiểm tra Utils ngày 2026-11-21: biên dịch và chạy `tests/test_utils_edge_cases.cpp` với các file `.cpp` trong `src/utils/`, kết quả **25 PASS, 0 FAIL** (gồm 9 ca `IdGenerator`). Các Service tạo MOV/ROM/SHW/USR/MEM và `BookingService` tạo INV/TKT hiện gọi `IdGenerator::generateNextId()` dựa trên ID đang nạp. `Repository<T>::load()` hiện đọc vào danh sách tạm và chỉ chuyển bằng `swap()` khi toàn bộ dòng hợp lệ; quy tắc không sao chép `Repository<T>` và `DoublyLinkedList<T>` mới là quy tắc sử dụng, chưa được compiler chặn. Các checklist Repository cụ thể và tích hợp nghiệp vụ chưa được xác nhận bởi lần kiểm tra này.
+Giai đoạn refactor tập trung vào các mục tiêu:
 
-Nhật ký Bước 01–03 được viết trước quyết định lộ trình mới nên có thể ghi trạng thái và tên thư mục cũ. Không sửa lịch sử để suy ra những lần build, test hoặc merge chưa xảy ra. Quy tắc TXT hiện hành: các file TXT nghiệp vụ không có dòng schema hoặc tiêu đề; `sequences.txt` không được dùng để cấp ID; xem [định dạng dữ liệu](../TongQuan/data_format.md). Bước 04 chỉ hoàn thành khi cả `MovieRepository` và `MovieService` xử lý nghiệp vụ phim, có kiểm thử C++ và tài liệu tương ứng.
+- Áp dụng Dependency Inversion Principle (DIP) với duy nhất một interface chung `IRepository<T>`.
+- Chuẩn hóa phân quyền RBAC dựa trên Permission, không kiểm tra vai trò viết cứng trong Service.
+- Phân chia rõ trách nhiệm giữa Model, Repository, Service và GUI.
+- Giữ lại `Repository<T>` và các cấu trúc dữ liệu đang sử dụng.
+- Hoàn thiện những chức năng Backend chưa triển khai.
+- Đồng bộ Backend và giao diện Qt thông qua Business – UI Contract.
+- Kiểm thử toàn bộ chức năng trước khi hoàn thiện đồ án.
+
+Ưu tiên giữ nguyên các quy tắc nghiệp vụ đã chốt, tránh thay đổi không cần thiết.
+
+## 3. Quy trình thực hiện
+
+Mỗi module được triển khai theo quy trình **Markdown-first**:
+
+1. Đọc code và tài liệu hiện tại.
+2. Thiết kế API, các thuộc tính và hàm cần thiết.
+3. Viết đầy đủ code `.h` và `.cpp` dự kiến vào tài liệu Markdown.
+4. Giải thích chi tiết từng hàm, luồng hoạt động và các đoạn code.
+5. Review và chốt Markdown.
+6. Triển khai code đúng theo Markdown đã chốt.
+7. Biên dịch, kiểm thử và sửa lỗi thông qua Markdown.
+8. Đối chiếu code với tài liệu và cập nhật tiến độ.
+
+Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm thử phù hợp.
+
+## 4. Lộ trình tổng quan
+
+| Giai đoạn | Nội dung | Trạng thái |
+|---|---|---|
+| 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
+| 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Chưa bắt đầu |
+| 03 | Refactor các Business Service theo DIP và Permission-only | Chưa bắt đầu |
+| 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
+| 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
+| 06 | Hoàn thiện giao diện và các luồng sử dụng | Chưa xác minh |
+| 07 | Kiểm thử tích hợp, xử lý lỗi và rà soát toàn hệ thống | Chưa bắt đầu |
+| 08 | Hoàn thiện tài liệu, đóng gói và chuẩn bị báo cáo | Chưa bắt đầu |
+
+Trạng thái có thể sử dụng:
+
+- **Chưa bắt đầu:** Chưa triển khai công việc trong giai đoạn refactor.
+- **Đang thực hiện:** Đã bắt đầu nhưng chưa đáp ứng đầy đủ điều kiện hoàn thành.
+- **Chờ kiểm thử:** Đã triển khai, đang chờ xác minh.
+- **Hoàn thành:** Đã kiểm tra đầy đủ và đáp ứng yêu cầu.
+- **Chưa xác minh:** Chưa đối chiếu đủ tài liệu, mã nguồn hoặc kết quả thực tế.
+
+## 5. Nội dung các giai đoạn
+
+### Giai đoạn 01 – Chuẩn hóa tài liệu và kiến trúc
+
+- [ ] Hoàn thiện `AGENTS.md`.
+- [ ] Hoàn thiện `README.md`.
+- [ ] Chuẩn hóa tài liệu trong `docs/architecture/`.
+- [ ] Chuẩn hóa tài liệu trong `docs/overview/`.
+- [ ] Lưu tài liệu phát triển cũ vào `pre_refactor/`.
+- [ ] Xây dựng kế hoạch refactor và phân công công việc mới.
+
+**Kết quả cần đạt:** Nhóm thống nhất kiến trúc, quy trình và phạm vi trước khi sửa code.
+
+### Giai đoạn 02 – Refactor Data Access
+
+- [ ] Thiết kế và triển khai `IRepository<T>`.
+- [ ] Rà soát các hàm chung của `Repository<T>`.
+- [ ] Chuẩn hóa các Concrete Repository theo interface chung.
+- [ ] Bảo đảm tính toàn vẹn dữ liệu và các liên kết giữa đối tượng.
+- [ ] Kiểm thử các Repository sau khi refactor.
+
+**Kết quả cần đạt:** Các Repository phù hợp với kiến trúc DIP và giữ nguyên hành vi nghiệp vụ đã chốt.
+
+### Giai đoạn 03 – Refactor Business Service
+
+- [ ] Rà soát các Service hiện tại.
+- [ ] Chuyển phụ thuộc Repository sang `IRepository<T>` tại các vị trí phù hợp.
+- [ ] Chuẩn hóa kiểm tra Permission thông qua `AuthService`.
+- [ ] Chuyển các điều kiện nghiệp vụ về đúng tầng Service.
+- [ ] Kiểm thử từng Service.
+
+**Kết quả cần đạt:** Các Service tuân thủ DIP, Permission-only và phân chia trách nhiệm rõ ràng.
+
+### Giai đoạn 04 – Hoàn thiện Backend
+
+- [ ] Rà soát các chức năng Backend chưa hoàn thiện.
+- [ ] Hoàn thiện nghiệp vụ quản lý và hủy suất chiếu.
+- [ ] Rà soát quy trình bán vé, hóa đơn và hủy vé.
+- [ ] Rà soát nghiệp vụ giá vé, ưu đãi và điểm thành viên.
+- [ ] Hoàn thiện báo cáo, thống kê và các nghiệp vụ còn thiếu.
+- [ ] Kiểm thử các luồng nghiệp vụ hoàn chỉnh.
+
+**Kết quả cần đạt:** Backend đáp ứng đầy đủ các chức năng trong phạm vi đồ án.
+
+### Giai đoạn 05 – Tích hợp Backend và GUI
+
+- [ ] Rà soát Business – UI Contract.
+- [ ] Thống nhất API giữa Hoàng và Kiệt.
+- [ ] Kết nối giao diện Qt với các Business Service.
+- [ ] Đồng bộ trạng thái dữ liệu và thông báo lỗi.
+- [ ] Kiểm tra phân quyền trên giao diện và tại Service.
+
+**Kết quả cần đạt:** Giao diện sử dụng đúng API và không trực tiếp xử lý nghiệp vụ hoặc thao tác file dữ liệu.
+
+### Giai đoạn 06 – Hoàn thiện giao diện
+
+- [ ] Hoàn thiện các màn hình quản lý.
+- [ ] Hoàn thiện luồng bán vé và thanh toán tại quầy.
+- [ ] Hoàn thiện tra cứu, hủy vé và báo cáo.
+- [ ] Xử lý các trạng thái lỗi và dữ liệu không hợp lệ.
+- [ ] Kiểm tra trải nghiệm sử dụng và điều hướng.
+
+**Kết quả cần đạt:** Các chức năng trong phạm vi đồ án có thể sử dụng thông qua giao diện Qt.
+
+### Giai đoạn 07 – Kiểm thử toàn hệ thống
+
+- [ ] Kiểm thử các Model, Repository và Service.
+- [ ] Kiểm thử các luồng nghiệp vụ liên quan nhiều module.
+- [ ] Kiểm thử quyền truy cập và các trường hợp bị từ chối.
+- [ ] Kiểm thử đọc/ghi dữ liệu và tính toàn vẹn liên kết.
+- [ ] Kiểm thử tích hợp giao diện Qt.
+- [ ] Sửa lỗi và chạy lại các bài kiểm thử liên quan.
+
+**Kết quả cần đạt:** Hệ thống hoạt động ổn định và các chức năng đã hoàn thành có kết quả kiểm thử xác nhận.
+
+### Giai đoạn 08 – Hoàn thiện đồ án
+
+- [ ] Rà soát tài liệu và mã nguồn.
+- [ ] Hoàn thiện hướng dẫn cài đặt, biên dịch và chạy chương trình.
+- [ ] Chuẩn bị dữ liệu minh họa.
+- [ ] Đóng gói ứng dụng.
+- [ ] Chuẩn bị báo cáo và demo.
+
+**Kết quả cần đạt:** Dự án sẵn sàng để trình bày và bảo vệ.
+
+## 6. Nguyên tắc cập nhật tiến độ
+
+- Chỉ đánh dấu hoàn thành khi có bằng chứng từ code, tài liệu và kết quả kiểm thử.
+- Không mặc định các chức năng của giai đoạn cũ đã hoàn thiện.
+- Các thay đổi về thiết kế phải được cập nhật trong Markdown trước khi triển khai code.
+- Không tự ý sửa các module ngoài phạm vi đang thực hiện.
+- Hoàng và Kiệt cập nhật công việc tương ứng trong các file Task riêng.
+- Các thay đổi lớn cần được review trước khi merge vào `main`.
+
+## 7. Tài liệu liên quan
+
+- `AGENTS.md`: Quy chuẩn chung của dự án.
+- `docs/architecture/dependency_inversion.md`: Thiết kế DIP.
+- `docs/architecture/PermissionDesign.md`: Thiết kế phân quyền.
+- `docs/architecture/Business_UI_Contract.md`: Giao tiếp Backend và GUI.
+- `docs/development/KeHoachRefactor.md`: Kế hoạch thực hiện chi tiết.
+- `docs/development/PhanCongCongViec.md`: Phân công công việc.
+- `docs/development/tasks/Task_Hoang.md`: Công việc của Hoàng.
+- `docs/development/tasks/Task_Kiet.md`: Công việc của Kiệt.
+- `docs/development/pre_refactor/`: Tài liệu phát triển giai đoạn cũ.

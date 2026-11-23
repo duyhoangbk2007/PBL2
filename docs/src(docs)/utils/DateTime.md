@@ -21,4 +21,4 @@ Hàm không nhận tham số. Nó trả chuỗi đã định dạng, hoặc ném
 - `std::localtime` dùng vùng nhớ tĩnh trên nhiều thư viện C, nên API hiện tại chưa được thiết kế để gọi đồng thời từ nhiều luồng.
 - Các quy tắc như “hủy vé trước giờ chiếu” hoặc kiểm tra trùng lịch chưa được cài trong lớp này; BLL phải xử lý khi các hàm ngày giờ cần thiết được bổ sung.
 
-Xem [quy ước dữ liệu thời gian](../../TongQuan/data_format.md) để thống nhất định dạng khi lưu TXT.
+Xem [quy ước dữ liệu thời gian](../../overview/data_format.md) để thống nhất định dạng khi lưu TXT.

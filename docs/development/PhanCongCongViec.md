@@ -1,50 +1,205 @@
-# Phân công phát triển PBL2 — Hoàng và Kiệt
+# Phân công công việc PBL2 – Giai đoạn Refactor
 
-## Nguyên tắc chung
+## 1. Tổng quan
 
-Dự án giữ **14 bước**. Nhóm xác nhận Bước 01–03 đã hoàn thành; phân công hiện hành: Hoàng phụ trách toàn bộ Backend ở Bước 01–11, Kiệt phụ trách toàn bộ GUI và tích hợp giao diện từ Bước 12. Phần việc lịch sử của mỗi người ở các bước đã qua được giữ nguyên; [nhật ký Bước 01](Buoc01_KhoiTaoDuAn.md), [Bước 02](Buoc02_XayDungModels.md) và [Bước 03](Buoc03_HaTangLuuTruDuLieu.md) giữ nguyên lịch sử, bằng chứng và giới hạn kỹ thuật tại thời điểm thực hiện. Từ Bước 04, làm **theo chức năng hoàn chỉnh**: xây dựng Repository → Service → kiểm thử C++ → cập nhật tài liệu. Không chờ hoàn tất mọi Repository mới bắt đầu Service. GUI Qt được triển khai tập trung ở Bước 12.
+Tài liệu này quy định việc phân chia công việc giữa hai thành viên trong giai đoạn refactor và hoàn thiện hệ thống quản lý bán vé rạp chiếu phim PBL2.
 
-Kiến trúc mục tiêu: **GUI (`src/gui/`) → Business (`src/business/`) → Data Access (`src/data_access/`) → DB (`data/*.txt`)**. `src/models/`, `src/data_structures/`, `src/utils/` hỗ trợ các tầng; `FileIO` chỉ đọc/ghi dòng TXT. Chỉ `DoublyLinkedList<T>` bắt buộc tự cài; cấu trúc khác dùng STL khi phù hợp. Các class ghi trong kế hoạch là **dự kiến**, trừ mã thực tế được nêu ở [tiến độ](TongQuanTienDo.md).
+**Thành viên:**
+- Hoàng
+- Kiệt
 
-## Lộ trình và người phụ trách
+Trong giai đoạn trước, Hoàng chủ yếu phụ trách Backend và Kiệt chủ yếu phụ trách GUI.
 
-| Bước | Nội dung | Phụ trách | Kết quả cần có |
-| --- | --- | --- | --- |
-| 01 | Khởi tạo dự án | Hoàng — Backend; Kiệt tham gia theo lịch sử | Giữ kết quả và nhật ký lịch sử. |
-| 02 | Xây dựng Models và quan hệ Model | Hoàng — Backend; Kiệt tham gia theo lịch sử | Giữ tám Model và nhật ký lịch sử. |
-| 03 | Xây dựng tiện ích lưu trữ dữ liệu ban đầu | Hoàng — Backend; Kiệt tham gia theo lịch sử | Giữ kết quả lịch sử; thiết kế hiện hành dùng `FileIO`, `DateTime`, `IdGenerator`. |
-| 04 | Quản lý phim | Hoàng | `MovieRepository` và `MovieService` đã có test riêng đạt; tiếp tục nghiệp vụ đổi trạng thái, lỗi file và kiểm thử bổ sung trước nghiệm thu. |
-| 05 | Đăng nhập và phân quyền | Hoàng | `UserRepository`, `AuthService`, kiểm tra tài khoản hoạt động và quyền Admin/Staff; [nhật ký Bước 05](Buoc05_DangNhapVaPhanQuyen.md) ghi 9/14 test đạt, còn 5 ca lỗi. |
-| 06 | Quản lý phòng, ghế và suất chiếu | Hoàng | Repository/Service phòng, ghế, suất đã có test riêng đạt theo [tiến độ](TongQuanTienDo.md); `ShowtimeService` đạt 89/89 trong phạm vi hiện có. Hủy/xóa suất còn chờ `TicketRepository`; tiếp tục kiểm tra ràng buộc vé và tích hợp trước nghiệm thu. |
-| 07 | Quản lý nhân viên | Hoàng | `StaffService` dùng lại `UserRepository`, thêm/sửa/tìm/vô hiệu hóa Staff, kiểm tra quyền Admin, kiểm thử. |
-| 08 | Quản lý thành viên | Hoàng | `MemberRepository` đạt 63/63; `MemberService` đủ 8 phương thức public ngoài constructor, kiểm tra RBAC và đạt 69/69. Tiếp tục kiểm chứng liên kết hóa đơn/điểm; xem [Bước 08](Buoc08_QuanLyThanhVien.md). |
-| 09 | Giá vé, ưu đãi và tích điểm | Hoàng | `Pricing`, `PricingRepository`, `PricingService` đã triển khai; `test_pricing.cpp` đạt 63/63. Còn tích hợp giá và điểm vào luồng giao dịch; xem [Bước 09](Buoc09_QuanLyGiaVeUuDaiVaTichDiem.md). |
-| 10 | Bán vé tại quầy | Hoàng | `TicketRepository`, `InvoiceRepository`, `BookingService`, chọn/Undo ghế, hóa đơn nhiều vé, điểm và lưu TXT; kiểm thử. |
-| 11 | Hủy vé, lịch sử hóa đơn và thống kê | Hoàng | Xử lý hủy/hoàn/thu hồi điểm/lịch sử, `ReportService` và thống kê; kiểm thử C++. |
-| 12 | Xây dựng giao diện Qt | Kiệt | Toàn bộ View Admin/Staff, `MainWindow`, dashboard, `SeatMapView` và cấu hình build GUI Qt; kết nối với API Backend. |
-| 13 | Kiểm thử tích hợp và sửa lỗi | Kiệt — tích hợp GUI; Hoàng — lỗi Backend | Kiệt thử luồng GUI → Business → Data Access → TXT; Hoàng sửa lỗi Backend được xác nhận từ tích hợp. |
-| 14 | Đóng gói, hoàn thiện tài liệu và bàn giao | Kiệt — GUI/bàn giao; Hoàng — hỗ trợ Backend | Đóng gói ứng dụng, hướng dẫn, báo cáo, demo; Hoàng cung cấp tài liệu và hỗ trợ build Backend. |
+Trong giai đoạn refactor, **cả hai thành viên cùng tham gia phát triển Backend, hoàn thiện chức năng, tích hợp GUI và kiểm thử hệ thống**.
 
-Các bước 04–11 bao gồm kiểm thử chức năng C++ và cập nhật tài liệu ngay trong bước; chúng không chờ GUI Qt. Không đánh dấu bước hoàn thành chỉ vì Model hoặc bản nháp Repository đã tồn tại. [Task Hoàng](tasks/Task_Hoang.md), [Task Kiệt](tasks/Task_Kiet.md) ghi việc cá nhân; [Tổng quan tiến độ](TongQuanTienDo.md) ghi trạng thái chung.
+Mục tiêu là phân chia công việc tương đối đồng đều, hạn chế phụ thuộc giữa hai thành viên và bảo đảm mã nguồn được triển khai theo cùng một quy chuẩn.
 
-## Phân công cụ thể và phụ thuộc
+## 2. Nguyên tắc phân công
 
-**Hoàng:** Chịu trách nhiệm toàn bộ Backend ở Bước 01–11: Models, cấu trúc dữ liệu và tiện ích, Repository, Service, phân quyền, phòng/ghế/suất, nhân viên, thành viên, giá/điểm, bán/hủy vé, lịch sử, báo cáo và kiểm thử C++. Tại Bước 12–14, Hoàng cung cấp API, sửa lỗi Backend phát hiện khi tích hợp và tài liệu kỹ thuật liên quan; không phụ trách lập trình View.
+- Mỗi module có một người chịu trách nhiệm chính.
+- Cả hai thành viên đều tham gia thiết kế, viết Markdown, triển khai code và kiểm thử.
+- Phân chia theo độ phức tạp và khối lượng công việc, không chỉ theo số lượng module.
+- Tuân thủ kiến trúc DIP với duy nhất một interface chung `IRepository<T>`.
+- Phân quyền theo Permission-only.
+- Phân chia rõ trách nhiệm giữa Model, Repository, Service và GUI.
+- Thực hiện quy trình Markdown-first trước khi sửa code.
+- Không tự ý thay đổi API hoặc module do người còn lại phụ trách.
+- Những thay đổi ảnh hưởng đến cả hai phải được thống nhất trước khi triển khai.
 
-**Kiệt:** Chịu trách nhiệm toàn bộ giao diện Qt từ Bước 12, gồm màn hình Admin/Staff, `MainWindow`, dashboard, `SeatMapView`, luồng thao tác và hiển thị lỗi. Kiệt tích hợp GUI với Backend qua Service, kiểm thử luồng giao diện, đóng gói phần GUI và chuẩn bị hướng dẫn sử dụng/demo. Ở Bước 01–03, Kiệt đã tham gia Backend theo lịch sử; việc đổi phân công không xóa kết quả đó.
+## 3. Công việc chung
 
-**Phối hợp:** Hoàng cung cấp hợp đồng Service và dữ liệu cho GUI; Kiệt báo lỗi tích hợp có thể tái hiện để Hoàng xử lý phần Backend. Không chuyển việc kiểm tra quyền/nghiệp vụ vào View; Kiệt chỉ gọi Service.
+Các công việc sau do cả Hoàng và Kiệt cùng thực hiện.
 
-| Giai đoạn | Hoàng | Kiệt |
-| --- | --- | --- |
-| Bước 01–03 | Backend và tích hợp phần lịch sử đã thực hiện | Ghi nhận đóng góp lịch sử; không nhận thêm việc Backend |
-| Bước 04–11 | Toàn bộ Repository, Service, nghiệp vụ và kiểm thử C++ | Chuẩn bị yêu cầu dữ liệu/giao diện khi cần, không triển khai Backend |
-| Bước 12 | Cung cấp API và hỗ trợ tích hợp Backend | Xây dựng toàn bộ GUI Qt và nối Service |
-| Bước 13 | Sửa lỗi Backend có bằng chứng | Chủ trì kiểm thử tích hợp GUI–Backend |
-| Bước 14 | Hỗ trợ build Backend, tài liệu kỹ thuật | Đóng gói GUI, hướng dẫn, demo và bàn giao |
+| Công việc | Hoàng | Kiệt |
+|---|---|---|
+| Thống nhất kiến trúc và quy chuẩn | Phối hợp | Phối hợp |
+| Thiết kế `IRepository<T>` | Phối hợp | Phối hợp |
+| Review Markdown | Phối hợp | Phối hợp |
+| Rà soát Business – UI Contract | Phối hợp | Phối hợp |
+| Tích hợp Backend và GUI | Phối hợp | Phối hợp |
+| Kiểm thử tích hợp | Phối hợp | Phối hợp |
+| Review Pull Request | Phối hợp | Phối hợp |
+| Hoàn thiện tài liệu và demo | Phối hợp | Phối hợp |
 
-Suất chiếu cần dữ liệu phim/phòng; bán vé cần phim/phòng/ghế/suất; thống kê cần vé/hóa đơn. Hoàng hoàn thiện các phụ thuộc này ở Backend trước khi Kiệt tích hợp giao diện. Các bước giữ nguyên thứ tự 01–14; việc có thể chuẩn bị hợp đồng GUI sớm không đánh dấu bước sau đã bắt đầu.
+Các công việc chung không thay thế trách nhiệm chính của từng thành viên đối với module được giao.
 
-## Theo dõi và nghiệm thu
+## 4. Phân chia module Backend
 
-[Nhật ký Bước 04](Buoc04_QuanLyPhim.md) ghi kế hoạch quản lý phim hiện hành; [Bước 05](Buoc05_DangNhapVaPhanQuyen.md) ghi phần đăng nhập/phân quyền và giữ riêng mốc lịch sử DALC. `MovieRepository` hiện đã có; đoạn về code cũ thuộc lịch sử Bước 04. Không tạo sẵn nhật ký trống cho các bước chưa bắt đầu. Bước chỉ được nghiệm thu khi phần phụ trách có mã, kiểm thử và tài liệu tương ứng; không suy ra kết quả từ tên file dự kiến. Ghi nhiều file TXT tuần tự không nguyên tử, nên kiểm tra kết quả ghi và báo lỗi; không dùng cơ chế giao dịch nhiều file trong thiết kế mục tiêu.
+### 4.1. Hoàng phụ trách
+
+| Nhóm | Module | Công việc |
+|---|---|---|
+| Phim | MovieRepository, MovieService | Refactor và hoàn thiện nghiệp vụ |
+| Suất chiếu | ShowtimeRepository, ShowtimeService | Refactor và hoàn thiện nghiệp vụ |
+| Vé | TicketRepository, TicketService | Refactor và hoàn thiện nghiệp vụ |
+| Hóa đơn | InvoiceRepository, InvoiceService | Refactor và hoàn thiện nghiệp vụ |
+| Bán vé | BookingService và các thành phần liên quan | Hoàn thiện quy trình bán vé |
+| Hủy vé | CancellationService và các thành phần liên quan | Hoàn thiện quy trình hủy vé, hoàn tiền |
+| Báo cáo | ReportService và các thành phần liên quan | Hoàn thiện thống kê, báo cáo |
+
+**Trọng tâm:** Các nghiệp vụ liên quan đến lịch chiếu, giao dịch bán vé, hóa đơn, hủy vé và báo cáo.
+
+### 4.2. Kiệt phụ trách
+
+| Nhóm | Module | Công việc |
+|---|---|---|
+| Phòng chiếu | RoomRepository, RoomService | Refactor và hoàn thiện nghiệp vụ |
+| Ghế | SeatRepository, SeatService | Refactor và hoàn thiện nghiệp vụ |
+| Nhân viên | UserRepository, UserService | Refactor và hoàn thiện nghiệp vụ |
+| Xác thực | AuthService và các thành phần liên quan | Chuẩn hóa xác thực, Permission |
+| Phân quyền | RolePermissionRepository và các thành phần liên quan | Refactor và kiểm thử quyền |
+| Thành viên | MemberRepository, MemberService | Refactor và hoàn thiện nghiệp vụ |
+| Giá vé | PricingRepository, PricingService | Refactor và hoàn thiện nghiệp vụ |
+
+**Trọng tâm:** Các nghiệp vụ quản lý dữ liệu nền tảng, người dùng, phân quyền, thành viên và giá vé.
+
+### 4.3. Các thành phần dùng chung
+
+Những thành phần sau được cả hai thành viên phối hợp xử lý:
+
+- `IRepository<T>`
+- `Repository<T>`
+- Các Models và quan hệ giữa Models
+- `DoublyLinkedList<T>`
+- Các tiện ích dùng chung trong `src/utils/`
+- Cơ chế đọc/ghi file
+- Cấu hình khởi tạo và liên kết các Service
+- Business – UI Contract
+
+**Quy định:** Không tự ý thay đổi các thành phần dùng chung khi chưa đánh giá ảnh hưởng đến module của người còn lại.
+
+## 5. Trách nhiệm đối với mỗi module
+
+Người được giao module phải thực hiện đầy đủ các bước:
+
+1. Đọc và phân tích code hiện tại.
+2. Xác định những điểm chưa phù hợp với kiến trúc mới.
+3. Thiết kế lại module trong Markdown.
+4. Viết đầy đủ code `.h` và `.cpp` dự kiến trong Markdown.
+5. Giải thích từng hàm và luồng hoạt động chi tiết.
+6. Gửi người còn lại review khi có thay đổi ảnh hưởng đến API chung.
+7. Chốt Markdown trước khi triển khai.
+8. Triển khai code đúng theo Markdown.
+9. Viết và chạy các bài kiểm thử.
+10. Đối chiếu code với tài liệu và cập nhật tiến độ.
+
+Mỗi module chỉ được đánh dấu hoàn thành sau khi đáp ứng các yêu cầu thiết kế, biên dịch và kiểm thử.
+
+## 6. Phân công GUI và tích hợp
+
+Do Kiệt đã phát triển giao diện Qt trong giai đoạn trước, nhóm ưu tiên tận dụng những thành phần giao diện hiện có.
+
+Tuy nhiên, giai đoạn mới không mặc định toàn bộ GUI là trách nhiệm riêng của Kiệt.
+
+**Kiệt:**
+- Rà soát và duy trì các thành phần GUI hiện có.
+- Phối hợp cập nhật giao diện khi API thay đổi.
+- Hỗ trợ tích hợp các chức năng quản lý.
+
+**Hoàng:**
+- Phối hợp kết nối các nghiệp vụ bán vé, hủy vé, hóa đơn và báo cáo với GUI.
+- Kiểm tra luồng dữ liệu giữa GUI và Service.
+- Hỗ trợ hoàn thiện các màn hình liên quan đến module phụ trách.
+
+Hai thành viên thống nhất cách chia màn hình cụ thể trước khi bắt đầu giai đoạn tích hợp, dựa trên khối lượng công việc thực tế.
+
+## 7. Thứ tự phối hợp thực hiện
+
+### Giai đoạn 01 – Chuẩn bị kiến trúc
+
+Cả hai thành viên:
+
+- Thống nhất thiết kế `IRepository<T>`.
+- Rà soát `Repository<T>` hiện tại.
+- Thống nhất cách Dependency Injection vào Service.
+- Thống nhất quy tắc Permission-only.
+- Rà soát những thay đổi ảnh hưởng đến nhiều module.
+
+### Giai đoạn 02 – Refactor Repository
+
+- Hoàng thực hiện các Repository thuộc nhóm được giao.
+- Kiệt thực hiện các Repository thuộc nhóm được giao.
+- Cùng kiểm thử các liên kết dữ liệu giữa các Repository.
+
+### Giai đoạn 03 – Refactor Service
+
+- Mỗi thành viên refactor các Service tương ứng.
+- Chuẩn hóa Permission và xử lý nghiệp vụ.
+- Kiểm thử từng Service.
+
+### Giai đoạn 04 – Hoàn thiện Backend
+
+- Hoàn thiện các chức năng còn thiếu.
+- Kiểm thử các nghiệp vụ liên quan nhiều module.
+- Phối hợp giải quyết các phụ thuộc giữa hai nhóm.
+
+### Giai đoạn 05 – GUI và kiểm thử
+
+- Tích hợp Backend với Qt.
+- Hoàn thiện giao diện.
+- Kiểm thử toàn bộ các luồng sử dụng.
+- Sửa lỗi và rà soát kết quả.
+
+## 8. Quy trình làm việc với GitHub
+
+- Mỗi thành viên làm việc trên nhánh riêng.
+- Không sửa trực tiếp trên `main`.
+- Commit theo từng phần công việc rõ ràng.
+- Khi hoàn thành một phần, tạo Pull Request.
+- Người còn lại review trước khi merge.
+- Đồng bộ với `main` thường xuyên để hạn chế xung đột.
+- Không tự ý sửa module của người khác nếu chưa thống nhất.
+
+Các thay đổi ảnh hưởng đến interface chung, API của Service hoặc định dạng dữ liệu phải được trao đổi trước khi merge.
+
+## 9. Theo dõi tiến độ
+
+Tiến độ tổng thể được ghi tại:
+
+`docs/development/TongQuanTienDo.md`
+
+Tiến độ cá nhân được ghi tại:
+
+- `docs/development/tasks/Task_Hoang.md`
+- `docs/development/tasks/Task_Kiet.md`
+
+Mỗi công việc cần thể hiện:
+
+- Nội dung cần thực hiện.
+- Trạng thái hiện tại.
+- Tài liệu thiết kế liên quan.
+- Kết quả biên dịch và kiểm thử.
+- Các lỗi hoặc vấn đề chưa giải quyết.
+
+Không đánh dấu hoàn thành chỉ vì đã viết xong code.
+
+## 10. Mục tiêu cuối cùng
+
+Sau khi hoàn thành giai đoạn refactor:
+
+- Backend tuân thủ kiến trúc đã thống nhất.
+- Các chức năng nghiệp vụ được hoàn thiện và kiểm thử.
+- GUI sử dụng đúng Business Service.
+- Tài liệu và code được đồng bộ.
+- Cả Hoàng và Kiệt đều nắm được kiến trúc, cách hoạt động và các nghiệp vụ chính của hệ thống.
+- Dự án sẵn sàng cho việc đóng gói, báo cáo và bảo vệ.
