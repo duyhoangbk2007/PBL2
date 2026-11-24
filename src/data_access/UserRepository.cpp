@@ -335,3 +335,11 @@ bool UserRepository::update(const User& newValues)
     }
     return true;
 }
+
+bool UserRepository::removeById(const string& userId)
+{
+    // Chua ho tro xoa tai khoan trong UserRepository hien tai.
+    // Khong thay doi repo hoac hai bang chi muc.
+    (void)userId;
+    return false;
+}

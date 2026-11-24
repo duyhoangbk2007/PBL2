@@ -3,12 +3,13 @@
 
 #include <string>
 #include <unordered_map>
+#include "IRepository.h"
 #include "Repository.h"
 #include "../models/User.h"
 
 using namespace std;
 
-class UserRepository {
+class UserRepository : public IRepository<User> {
 private:
     Repository<User> repo;
 
@@ -25,19 +26,20 @@ private:
 public:
     UserRepository(const string& filePath);
 
-    bool load();
-    bool save();
+    bool load() override;
+    bool save() override;
     
     // Quan ly tai khoan
-    bool add(User* user);
-    bool update(const User& newValues);
+    bool add(User* user) override;
+    bool update(const User& newValues) override;
+    bool removeById(const string& userId) override;
 
     // Truy van tai khoan
-    User* findById(const string& userId);
+    User* findById(const string& userId) override;
     User* findByUsername(const string& username);
-    User* getAt(int index);
-    int count();
-    bool isLoaded();
+    User* getAt(int index) override;
+    int count() override;
+    bool isLoaded() override;
 };
 
 #endif
