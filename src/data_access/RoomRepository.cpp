@@ -43,7 +43,7 @@ bool RoomRepository::isValidRoom(const Room* room)
     }
     return true;
 }
- 
+
 Room* RoomRepository::stringToRoom(const string& line)
 {
     vector<string> fields;
@@ -82,14 +82,12 @@ Room* RoomRepository::stringToRoom(const string& line)
     {
         throw runtime_error("So hang hoac so cot khong hop le");
     }
-    // Kiem tra trang thai
     if (fields[4] != "0" && fields[4] != "1")
     {
         throw runtime_error("Trang thai Room khong hop le");
     }
     bool active = (fields[4] == "1");
 
-    // Tao doi tuong Room
     Room* room = new Room(
         fields[0],
         fields[1],
@@ -98,7 +96,6 @@ Room* RoomRepository::stringToRoom(const string& line)
         active
     );
 
-    // Kiem tra du lieu Room
     if (!isValidRoom(room))
     {
         delete room;
@@ -162,7 +159,6 @@ bool RoomRepository::update(const Room& newValues)
     {
         return false;
     }
-    // Khong cho thu nho phong neu co ghe nam ngoai kich thuoc moi
     for (int i = 0; i < room->getSeatCount(); i++)
     {
         Seat* seat = room->getSeatAt(i);
@@ -194,7 +190,6 @@ bool RoomRepository::removeById(const string& roomId)
     {
         return false;
     }
-    // Khong xoa phong khi con ghe hoac suat chieu
     if (room->getSeatCount() > 0 ||
         room->getShowtimeCount() > 0)
     {
@@ -219,6 +214,3 @@ bool RoomRepository::isLoaded()
 {
     return repo.isLoaded();
 }
-
-
-
