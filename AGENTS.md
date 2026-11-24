@@ -29,6 +29,8 @@
 
 Các thành phần chưa tuân thủ sẽ được refactor theo kế hoạch, không tự ý sửa ngoài phạm vi công việc.
 
+**Mẫu cho Concrete Repository (áp dụng cho Hoàng và Kiệt):** Tham chiếu `MovieRepository.h/.cpp` về cấu trúc lớp, thứ tự hàm, tên, định dạng, comment, validation, xử lý lỗi và bộ nhớ; tham chiếu `MovieRepository.md` về bố cục thiết kế, code, giải thích thư viện và từng hàm, kế hoạch test và tiến độ. Điều chỉnh logic theo Model, không sao chép máy móc. Thực hiện theo thứ tự: Rà soát → Thiết kế Markdown → CHỐT MARKDOWN → Code → Test → Cập nhật tài liệu.
+
 ## 3. Quy trình Markdown-first bắt buộc
 
 Áp dụng cho cả Hoàng, Kiệt và Codex khi tạo hoặc sửa lớp/hàm C++.
@@ -148,3 +150,13 @@ Chỉ bàn giao khi code khớp Markdown đã chốt, biên dịch thành công,
 - Người còn lại review code, tài liệu và khả năng tương thích trước khi merge.
 - Kiểm tra xung đột, biên dịch và chạy test liên quan trước khi merge vào `main`.
 - Codex không tự ý commit, push, merge hoặc sửa ngoài phạm vi khi chưa được yêu cầu.
+
+## Quy tắc kiểm tra dữ liệu
+
+- Repository chung kiểm tra các điều kiện lưu trữ chung.
+- Concrete Repository kiểm tra tính hợp lệ và toàn vẹn dữ liệu của từng Model.
+- Business Service kiểm tra phân quyền và điều kiện nghiệp vụ.
+- Không kiểm tra lặp lại điều kiện mà tầng dưới đã bảo đảm, trừ khi cần thiết để xử lý an toàn tại tầng hiện tại.
+- Không loại bỏ các kiểm tra cần thiết cho liên kết đối tượng và rollback.
+
+Tuân thủ quy định chi tiết tại `docs/architecture/validation_rules.md`.

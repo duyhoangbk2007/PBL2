@@ -14,7 +14,7 @@ Lớp được xây dựng nhằm áp dụng nguyên lý Dependency Inversion Pr
 - `src/data_access/Repository.h`
 - Các Concrete Repository trong `src/data_access/`.
 
-**Trạng thái:** Thiết kế dự kiến – chờ CHỐT MARKDOWN.
+**Trạng thái:** CHỐT MARKDOWN; đã triển khai và kiểm thử thành công qua `tests/test_irepository.cpp` (81 PASS, 0 FAIL).
 
 ## 2. Mục tiêu
 
@@ -834,12 +834,12 @@ Việc kiểm thử được thực hiện thông qua các lớp triển khai in
 ### 11.1. Kiểm thử interface
 
 - [ ] Kiểm tra file `IRepository.h` có thể biên dịch độc lập.
-- [ ] Kiểm tra `IRepository<T>` là lớp trừu tượng.
-- [ ] Kiểm tra Concrete Repository có thể kế thừa interface.
-- [ ] Kiểm tra Concrete Repository phải triển khai đầy đủ các hàm thuần ảo.
+- [x] Kiểm tra `IRepository<T>` là lớp trừu tượng.
+- [x] Kiểm tra Concrete Repository có thể kế thừa interface.
+- [x] Kiểm tra Concrete Repository phải triển khai đầy đủ các hàm thuần ảo.
 - [ ] Kiểm tra các hàm sử dụng `override` đúng chữ ký.
-- [ ] Kiểm tra cơ chế đa hình thông qua tham chiếu interface.
-- [ ] Kiểm tra destructor ảo hoạt động đúng.
+- [x] Kiểm tra cơ chế đa hình thông qua tham chiếu interface.
+- [x] Kiểm tra destructor ảo hoạt động đúng.
 
 ### 11.2. Kiểm thử chức năng
 
@@ -861,21 +861,23 @@ Sau khi refactor từng Concrete Repository:
 
 Ưu tiên sử dụng lại các bài kiểm thử hiện có của từng Repository và bổ sung các trường hợp liên quan đến interface.
 
+**Kết quả thực tế (24/11/2026):** `tests/test_irepository.cpp` biên dịch với C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`), chạy thành công: 81 PASS, 0 FAIL. Bài test bao phủ MovieRepository qua interface, trạng thái trước load, load, truy vấn, thêm, sửa, xóa, lưu, đa hình và dữ liệu load không hợp lệ. Các mục chưa đánh dấu ở trên cần kiểm chứng riêng cho các Repository khác hoặc bằng phép kiểm tra độc lập.
+
 ## 12. Phạm vi triển khai hiện tại
 
 Trong bước xây dựng IRepository:
 
-- [ ] Review và chốt tài liệu `IRepository.md`.
-- [ ] Tạo file `src/data_access/IRepository.h`.
-- [ ] Triển khai đúng code đã được chốt trong Markdown.
-- [ ] Biên dịch và kiểm thử interface.
-- [ ] Đối chiếu mã nguồn với tài liệu.
-- [ ] Cập nhật tiến độ sau khi kiểm thử thành công.
+- [x] Review và CHỐT MARKDOWN `IRepository.md`.
+- [x] Tạo file `src/data_access/IRepository.h`.
+- [x] Triển khai interface theo Markdown đã chốt.
+- [x] Biên dịch và kiểm thử interface qua `test_irepository.cpp`.
+- [ ] Đối chiếu mã nguồn với tài liệu theo yêu cầu khớp 100%.
+- [x] Cập nhật tiến độ sau khi kiểm thử thành công.
 
 Chưa thực hiện trong bước này:
 
 - Refactor `Repository<T>`.
-- Refactor các Concrete Repository.
+- Refactor các Concrete Repository khác ngoài MovieRepository.
 - Refactor các Business Service.
 - Thay đổi các Model.
 - Thay đổi cấu trúc dữ liệu.

@@ -22,10 +22,13 @@ private:
 public:
     Repository(const string& filePath, string (*getId)(T*), T* (*parse)(const string&), string (*serialize)(T*));
     ~Repository();
+
     bool load();
     bool save();
+
     bool add(T* item);
     bool removeById(const string& id);
+    
     T* findById(const string& id);
     T* getAt(int index);
     int count();

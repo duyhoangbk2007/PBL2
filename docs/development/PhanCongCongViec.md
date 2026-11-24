@@ -33,7 +33,7 @@ Các công việc sau do cả Hoàng và Kiệt cùng thực hiện.
 | Công việc | Hoàng | Kiệt |
 |---|---|---|
 | Thống nhất kiến trúc và quy chuẩn | Phối hợp | Phối hợp |
-| Thiết kế `IRepository<T>` | Phối hợp | Phối hợp |
+| Thiết kế `IRepository<T>` | Phối hợp; đã CHỐT MARKDOWN, triển khai và kiểm thử | Phối hợp; đã CHỐT MARKDOWN, triển khai và kiểm thử |
 | Review Markdown | Phối hợp | Phối hợp |
 | Rà soát Business – UI Contract | Phối hợp | Phối hợp |
 | Tích hợp Backend và GUI | Phối hợp | Phối hợp |
@@ -49,7 +49,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 
 | Nhóm | Module | Công việc |
 |---|---|---|
-| Phim | MovieRepository, MovieService | Refactor và hoàn thiện nghiệp vụ |
+| Phim | MovieRepository, MovieService | MovieRepository đã refactor, CHỐT MARKDOWN và kiểm thử qua `test_irepository.cpp`; MovieService còn theo kế hoạch |
 | Suất chiếu | ShowtimeRepository, ShowtimeService | Refactor và hoàn thiện nghiệp vụ |
 | Vé | TicketRepository, TicketService | Refactor và hoàn thiện nghiệp vụ |
 | Hóa đơn | InvoiceRepository, InvoiceService | Refactor và hoàn thiện nghiệp vụ |
@@ -79,6 +79,7 @@ Những thành phần sau được cả hai thành viên phối hợp xử lý:
 
 - `IRepository<T>`
 - `Repository<T>`
+- Tài liệu `Repository.md` đã được rà soát và đồng bộ theo mẫu `MovieRepository.md`; `Repository<T>` được kiểm thử gián tiếp qua `test_irepository.cpp` (81 PASS, 0 FAIL), chưa xác nhận mọi Model.
 - Các Models và quan hệ giữa Models
 - `DoublyLinkedList<T>`
 - Các tiện ích dùng chung trong `src/utils/`
@@ -140,6 +141,7 @@ Cả hai thành viên:
 - Hoàng thực hiện các Repository thuộc nhóm được giao.
 - Kiệt thực hiện các Repository thuộc nhóm được giao.
 - Cùng kiểm thử các liên kết dữ liệu giữa các Repository.
+- Cả Hoàng và Kiệt dùng `MovieRepository.h/.cpp` và `MovieRepository.md` làm mẫu cho các Concrete Repository được giao, điều chỉnh logic theo từng Model và theo quy trình trong `AGENTS.md`.
 
 ### Giai đoạn 03 – Refactor Service
 

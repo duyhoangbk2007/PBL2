@@ -25,7 +25,7 @@ MovieRepository không trực tiếp xử lý phân quyền hoặc các nghiệp
 - `src/models/Movie.h`
 - `src/utils/Validator.h`
 
-**Trạng thái:** Thiết kế refactor – chờ CHỐT MARKDOWN và kiểm thử.
+**Trạng thái:** CHỐT MARKDOWN; refactor đã triển khai và kiểm thử thành công qua `tests/test_irepository.cpp` (81 PASS, 0 FAIL).
 
 ## 2. Kiến trúc
 
@@ -1492,19 +1492,19 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 
 ### 12.7. Kiểm thử IRepository
 
-- [ ] Khởi tạo MovieRepository sau khi kế thừa interface.
-- [ ] Sử dụng tham chiếu `IRepository<Movie>&`.
-- [ ] Sử dụng con trỏ `IRepository<Movie>*`.
-- [ ] Gọi load() thông qua interface.
-- [ ] Gọi save() thông qua interface.
-- [ ] Gọi add() thông qua interface.
-- [ ] Gọi update() thông qua interface.
-- [ ] Gọi removeById() thông qua interface.
-- [ ] Gọi findById() thông qua interface.
-- [ ] Gọi getAt() thông qua interface.
-- [ ] Gọi count() thông qua interface.
-- [ ] Gọi isLoaded() thông qua interface.
-- [ ] Kiểm tra destructor ảo.
+- [x] Khởi tạo MovieRepository sau khi kế thừa interface.
+- [x] Sử dụng tham chiếu `IRepository<Movie>&`.
+- [x] Sử dụng con trỏ `IRepository<Movie>*`.
+- [x] Gọi load() thông qua interface.
+- [x] Gọi save() thông qua interface.
+- [x] Gọi add() thông qua interface.
+- [x] Gọi update() thông qua interface.
+- [x] Gọi removeById() thông qua interface.
+- [x] Gọi findById() thông qua interface.
+- [x] Gọi getAt() thông qua interface.
+- [x] Gọi count() thông qua interface.
+- [x] Gọi isLoaded() thông qua interface.
+- [x] Kiểm tra destructor ảo.
 - [ ] Chạy lại các bài kiểm thử MovieRepository hiện có.
 
 ## 13. Tiến độ triển khai
@@ -1515,12 +1515,14 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 - [x] Xác định phạm vi thay đổi file MovieRepository.h.
 - [x] Rà soát logic file MovieRepository.cpp.
 - [x] Xây dựng nội dung tài liệu MovieRepository.md.
-- [ ] Review và CHỐT MARKDOWN.
-- [ ] Đối chiếu mã nguồn với thiết kế đã chốt.
-- [ ] Biên dịch mã nguồn.
-- [ ] Kiểm thử MovieRepository.
-- [ ] Kiểm thử IRepository thông qua MovieRepository.
-- [ ] Cập nhật tiến độ refactor.
+- [x] Review và CHỐT MARKDOWN.
+- [ ] Đối chiếu mã nguồn với thiết kế đã chốt theo yêu cầu khớp 100%.
+- [x] Biên dịch mã nguồn cùng `test_irepository.cpp`.
+- [x] Kiểm thử MovieRepository trong phạm vi `test_irepository.cpp`.
+- [x] Kiểm thử IRepository thông qua MovieRepository.
+- [x] Cập nhật tiến độ refactor.
+
+**Kết quả thực tế (24/11/2026):** `tests/test_irepository.cpp` biên dịch với C++17 và chạy thành công: 81 PASS, 0 FAIL. Bài test bao phủ load/save, CRUD, truy vấn, trạng thái chưa load, đa hình và exception khi load dữ liệu lỗi. Các mục kiểm thử chưa đánh dấu ở mục 12 và bài `test_movie_repository.cpp` cũ chưa được chạy lại trong lần cập nhật này.
 
 ## 14. Kết luận
 
