@@ -340,3 +340,8 @@ bool MemberRepository::update(const Member& newValues)
 
     return true;
 }
+
+bool MemberRepository::removeById(const string& memberId)
+{
+    return false;
+}
