@@ -42,7 +42,7 @@ Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm
 | Giai đoạn | Nội dung | Trạng thái |
 |---|---|---|
 | 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
-| 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository và MovieRepository hoàn thành; các Repository khác chưa refactor |
+| 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository và MovieRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa refactor |
 | 03 | Refactor các Business Service theo DIP và Permission-only | Chưa bắt đầu |
 | 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
 | 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
@@ -74,15 +74,15 @@ Trạng thái có thể sử dụng:
 ### Giai đoạn 02 – Refactor Data Access
 
 - [x] Thiết kế, CHỐT MARKDOWN, triển khai và kiểm thử `IRepository<T>`.
-- [x] Refactor `MovieRepository` theo interface; CHỐT MARKDOWN và kiểm thử qua `test_irepository.cpp`.
-- [x] Rà soát `Repository<T>` và cập nhật `Repository.md` theo mẫu MovieRepository; ghi nhận kiểm thử gián tiếp qua `test_irepository.cpp` (81 PASS, 0 FAIL). Chưa kiểm thử trực tiếp mọi API của template.
+- [x] Refactor `MovieRepository` theo interface và quy tắc validation; CHỐT MARKDOWN, đồng bộ `.cpp` với tài liệu và kiểm thử qua `test_irepository.cpp`.
+- [x] Hoàn thành rà soát `Repository<T>` và cập nhật `Repository.md`; kiểm thử gián tiếp qua `test_irepository.cpp` (81 PASS, 0 FAIL). Chưa kiểm thử trực tiếp mọi API của template.
 - [ ] Chuẩn hóa các Concrete Repository theo interface chung.
 - [ ] Bảo đảm tính toàn vẹn dữ liệu và các liên kết giữa đối tượng.
 - [ ] Kiểm thử các Repository sau khi refactor.
 
 **Kết quả cần đạt:** Các Repository phù hợp với kiến trúc DIP và giữ nguyên hành vi nghiệp vụ đã chốt.
 
-**Kết quả đã xác minh (24/11/2026):** `tests/test_irepository.cpp` biên dịch bằng C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy đạt 81 PASS, 0 FAIL. Kết quả này xác nhận phần interface và MovieRepository trong phạm vi bài test; chưa xác nhận toàn bộ tầng Data Access.
+**Kết quả đã xác minh (24/11/2026):** Sau điều chỉnh validation, `tests/test_irepository.cpp` biên dịch bằng C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy đạt 81 PASS, 0 FAIL. Kết quả xác nhận interface, MovieRepository và gián tiếp `Repository<Movie>` trong phạm vi bài test; chưa xác nhận toàn bộ tầng Data Access.
 
 ### Giai đoạn 03 – Refactor Business Service
 

@@ -49,7 +49,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 
 | Nhóm | Module | Công việc |
 |---|---|---|
-| Phim | MovieRepository, MovieService | MovieRepository đã refactor, CHỐT MARKDOWN và kiểm thử qua `test_irepository.cpp`; MovieService còn theo kế hoạch |
+| Phim | MovieRepository, MovieService | MovieRepository đã refactor theo DIP và validation, CHỐT MARKDOWN, kiểm thử qua `test_irepository.cpp` (81 PASS, 0 FAIL); MovieService còn theo kế hoạch |
 | Suất chiếu | ShowtimeRepository, ShowtimeService | Refactor và hoàn thiện nghiệp vụ |
 | Vé | TicketRepository, TicketService | Refactor và hoàn thiện nghiệp vụ |
 | Hóa đơn | InvoiceRepository, InvoiceService | Refactor và hoàn thiện nghiệp vụ |
@@ -79,7 +79,7 @@ Những thành phần sau được cả hai thành viên phối hợp xử lý:
 
 - `IRepository<T>`
 - `Repository<T>`
-- Tài liệu `Repository.md` đã được rà soát và đồng bộ theo mẫu `MovieRepository.md`; `Repository<T>` được kiểm thử gián tiếp qua `test_irepository.cpp` (81 PASS, 0 FAIL), chưa xác nhận mọi Model.
+- `IRepository<T>` đã hoàn thành; `Repository<T>` đã được rà soát và đồng bộ tài liệu, kiểm thử gián tiếp qua `test_irepository.cpp` (81 PASS, 0 FAIL), chưa xác nhận mọi Model.
 - Các Models và quan hệ giữa Models
 - `DoublyLinkedList<T>`
 - Các tiện ích dùng chung trong `src/utils/`

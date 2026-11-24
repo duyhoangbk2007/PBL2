@@ -25,7 +25,7 @@ MovieRepository không trực tiếp xử lý phân quyền hoặc các nghiệp
 - `src/models/Movie.h`
 - `src/utils/Validator.h`
 
-**Trạng thái:** CHỐT MARKDOWN; refactor đã triển khai và kiểm thử thành công qua `tests/test_irepository.cpp` (81 PASS, 0 FAIL).
+**Trạng thái:** CHỐT MARKDOWN; đã triển khai đồng bộ quy tắc validation trong `MovieRepository.cpp`. Khối `.cpp` ở mục 5 khớp mã nguồn hiện tại; `tests/test_irepository.cpp` đã biên dịch và chạy lại thành công (81 PASS, 0 FAIL).
 
 ## 2. Kiến trúc
 
@@ -83,6 +83,8 @@ Repository<Movie> repo;
 - Quản lý trạng thái nạp dữ liệu.
 
 MovieRepository bổ sung các logic riêng của Movie mà Repository chung không thể xử lý.
+
+Theo `docs/architecture/validation_rules.md`, `Repository<Movie>` kiểm tra trạng thái loaded và điều kiện lưu trữ chung; MovieRepository kiểm tra thuộc tính Movie và liên kết Showtime khi cần. Không loại bỏ kiểm tra tại thời điểm khác nếu cần bảo vệ dữ liệu hoặc bộ nhớ.
 
 ## 3. Định dạng dữ liệu
 
@@ -390,18 +392,9 @@ bool MovieRepository::save()
 // Them phim moi
 bool MovieRepository::add(Movie* movie)
 {
-    if (!repo.isLoaded() || !isValidMovie(movie))
+    if (!isValidMovie(movie))
     {
         return false;
-    }
-
-    // Khong them lai con tro da duoc quan ly
-    for (int i = 0; i < repo.count(); i++)
-    {
-        if (repo.getAt(i) == movie)
-        {
-            return false;
-        }
     }
 
     return repo.add(movie);
@@ -433,14 +426,8 @@ bool MovieRepository::update(const Movie& newValues)
     return true;
 }
 
-// Xoa phim theo ID
 bool MovieRepository::removeById(const string& movieId)
 {
-    if (!repo.isLoaded())
-    {
-        return false;
-    }
-
     Movie* movie = repo.findById(movieId);
 
     if (movie == nullptr)
@@ -457,25 +444,21 @@ bool MovieRepository::removeById(const string& movieId)
     return repo.removeById(movieId);
 }
 
-// Tim phim theo ID
 Movie* MovieRepository::findById(const string& movieId)
 {
     return repo.findById(movieId);
 }
 
-// Lay phim theo vi tri
 Movie* MovieRepository::getAt(int index)
 {
     return repo.getAt(index);
 }
 
-// Dem so luong phim
 int MovieRepository::count()
 {
     return repo.count();
 }
 
-// Kiem tra trang thai load
 bool MovieRepository::isLoaded()
 {
     return repo.isLoaded();
@@ -954,40 +937,36 @@ Thêm một phim mới vào Repository.
 
 **Quy trình xử lý:**
 
-Bước 1: Kiểm tra trạng thái Repository và dữ liệu Movie.
+Bước 1: Kiểm tra dữ liệu Movie tại tầng Concrete Repository.
 
 ```cpp
-if (!repo.isLoaded() || !isValidMovie(movie))
+if (!isValidMovie(movie))
 {
     return false;
 }
 ```
 
-Không cho phép thêm phim nếu Repository chưa được nạp hoặc dữ liệu phim không hợp lệ.
+`isValidMovie()` kiểm tra `nullptr` trước khi truy cập thuộc tính, rồi kiểm tra mã `MOV`, văn bản, thời lượng, tuổi và ngày. Đây là validation riêng của Movie; nếu sai, trả `false` và không chuyển quyền sở hữu.
 
-Bước 2: Kiểm tra trùng con trỏ.
-
-```cpp
-for (int i = 0; i < repo.count(); i++)
-{
-    if (repo.getAt(i) == movie)
-    {
-        return false;
-    }
-}
-```
-
-Hai con trỏ bằng nhau nghĩa là chúng đang trỏ đến cùng một đối tượng.
-
-Việc kiểm tra giúp tránh thêm lại đối tượng đã được quản lý.
-
-Bước 3: Thêm phim vào Repository chung.
+Bước 2: Giao kiểm tra lưu trữ chung và thêm phim cho Repository.
 
 ```cpp
 return repo.add(movie);
 ```
 
-Repository chung tiếp tục kiểm tra các điều kiện thêm, bao gồm kiểm tra trùng khóa.
+`Repository<Movie>::add()` kiểm tra loaded, `nullptr`, trùng địa chỉ con trỏ, ID rỗng và trùng ID trước khi `pushBack()`. MovieRepository không cần lặp lại các kiểm tra này. `return` chuyển nguyên kết quả `bool` của tầng dưới; không tự bắt exception hoặc lưu TXT.
+
+**Luồng hoạt động chi tiết:**
+
+```text
+add(movie) → isValidMovie(movie)? ─ không → false (caller giữ con trỏ mới)
+                            │ có
+                            v
+                       repo.add(movie) → điều kiện lưu trữ sai → false
+                            │ thành công
+                            v
+                         true; repo sở hữu movie
+```
 
 **Lưu ý:**
 
@@ -1100,22 +1079,13 @@ Xóa phim khỏi Repository dựa trên mã phim.
 
 **Quy trình xử lý:**
 
-Bước 1: Kiểm tra Repository đã được nạp.
-
-```cpp
-if (!repo.isLoaded())
-{
-    return false;
-}
-```
-
-Bước 2: Tìm phim theo mã.
+Bước 1: Tìm phim theo mã.
 
 ```cpp
 Movie* movie = repo.findById(movieId);
 ```
 
-Bước 3: Kiểm tra phim tồn tại.
+Bước 2: Kiểm tra phim tồn tại trước khi truy cập con trỏ.
 
 ```cpp
 if (movie == nullptr)
@@ -1124,7 +1094,7 @@ if (movie == nullptr)
 }
 ```
 
-Bước 4: Kiểm tra liên kết với Showtime.
+Bước 3: Kiểm tra liên kết với Showtime.
 
 ```cpp
 if (movie->getShowtimeCount() > 0)
@@ -1137,13 +1107,25 @@ Không cho phép xóa phim nếu phim vẫn còn liên kết với bất kỳ Sh
 
 Quy định này giúp tránh việc Showtime tham chiếu đến một đối tượng Movie đã bị giải phóng.
 
-Bước 5: Xóa phim thông qua Repository chung.
+Bước 4: Xóa phim thông qua Repository chung.
 
 ```cpp
 return repo.removeById(movieId);
 ```
 
-Repository chung chịu trách nhiệm xóa đối tượng khỏi danh sách và giải phóng bộ nhớ.
+`repo.findById()` trả `nullptr` khi danh sách chưa có phim; `repo.removeById()` vẫn tự kiểm tra loaded, tìm ID, xóa node và giải phóng bộ nhớ. MovieRepository chỉ giữ `nullptr` guard và ràng buộc Showtime cần thiết trước khi dereference/xóa.
+
+**Luồng hoạt động chi tiết:**
+
+```text
+removeById(movieId) → repo.findById(movieId) → nullptr? ─ có → false
+                                               │ không
+                                               v
+                           getShowtimeCount() > 0? ─ có → false
+                                               │ không
+                                               v
+                            repo.removeById(movieId) → trả bool
+```
 
 **Lưu ý:**
 
@@ -1364,6 +1346,8 @@ Phần refactor MovieService sẽ được thực hiện trong bước tiếp th
 
 ## 11. Các thay đổi sau refactor
 
+Phần 11.1 ghi nhận refactor DIP; phần 11.2 ghi nhận điều chỉnh validation đã triển khai và kiểm thử trong phạm vi `test_irepository.cpp`.
+
 ### 11.1. Thay đổi trong MovieRepository.h
 
 Bổ sung thư viện:
@@ -1392,9 +1376,9 @@ Bổ sung `override` cho 9 hàm:
 
 ### 11.2. Thay đổi trong MovieRepository.cpp
 
-Không thay đổi logic triển khai.
+Theo `validation_rules.md`, `add()` giao kiểm tra loaded, `nullptr` và trùng con trỏ/ID cho `Repository<Movie>` sau khi `isValidMovie()` kiểm tra dữ liệu Movie. `removeById()` tìm phim, kiểm tra `nullptr` và liên kết Showtime, rồi giao kiểm tra loaded, tìm kiếm và giải phóng cho `Repository<Movie>`. Hai thay đổi đã có trong `.cpp` hiện tại.
 
-Các hàm hiện tại đã có chữ ký tương thích với `IRepository<Movie>`.
+Các hàm hiện tại có chữ ký tương thích với `IRepository<Movie>`.
 
 Tên tham số trong lớp con có thể khác tên tham số trong interface.
 
@@ -1415,13 +1399,21 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 - Constructor.
 - Thuộc tính `Repository<Movie> repo`.
 - Các hàm static.
-- Logic kiểm tra dữ liệu.
+- `isValidMovie()`, parse, serialize và các kiểm tra dữ liệu riêng của Movie.
 - Logic đọc ghi file.
-- Logic thêm, cập nhật và xóa phim.
+- API và hành vi trả lỗi của thêm, cập nhật và xóa phim; chỉ phân lại nơi thực hiện hai kiểm tra lưu trữ trùng lặp.
 - Cơ chế quản lý bộ nhớ.
 - Cơ chế kiểm tra liên kết với Showtime.
 - Định dạng file TXT.
 - Cấu trúc Model.
+
+### 11.4. Rà soát các phương thức còn lại theo validation_rules.md
+
+- `isValidMovie()` giữ kiểm tra `nullptr` và toàn bộ thuộc tính của Movie; được dùng tại load, add, update và serialize để không phụ thuộc vào Service.
+- `getMovieId()` giữ nhánh null trả chuỗi rỗng để callback không dereference con trỏ null. `stringToMovie()` giữ kiểm tra đủ 8 trường, parse số hết chuỗi, active chỉ `0/1`, validation và `delete movie` trước khi ném lỗi; `Repository<Movie>::load()` chịu trách nhiệm dọn danh sách tạm.
+- `movieToString()` giữ validation trước khi ghi để không xuất dữ liệu Movie sai. `load()` và `save()` chỉ chuyển lời gọi vì tầng chung đã xử lý loaded, file và ngoại lệ theo hợp đồng hiện tại.
+- `update()` giữ kiểm tra loaded vì tự tìm và sửa trực tiếp đối tượng, không có `Repository<T>::update()` bảo vệ thao tác. Giữ `isValidMovie(&newValues)` và kiểm tra `movie == nullptr` trước các setter; mã phim và địa chỉ đối tượng không đổi để bảo vệ liên kết. Các setter hiện tại không có rollback nhiều bước.
+- `findById()`, `getAt()`, `count()` và `isLoaded()` chỉ chuyển lời gọi; điều kiện tìm kiếm, chỉ số và trạng thái thuộc tầng chung. Không thêm validation hoặc API mới.
 
 ## 12. Kế hoạch kiểm thử
 
@@ -1441,6 +1433,8 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 - [ ] Kiểm tra trường hợp nạp dữ liệu nhiều lần.
 
 ### 12.2. Kiểm thử thêm phim
+
+Các trường hợp đã có trong `test_irepository.cpp` được xác nhận sau khi triển khai; các trường hợp còn lại cần test riêng.
 
 - [ ] Thêm phim hợp lệ.
 - [ ] Thêm phim khi Repository chưa được nạp.
@@ -1462,6 +1456,8 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 - [ ] Kiểm tra các liên kết Showtime được giữ nguyên.
 
 ### 12.4. Kiểm thử xóa phim
+
+`test_irepository.cpp` đã xác nhận đường đi chưa load và xóa phim thông thường. Trường hợp phim có liên kết Showtime vẫn cần test riêng để xác nhận ràng buộc không giải phóng Movie đang được tham chiếu.
 
 - [ ] Xóa phim hợp lệ.
 - [ ] Xóa phim không tồn tại.
@@ -1492,6 +1488,8 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 
 ### 12.7. Kiểm thử IRepository
 
+Các dấu `[x]` dưới đây đã được xác nhận bằng lần chạy lại `test_irepository.cpp` sau điều chỉnh validation.
+
 - [x] Khởi tạo MovieRepository sau khi kế thừa interface.
 - [x] Sử dụng tham chiếu `IRepository<Movie>&`.
 - [x] Sử dụng con trỏ `IRepository<Movie>*`.
@@ -1509,6 +1507,8 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 
 ## 13. Tiến độ triển khai
 
+**Điều chỉnh validation:** Đã triển khai `add()` và `removeById()` theo Markdown đã chốt; đối chiếu toàn bộ khối `.cpp` ở mục 5 với file hiện tại. `test_irepository.cpp` đã chạy lại sau thay đổi.
+
 - [x] Thiết kế MovieRepository kế thừa IRepository.
 - [x] Xác định các hàm cần override.
 - [x] Rà soát chữ ký các hàm hiện tại.
@@ -1516,11 +1516,14 @@ Hai hàm có chữ ký tương thích vì tên tham số không ảnh hưởng �
 - [x] Rà soát logic file MovieRepository.cpp.
 - [x] Xây dựng nội dung tài liệu MovieRepository.md.
 - [x] Review và CHỐT MARKDOWN.
-- [ ] Đối chiếu mã nguồn với thiết kế đã chốt theo yêu cầu khớp 100%.
+- [x] Đối chiếu toàn bộ `MovieRepository.cpp` với khối mã ở mục 5: khớp 100%.
 - [x] Biên dịch mã nguồn cùng `test_irepository.cpp`.
 - [x] Kiểm thử MovieRepository trong phạm vi `test_irepository.cpp`.
 - [x] Kiểm thử IRepository thông qua MovieRepository.
 - [x] Cập nhật tiến độ refactor.
+- [x] CHỐT MARKDOWN và triển khai điều chỉnh validation ở mục 5, 8 và 11.
+- [x] Biên dịch, chạy lại `test_irepository.cpp` sau khi triển khai: 81 PASS, 0 FAIL.
+- [ ] Chạy lại bài test MovieRepository cũ và các trường hợp liên kết Showtime chưa được xác nhận.
 
 **Kết quả thực tế (24/11/2026):** `tests/test_irepository.cpp` biên dịch với C++17 và chạy thành công: 81 PASS, 0 FAIL. Bài test bao phủ load/save, CRUD, truy vấn, trạng thái chưa load, đa hình và exception khi load dữ liệu lỗi. Các mục kiểm thử chưa đánh dấu ở mục 12 và bài `test_movie_repository.cpp` cũ chưa được chạy lại trong lần cập nhật này.
 
@@ -1530,8 +1533,8 @@ MovieRepository là Concrete Repository triển khai `IRepository<Movie>` và s�
 
 Sau refactor, MovieRepository triển khai đầy đủ 9 hàm của interface.
 
-Quá trình refactor chỉ cần bổ sung quan hệ kế thừa và từ khóa `override` trong file header, không cần thay đổi logic triển khai hiện tại trong file `.cpp`.
+Refactor DIP đã bổ sung quan hệ kế thừa và `override`. Điều chỉnh validation đã rút gọn hai hàm trong `.cpp`, giữ nguyên chữ ký API và ràng buộc Movie.
 
 Thiết kế này giúp MovieRepository tương thích với kiến trúc Dependency Inversion Principle, đồng thời giữ nguyên cơ chế quản lý dữ liệu, bộ nhớ, liên kết đối tượng và định dạng file TXT.
 
-MovieRepository được sử dụng làm mẫu để triển khai IRepository cho các Concrete Repository còn lại.
+MovieRepository là mẫu chuẩn cho các Concrete Repository còn lại; mỗi Repository vẫn phải áp dụng logic riêng của Model.

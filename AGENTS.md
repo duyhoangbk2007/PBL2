@@ -5,6 +5,7 @@
 ## 1. Nguồn đối chiếu và phạm vi
 
 - Đọc yêu cầu, code, test và tài liệu liên quan trước khi thực hiện.
+- Đọc và tuân thủ `docs/architecture/validation_rules.md` trước khi viết hoặc refactor code.
 - Đối chiếu `README.md`, `docs/overview/business_rules.md` và `docs/overview/data_format.md`.
 - Phân biệt code hiện tại với thiết kế dự kiến. Không tự ý thay đổi API, schema, quy tắc nghiệp vụ hoặc cấu trúc thư mục.
 - Khi có mâu thuẫn, báo cáo và thống nhất trước khi sửa.
@@ -29,7 +30,7 @@
 
 Các thành phần chưa tuân thủ sẽ được refactor theo kế hoạch, không tự ý sửa ngoài phạm vi công việc.
 
-**Mẫu cho Concrete Repository (áp dụng cho Hoàng và Kiệt):** Tham chiếu `MovieRepository.h/.cpp` về cấu trúc lớp, thứ tự hàm, tên, định dạng, comment, validation, xử lý lỗi và bộ nhớ; tham chiếu `MovieRepository.md` về bố cục thiết kế, code, giải thích thư viện và từng hàm, kế hoạch test và tiến độ. Điều chỉnh logic theo Model, không sao chép máy móc. Thực hiện theo thứ tự: Rà soát → Thiết kế Markdown → CHỐT MARKDOWN → Code → Test → Cập nhật tài liệu.
+**Mẫu chuẩn cho Concrete Repository (áp dụng cho Hoàng và Kiệt):** Dùng `MovieRepository.h`, `MovieRepository.cpp` và `MovieRepository.md` làm mẫu về cấu trúc, thứ tự hàm, cách viết code, validation, lỗi, bộ nhớ và bố cục tài liệu. Điều chỉnh logic theo Model, không sao chép máy móc. Thực hiện: Rà soát → Thiết kế Markdown → CHỐT MARKDOWN → Code → Test → Cập nhật tài liệu.
 
 ## 3. Quy trình Markdown-first bắt buộc
 
