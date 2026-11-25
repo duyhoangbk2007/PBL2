@@ -6,7 +6,7 @@
 
 **File liên quan:** `src/data_access/ShowtimeRepository.h/.cpp`, `src/data_access/IRepository.h`, `src/data_access/Repository.h`, `src/models/Showtime.h`, `src/models/Movie.h`, `src/models/Room.h`, `src/utils/Validator.h`, `src/utils/DateTime.h`.
 
-**Trạng thái:** **Đã CHỐT MARKDOWN** và triển khai mã nguồn `.h/.cpp` đúng theo hai khối mã ở mục 5. `load()` dùng một vòng; `update()` cho phép đổi Movie/Room với rollback liên kết. ShowtimeService sẽ kiểm tra thời điểm và lịch sử Ticket/Invoice trước khi gọi `update()` khi refactor Business. Chưa kiểm thử mã triển khai.
+**Trạng thái:** Bản chuẩn hóa Markdown **đang chờ review và CHỐT MARKDOWN**. Mã nguồn `.h/.cpp` ở mục 5 là mã **dự kiến**, chưa triển khai các chỉnh sửa định dạng và `override` của bản này. Logic hiện tại của `load()`, `update()`, `removeById()` và rollback được giữ nguyên; chưa xác nhận kết quả kiểm thử cho bản chuẩn hóa.
 
 ## 2. Kiến trúc
 
@@ -24,11 +24,16 @@ Business Service → IRepository<Showtime> ← ShowtimeRepository
 
 `ShowtimeRepository` triển khai chín hàm của `IRepository<Showtime>`. `Repository<Showtime>` quản lý danh sách con trỏ, trạng thái loaded, ID chính và đọc/ghi TXT; nó không kế thừa interface. Hai Repository tham chiếu phải sống lâu hơn ShowtimeRepository để destructor có thể gỡ liên kết.
 
-### 2.2. Trách nhiệm validation
+### 2.2. Quan hệ với IRepository và Repository
+
+`IRepository<Showtime>` là hợp đồng chín thao tác chung, cho phép Service nhận dependency qua interface. `ShowtimeRepository` triển khai hợp đồng và sở hữu `Repository<Showtime>` bằng composition. Hai tham chiếu `IRepository<Movie>&` và `IRepository<Room>&` là dependency mượn, không chuyển quyền sở hữu. `Repository<Showtime>` quản lý danh sách, ID và TXT; ShowtimeRepository giữ các ràng buộc riêng của suất chiếu.
+
+### 2.3. Trách nhiệm validation
 
 - `Repository<Showtime>` kiểm tra loaded, null/trùng con trỏ khi thêm, ID rỗng/trùng, tồn tại khi xóa và lỗi file.
 - ShowtimeRepository kiểm tra thuộc tính Showtime, tham chiếu Movie/Room, trạng thái hoạt động của chúng đối với suất `SCHEDULED`, trùng lịch, liên kết hai chiều và rollback trước/sau khi gọi lớp lưu trữ chung.
 - ShowtimeService kiểm tra Permission, suất đã bắt đầu, trạng thái, lịch sử Ticket/Invoice, lịch chiếu thuộc khoảng phát hành và thời lượng phim trước khi gọi `update()`. Repository không tự kiểm tra lại các điều kiện nghiệp vụ này.
+- Trước `removeById()`, ShowtimeService phải xác nhận suất chưa từng có Ticket, kể cả vé đã hủy, và không có Invoice tham chiếu. Phần kiểm tra này chờ refactor TicketRepository và InvoiceRepository; ShowtimeRepository không nhận thêm hai dependency đó.
 
 ## 3. Định dạng dữ liệu
 
@@ -77,16 +82,18 @@ Ba callback và `isValidShowtime()` là `static` vì không dùng thuộc tính 
 
 | Hàm | Vai trò | Override |
 |---|---|---|
-| Constructor, destructor | Khởi tạo dependency; gỡ liên kết trước khi `repo` bị hủy. | Không |
+| Constructor, destructor | Khởi tạo dependency; gỡ liên kết trước khi `repo` bị hủy. | Chỉ destructor |
 | `load()`, `save()` | Nạp và lưu dữ liệu. | Có |
 | `add()`, `update()`, `removeById()` | Thêm, cập nhật cả Movie/Room khi hợp lệ, xóa. | Có |
 | `findById()`, `getAt()`, `count()`, `isLoaded()` | Truy vấn. | Có |
 
-## 5. Mã nguồn đề xuất
+## 5. Mã nguồn dự kiến sau chuẩn hóa
+
+Hai khối dưới đây là toàn bộ mã nguồn **dự kiến**. Mã nguồn hiện tại trong `src/` chưa được sửa theo bản này; chỉ sao chép sau khi nhóm CHỐT MARKDOWN. Các thay đổi ở đây chỉ là `override` cho destructor, nhóm hàm private, căn chỉnh và trình bày; logic được giữ nguyên.
 
 ### 5.1. ShowtimeRepository.h
 
-**Đường dẫn dự kiến:** `src/data_access/ShowtimeRepository.h`
+**Đường dẫn:** `src/data_access/ShowtimeRepository.h`
 
 ```cpp
 #ifndef SHOWTIME_REPOSITORY_H
@@ -107,20 +114,31 @@ private:
     IRepository<Movie>& movieRepo;
     IRepository<Room>& roomRepo;
 
+    // Chuyen doi du lieu
+
     static std::string getShowtimeId(Showtime* showtime);
     static Showtime* stringToShowtime(const std::string& line);
     static std::string showtimeToString(Showtime* showtime);
+    // Kiem tra du lieu va rang buoc
+
     static bool isValidShowtime(const Showtime* showtime);
 
     bool isValidReference(const Showtime* showtime);
     bool hasScheduleConflict(const Showtime* showtime, const std::string& excludeId = "");
+    // Quan ly lien ket va khoi phuc
+
     void unlinkReferences(Showtime* showtime);
     void unlinkAll();
-    void restoreShowtime(Showtime* showtime, const Showtime& oldValues, Movie* oldMovie, Room* oldRoom);
+    void restoreShowtime(Showtime* showtime,
+                         const Showtime& oldValues,
+                         Movie* oldMovie,
+                         Room* oldRoom);
 
 public:
-    ShowtimeRepository(const std::string& filePath, IRepository<Movie>& movieRepo, IRepository<Room>& roomRepo);
-    ~ShowtimeRepository();
+    ShowtimeRepository(const std::string& filePath,
+                       IRepository<Movie>& movieRepo,
+                       IRepository<Room>& roomRepo);
+    ~ShowtimeRepository() override;
 
     // Doc va ghi du lieu
     bool load() override;
@@ -143,7 +161,7 @@ public:
 
 ### 5.2. ShowtimeRepository.cpp
 
-**Đường dẫn dự kiến:** `src/data_access/ShowtimeRepository.cpp`
+**Đường dẫn:** `src/data_access/ShowtimeRepository.cpp`
 
 ```cpp
 #include "ShowtimeRepository.h"
@@ -156,7 +174,6 @@ public:
 #include <stdexcept>
 #include <vector>
 using namespace std;
-
 
 // Kiem tra toan bo du lieu Showtime
 bool ShowtimeRepository::isValidShowtime(const Showtime* showtime)
@@ -280,7 +297,8 @@ ShowtimeRepository::ShowtimeRepository(const string& filePath,
                                        IRepository<Movie>& movieRepo,
                                        IRepository<Room>& roomRepo)
     : repo(filePath, getShowtimeId, stringToShowtime, showtimeToString),
-      movieRepo(movieRepo), roomRepo(roomRepo)
+      movieRepo(movieRepo),
+      roomRepo(roomRepo)
 {
 }
 
@@ -542,7 +560,7 @@ bool ShowtimeRepository::update(const Showtime& newValues)
 
     Movie* oldMovie = current->getMovie();
     Room* oldRoom = current->getRoom();
-    
+
     Movie* newMovie = movieRepo.findById(newValues.getMovieId());
     Room* newRoom = roomRepo.findById(newValues.getRoomId());
 
@@ -662,282 +680,477 @@ bool ShowtimeRepository::isLoaded()
 
 ## 6. Giải thích thư viện và từ khóa
 
-| Thành phần | Vai trò trong mã đề xuất |
+### 6.1. Thư viện chuẩn
+
+| Include | Cách dùng |
 |---|---|
-| `<string>` | `std::string`, đường dẫn, ID và dòng TXT. |
-| `<vector>` | Tách dòng TXT thành sáu trường. |
-| `<exception>` | `terminate()` khi destructor không thể gỡ liên kết an toàn. |
-| `<iostream>` | `cerr` báo lỗi trước khi dừng trong destructor. |
-| `<stdexcept>` | `runtime_error` cho dữ liệu/quan hệ/lịch lỗi khi load hoặc rollback không thể khôi phục. |
-| `IRepository.h` | Hợp đồng chung cho Showtime, Movie và Room. |
-| `Repository.h` | Danh sách sở hữu `Showtime*`, trạng thái nạp và FileIO. |
-| `Showtime.h`, `Movie.h`, `Room.h` | Model, enum, getter, link/unlink. Header chỉ cần định nghĩa Showtime; `.cpp` cần đầy đủ Movie và Room. |
-| `Validator.h`, `DateTime.h` | Kiểm ID, DateTime và lịch có khoảng nghỉ. |
-| `override` | Compiler xác nhận chín phương thức khớp chữ ký interface. |
-| `static` và callback | Hàm chuyển đổi/lấy ID không cần `this`, truyền được vào `Repository<Showtime>`. |
-| `IRepository<T>&` | Dependency Injection không sở hữu repository được tham chiếu; đối tượng tham chiếu phải sống đủ lâu. |
+| `<string>` | `std::string` trong header cho đường dẫn, ID và dòng TXT; `.cpp` dùng `string` sau `using namespace std;`. |
+| `<vector>` | `vector<string>` giữ sáu trường sau khi tách một dòng. |
+| `<stdexcept>` | `runtime_error` báo dữ liệu hoặc liên kết không hợp lệ. |
+| `<exception>` | `exception` trong catch và `terminate()` khi destructor không thể gỡ liên kết. |
+| `<iostream>` | `cerr` và `endl` báo lỗi ngay trước `terminate()`. |
+
+### 6.2. Header dự án
+
+`IRepository.h` khai báo hợp đồng chung; `Repository.h` cung cấp lưu trữ và FileIO. `Showtime.h` cho Model và enum. Header chỉ cần forward declaration `class Movie; class Room;` cho tham chiếu và con trỏ; `.cpp` include đầy đủ `Movie.h` và `Room.h` để gọi getter, `isActive()` và link/unlink. `Validator.h` kiểm ID/DateTime; `DateTime.h` so thứ tự và xung đột lịch có khoảng nghỉ.
+
+### 6.3. `static`, callback và `override`
+
+Các hàm `static` không có `this`, nên ba callback lấy ID, parse và serialize có thể truyền trực tiếp cho `Repository<Showtime>`. `override` xác nhận chín phương thức interface và destructor khớp hàm ảo của lớp cha; sai chữ ký sẽ bị compiler phát hiện.
+
+### 6.4. Tham chiếu, con trỏ và exception
+
+`IRepository<Movie>&` và `IRepository<Room>&` là dependency mượn, không thể null và không do ShowtimeRepository hủy. `Showtime*` do `repo` sở hữu sau load/add thành công; con trỏ Movie/Room là liên kết mượn. `try/catch (...)` chỉ xuất hiện khi cần gỡ liên kết hoặc khôi phục trạng thái; `throw;` ném lại lỗi đang xử lý sau rollback thành công.
 
 ## 7. Giải thích các hàm private
 
-### 7.1. `isValidShowtime()`
+Các chữ ký dưới đây dùng cách viết trong `.cpp`; khai báo trong header dùng `std::string`. Các callback `static` không dùng trạng thái của đối tượng Repository.
 
-**Tổng quan:** Nhận `const Showtime*`, trả `bool`; từ chối null, ID sai tiền tố, DateTime sai hoặc không tăng, status ngoài hai giá trị.
+### 7.1. Hàm isValidShowtime()
+
+**Chữ ký:** `static bool isValidShowtime(const Showtime* showtime)`. Nhận con trỏ chỉ đọc, trả `true` nếu các thuộc tính hợp lệ; `false` nếu không.
+
+**Luồng xử lý:**
 
 ```text
-null? → false → ID SHW/MOV/ROM hợp lệ? → DateTime hợp lệ?
-→ startAt < endAt? → status thuộc SCHEDULED/CANCELLED? → true
-      mỗi nhánh sai → false
+showtime null? ─có→ false
+↓ không
+ID SHW, MOV, ROM hợp lệ? ─không→ false
+↓ có
+startAt, endAt là DateTime hợp lệ? ─không→ false
+↓ có
+startAt trước endAt? ─không→ false
+↓ có
+status là SCHEDULED/CANCELLED? ─không→ false
+↓ có
+true
 ```
 
-**Giải thích code:** Kiểm `showtime == nullptr` trước mọi `->`. `Validator::isValidId` kiểm ba ID; `||` trả sớm nếu một ID sai. `Validator::isValidDateTime` kiểm chuỗi trước khi `DateTime::isBefore` so thứ tự. Enum được so tường minh để không serialize giá trị lạ. Hàm không tra Repository hoặc kiểm lịch.
+**Giải thích code:** Kiểm `nullptr` trước các getter. Ba lời gọi `Validator::isValidId()` kiểm định dạng từng khóa, không kiểm đối tượng tham chiếu có tồn tại. `Validator::isValidDateTime()` bảo đảm chuỗi giờ hợp lệ trước khi `DateTime::isBefore()` so thứ tự. So enum tường minh chặn giá trị ngoài hai trạng thái. Hàm chỉ kiểm thuộc tính; `isValidReference()` và `hasScheduleConflict()` xử lý tham chiếu, lịch.
 
-### 7.2. `getShowtimeId()`
+### 7.2. Hàm getShowtimeId()
 
-**Tổng quan:** Nhận `Showtime*`, trả ID dạng `string`; null trả chuỗi rỗng.
+**Chữ ký:** `static string getShowtimeId(Showtime* showtime)`. Nhận con trỏ, trả ID hoặc chuỗi rỗng nếu null.
 
 ```text
-showtime null? → ""; không → getShowtimeId()
+showtime null? ─có→ return ""
+↓ không
+return showtime->getShowtimeId()
 ```
 
-**Giải thích code:** Null guard bảo vệ dereference trong callback. `Repository<T>` dùng chuỗi trả về để tìm, thêm và kiểm ID trùng.
+`Repository<Showtime>` gọi callback này để kiểm ID trùng, tìm kiếm và xóa. Guard null ngăn truy cập con trỏ rỗng.
 
-### 7.3. `stringToShowtime()`
+### 7.3. Hàm stringToShowtime()
 
-**Tổng quan:** Nhận một dòng TXT, trả `Showtime*` mới nếu hợp lệ; dữ liệu sai ném `runtime_error`.
+**Chữ ký:** `static Showtime* stringToShowtime(const string& line)`. Nhận dòng TXT, trả đối tượng mới; dữ liệu sai ném `runtime_error`.
 
 ```text
-tách theo | → đúng 6 trường? ─ không → throw
-→ status SCHEDULED/CANCELLED? ─ không → throw
-→ new Showtime → isValidShowtime? ─ không → delete, throw
-→ trả con trỏ cho Repository<Showtime>
+Tách line theo '|'
+↓
+đúng 6 trường? ─không→ throw
+↓ có
+status hợp lệ? ─không→ throw
+↓ có
+new Showtime → isValidShowtime?
+├─ không → delete showtime → throw
+↓ có
+return showtime
 ```
 
-**Giải thích code:** `vector<string> fields` giữ trường; `start`, `pos`, `find('|', start)` và `substr` giữ cả trường rỗng cuối. `string::npos` đánh dấu hết dấu phân cách. Sau kiểm số trường, hai nhánh status ánh xạ văn bản sang enum, nhánh `else` ném lỗi. `new Showtime(...)` tạo Model; nếu validation sai, `delete` trước khi ném để không rò bộ nhớ. Sau khi trả con trỏ, `Repository<Showtime>::load()` nhận quyền sở hữu tạm và thêm thông tin file/dòng khi có exception.
+**Bước 1 — tách và kiểm số trường.** `vector<string> fields`, `find('|', start)` và `substr()` giữ cả trường rỗng cuối. `string::npos` là dấu hiệu không còn dấu phân cách. Chỉ đọc `fields[5]` sau khi `fields.size() == 6`.
 
-### 7.4. `showtimeToString()`
+**Bước 2 — giải mã trạng thái.** Hai nhánh `if/else if` ánh xạ `SCHEDULED` và `CANCELLED` sang enum; nhánh khác ném lỗi thay vì mặc định một trạng thái.
 
-**Tổng quan:** Nhận `Showtime*`, trả dòng TXT; dữ liệu không hợp lệ ném `runtime_error`.
+**Bước 3 — tạo và kiểm Model.** `new Showtime(fields[0], ..., status)` cấp phát; `isValidShowtime()` sai thì `delete showtime` trước khi ném. Con trỏ trả về được `Repository<Showtime>::load()` quản lý. Phương thức này chưa liên kết Movie/Room; `load()` làm sau khi toàn bộ bản ghi được parse.
+
+### 7.4. Hàm showtimeToString()
+
+**Chữ ký:** `static string showtimeToString(Showtime* showtime)`. Nhận con trỏ, trả dòng sáu trường; dữ liệu sai ném `runtime_error`.
 
 ```text
-isValidShowtime? ─ không → throw
-→ chọn status → nối 6 trường bằng | → trả string
+isValidShowtime? ─không→ throw
+↓ có
+chọn chuỗi status → nối 6 trường → return string
 ```
 
-**Giải thích code:** Validation trước dereference chặn null và enum sai. Biến `status` nhận đúng `SCHEDULED` hoặc `CANCELLED`; biểu thức `+` nối các getter theo schema. FileIO do `Repository<Showtime>::save()` gọi, không có thao tác ghi ở đây.
+`isValidShowtime()` chặn null và enum sai trước khi gọi getter. `status` nhận `SCHEDULED` hoặc `CANCELLED`; phép `+` nối các trường theo đúng schema. Callback chỉ tạo chuỗi; `repo.save()` chịu trách nhiệm ghi file.
 
-### 7.5. `isValidReference()`
+### 7.5. Hàm isValidReference()
 
-**Tổng quan:** Nhận `const Showtime*`, trả `bool`; caller đã kiểm thuộc tính bằng `isValidShowtime()`. Kiểm null để truy cập an toàn, trạng thái Movie/Room Repository, tồn tại tham chiếu và hoạt động đối với `SCHEDULED`.
+**Chữ ký:** `bool isValidReference(const Showtime* showtime)`. Nhận con trỏ chỉ đọc; trả `true` khi tham chiếu dùng được.
 
 ```text
-null? → false → Movie/Room đã load? ─ không → false
-→ tìm Movie và Room → thiếu? → false
-→ SCHEDULED và Movie/Room inactive? → false → true
+showtime null? ─có→ false
+↓ không
+movieRepo và roomRepo loaded? ─không→ false
+↓ có
+tìm Movie, Room theo ID → thiếu một bên? ─có→ false
+↓ không
+SCHEDULED và Movie/Room inactive? ─có→ false
+↓ không
+true
 ```
 
-**Giải thích code:** Không gọi lại `isValidShowtime()`. `findById` lấy con trỏ mượn, được kiểm `nullptr` trước `isActive()`. `CANCELLED` không đòi Movie/Room còn active để có thể đọc lịch sử. Hàm không kiểm giờ tương lai; việc đó thuộc Service.
+Caller đã gọi `isValidShowtime()`, nên helper không kiểm lại ID và thời gian. Hai con trỏ tìm được phải khác null trước `isActive()`. Suất `CANCELLED` được phép giữ tham chiếu đến Movie/Room đã ngừng hoạt động. Hàm không áp đặt thời điểm tương lai hoặc thời lượng phim.
 
-### 7.6. `hasScheduleConflict()`
+### 7.6. Hàm hasScheduleConflict()
 
-**Tổng quan:** Nhận Showtime cần kiểm và `excludeId` tùy chọn; trả `true` khi suất `SCHEDULED` cùng phòng chồng lịch, kể cả 15 phút nghỉ.
+**Chữ ký:** `bool hasScheduleConflict(const Showtime* showtime, const string& excludeId = "")`. Trả `true` nếu có suất cùng phòng chồng lịch; `excludeId` bỏ qua chính bản ghi đang xét.
 
 ```text
-null hoặc CANCELLED? → false
-duyệt repo → bỏ null / chính ID exclude / khác phòng / CANCELLED
-→ DateTime::isOverlapping? ─ có → true; không → tiếp tục
+showtime null hoặc CANCELLED? ─có→ false
+↓ không
+duyệt repo
+├─ current null / cùng excludeId / khác phòng / CANCELLED → tiếp tục
+↓ suất cần so
+DateTime::isOverlapping()? ─có→ true
+↓ không, tiếp tục
 hết danh sách → false
 ```
 
-**Giải thích code:** `excludeId` loại chính suất đang update hoặc đang được duyệt trong load; nó không loại suất khác vì ID chính đã duy nhất sau `repo.load()`. `current` null được bỏ qua trước khi đọc getter. `DateTime::isOverlapping` áp dụng khoảng nghỉ hiện hành. Helper được gọi ở load/add/update để tránh ba cách kiểm lịch khác nhau; chỉ gọi sau khi dữ liệu thời gian đã qua validation.
+Vòng `for` dùng `repo.count()` và `repo.getAt(i)`. `continue` loại các trường hợp không thể xung đột trước khi gọi `DateTime::isOverlapping()`. Hàm DateTime áp dụng khoảng nghỉ 15 phút hiện hành. `load()` truyền ID của chính suất; `update()` truyền ID hiện có; `add()` dùng chuỗi mặc định rỗng. Chỉ gọi sau khi thời gian đầu vào đã hợp lệ.
 
-### 7.7. `unlinkReferences()`
+### 7.7. Hàm unlinkReferences()
 
-**Tổng quan:** Nhận `Showtime*` đã được caller kiểm tra, trả `void`; gỡ các liên kết Movie và Room đang tồn tại. Nếu một thao tác unlink trả `false`, vẫn thử thao tác còn lại rồi ném `runtime_error`. Dùng khi rollback `add()` và khi gỡ từng suất trong `unlinkAll()`.
-
-```text
-lấy Movie/Room hiện liên kết từ Showtime
-→ Movie có? → thử unlink, lưu movieUnlinked
-→ Room có? → thử unlink, lưu roomUnlinked
-→ một kết quả false? ─ có → throw; không → kết thúc
-```
-
-**Giải thích code:** `movie` và `room` là con trỏ mượn; hai biến `movieUnlinked` và `roomUnlinked` mặc định `true` cho cạnh không tồn tại. Mỗi cạnh có con trỏ mới gọi `unlinkShowtime()` và lưu kết quả riêng. Hai khối `if` độc lập bảo đảm thao tác Room vẫn được thử khi Movie trả `false`. Sau cả hai thao tác, một kết quả `false` gây exception, báo rollback không hoàn tất. Helper không xóa Showtime; nếu chính `unlinkShowtime()` ném exception thì hàm chuyển tiếp exception đó và không thể bảo đảm đã thử cạnh còn lại.
-
-### 7.8. `unlinkAll()`
-
-**Tổng quan:** Không tham số, trả `void`; gỡ các liên kết Movie/Room của mọi Showtime đang được `repo` giữ. Nếu unlink thất bại, ném `runtime_error` để không tiếp tục xóa Showtime khi còn liên kết. Dùng trong destructor và trước `repo.clear()` khi load rollback.
+**Chữ ký:** `void unlinkReferences(Showtime* showtime)`. Nhận con trỏ hợp lệ do caller cung cấp; không có giá trị trả về, ném `runtime_error` nếu một cạnh không gỡ được.
 
 ```text
-duyệt repo → lấy Showtime → unlinkReferences(showtime)
-→ một cạnh unlink trả false? → helper thử cả hai rồi throw
-hết danh sách → kết thúc
+lấy Movie*, Room* hiện đang liên kết
+↓
+Movie khác null? ─có→ thử movie->unlinkShowtime()
+↓
+Room khác null? ─có→ thử room->unlinkShowtime()
+↓
+một kết quả false? ─có→ throw
+↓ không
+kết thúc
 ```
 
-**Giải thích code:** Mỗi lần lặp truyền `Showtime*` còn sống cho `unlinkReferences()`; helper xử lý cả Movie và Room, `unlinkAll()` không lặp lại logic này. Khi helper ném, vòng lặp dừng trước khi xóa Showtime. Trong rollback của `load()`, exception này ngăn `repo.clear()` và báo lỗi liên kết chưa được dọn, thay cho lỗi load ban đầu. Trong destructor, lỗi được báo qua `cerr` rồi dừng chương trình vì destructor của interface không cho ném exception ra ngoài. Thiết kế vẫn không tự phục hồi được trạng thái Model đã hỏng sẵn.
+Hai biến `movieUnlinked` và `roomUnlinked` khởi tạo `true` để cạnh vắng mặt được coi là không cần gỡ. Phương thức cố thử cả hai cạnh kể cả cạnh đầu trả false, rồi mới báo lỗi. Vì vậy lỗi có thể xảy ra sau khi một cạnh đã được gỡ; helper không tự khôi phục cạnh đó. Caller dùng hàm trong rollback `add()`, `load()` và destructor phải xét giới hạn này.
 
-### 7.9. `restoreShowtime()`
+```cpp
+if (movie != nullptr)
+{
+    movieUnlinked = movie->unlinkShowtime(showtime);
+}
+if (room != nullptr)
+{
+    roomUnlinked = room->unlinkShowtime(showtime);
+}
+if (!movieUnlinked || !roomUnlinked)
+{
+    throw runtime_error("Khong the go lien ket Movie/Room cua Showtime");
+}
+```
 
-**Tổng quan:** Nhận `Showtime* showtime`, bản sao thuộc tính cũ `const Showtime& oldValues`, cùng `Movie* oldMovie` và `Room* oldRoom`; trả `void`. Khôi phục các cạnh đã đổi và ba thuộc tính thời gian/status. Nếu khôi phục thất bại, ném `runtime_error` có thông điệp rõ ràng.
+### 7.8. Hàm unlinkAll()
+
+**Chữ ký:** `void unlinkAll()`. Không có tham số hoặc kết quả; duyệt mọi Showtime trong `repo` và gỡ Movie/Room.
 
 ```text
-Movie hiện khác oldMovie? → unlink Movie mới nếu có → setMovieId cũ → link Movie cũ
-Room hiện khác oldRoom? → unlink Room mới nếu có → setRoomId cũ → link Room cũ
-setStartAt, setEndAt, setStatus từ oldValues → kết thúc
-unlink/set ID/link thất bại → runtime_error nêu cạnh không khôi phục được
+i = 0
+↓
+i < repo.count()? ─không→ kết thúc
+↓ có
+unlinkReferences(repo.getAt(i)) ─exception→ truyền ra
+↓ thành công
+i++ → lặp
 ```
 
-**Giải thích code:** `oldValues` là Model độc lập giữ ID và thuộc tính trước khi `update()` sửa; nó không được link vào Repository. Helper xử lý Movie trước Room, đúng thứ tự hiện có trong khối `.cpp`. Khi con trỏ hiện tại khác con trỏ cũ, helper lấy con trỏ mới vào biến `movie`/`room`, kiểm null, gọi `unlinkShowtime()` và kiểm kết quả; sau đó `setMovieId()`/`setRoomId()` khôi phục ID trước khi link Model cũ. Con trỏ không đổi thì không thực hiện lại link. Ba setter cuối trả thời gian/status cũ. Hàm không kiểm null đầu vào hoặc bắt exception; `update()` chỉ gọi nó sau khi xác nhận `current`, `oldMovie`, `oldRoom` khác null. Nếu một bước khôi phục thất bại, `runtime_error` của helper được ném ra, có thể thay lỗi update gốc; không khẳng định rollback đã hoàn tất. Helper không giải phóng `Showtime*` hoặc lưu TXT.
+Hàm không xóa `repo`; nó chỉ gỡ các liên kết trước khi `repo.clear()` hoặc destructor sở hữu dữ liệu chạy. Nếu một lần gỡ ném, vòng lặp dừng và các Showtime phía sau chưa được xử lý.
+
+### 7.9. Hàm restoreShowtime()
+
+**Chữ ký:** `void restoreShowtime(Showtime* showtime, const Showtime& oldValues, Movie* oldMovie, Room* oldRoom)`. Nhận đối tượng đang sửa, bản sao thuộc tính cũ và hai con trỏ cũ; không trả về, ném khi không thể khôi phục.
+
+```text
+Movie hiện tại khác oldMovie?
+├─ có → gỡ Movie mới nếu có ─lỗi→ throw
+│       → setMovieId cũ → linkMovie cũ ─lỗi→ throw
+↓
+Room hiện tại khác oldRoom?
+├─ có → gỡ Room mới nếu có ─lỗi→ throw
+│       → setRoomId cũ → linkRoom cũ ─lỗi→ throw
+↓
+setStartAt, setEndAt, setStatus về giá trị cũ
+↓
+kết thúc
+```
+
+**Khôi phục Movie:** So con trỏ hiện tại với `oldMovie`; nếu khác, gỡ liên kết mới trước. `setMovieId()` chỉ nhận ID khi con trỏ Movie đã null; tiếp đó `linkMovie(oldMovie)` tái lập liên kết hai chiều.
+
+```cpp
+if (showtime->getMovie() != oldMovie)
+{
+    Movie* movie = showtime->getMovie();
+    if (movie != nullptr && !movie->unlinkShowtime(showtime))
+    {
+        throw runtime_error("Khong the huy lien ket Movie moi");
+    }
+    if (!showtime->setMovieId(oldValues.getMovieId()) ||
+        !showtime->linkMovie(oldMovie))
+    {
+        throw runtime_error("Khong the khoi phuc lien ket Movie");
+    }
+}
+```
+
+**Khôi phục Room:** Làm tương tự với `oldRoom` và `setRoomId()`. Mỗi lần unlink/set/link thất bại đều ném lỗi ngay, không tiếp tục các bước sau.
+
+```cpp
+if (showtime->getRoom() != oldRoom)
+{
+    Room* room = showtime->getRoom();
+    if (room != nullptr && !room->unlinkShowtime(showtime))
+    {
+        throw runtime_error("Khong the huy lien ket Room moi");
+    }
+    if (!showtime->setRoomId(oldValues.getRoomId()) ||
+        !showtime->linkRoom(oldRoom))
+    {
+        throw runtime_error("Khong the khoi phuc lien ket Room");
+    }
+}
+```
+
+**Khôi phục thuộc tính:** Ba setter cho thời gian và trạng thái chạy sau hai liên kết. Nếu chính quá trình khôi phục ném, trạng thái có thể chỉ được phục hồi một phần và exception gốc từ `update()` bị thay thế; mã hiện tại không có rollback cấp hai.
 
 ## 8. Giải thích các hàm public
 
 ### 8.1. Constructor
 
-**Tổng quan:** Nhận đường dẫn TXT, hai tham chiếu interface; không trả giá trị. Movie/Room Repository phải sống lâu hơn ShowtimeRepository.
+**Chữ ký:** `ShowtimeRepository(const string& filePath, IRepository<Movie>& movieRepo, IRepository<Room>& roomRepo)`. Nhận đường dẫn và hai dependency qua tham chiếu; không trả về, không tự load.
 
 ```text
-nhận filePath, movieRepo, roomRepo → khởi tạo repo với 3 callback
-→ giữ hai tham chiếu → kết thúc, chưa load file
+nhận filePath, Movie repo, Room repo
+↓
+khởi tạo repo với ba callback
+↓
+lưu hai tham chiếu → kết thúc
 ```
 
-**Giải thích code:** Danh sách sau dấu `:` khởi tạo `repo` rồi hai tham chiếu theo thứ tự thuộc tính. Không cấp quyền sở hữu Movie/Room Repository; thân `{}` rỗng. Callback static có chữ ký phù hợp `Repository<Showtime>`.
+Danh sách khởi tạo gọi `Repository<Showtime>(filePath, getShowtimeId, stringToShowtime, showtimeToString)`, rồi gắn hai tham chiếu. `MovieRepository` và `RoomRepository` phải tồn tại lâu hơn đối tượng này vì destructor còn dùng chúng để gỡ liên kết.
 
 ### 8.2. Destructor
 
-**Tổng quan:** Không tham số/giá trị trả về; tháo liên kết trước khi thành viên `repo` tự hủy. Nếu unlink thất bại, báo lỗi rồi `terminate()` vì destructor không được ném exception ra ngoài.
+**Chữ ký:** `~ShowtimeRepository() override`. Không có tham số hay kết quả; gỡ các liên kết trước khi `repo` tự hủy.
 
 ```text
-~ShowtimeRepository → try unlinkAll()
-→ thành công: hủy repo → delete Showtime*
-→ exception: cerr báo lỗi → terminate()
+try unlinkAll()
+├─ thành công → hủy các thuộc tính; repo giải phóng Showtime
+├─ std::exception → ghi lỗi → terminate()
+└─ ngoại lệ khác → ghi lỗi → terminate()
 ```
 
-**Giải thích code:** `try` gọi `unlinkAll()`. `catch (const exception& e)` in `e.what()` ra `cerr`; `catch (...)` báo lỗi không xác định. Cả hai nhánh lỗi gọi `terminate()` trước khi `repo` bị hủy để không xóa Showtime khi Movie/Room còn giữ liên kết. Khi thành công, C++ hủy `repo` sau thân destructor, dẫn tới `Repository<T>::clear()`. Cần hủy ShowtimeRepository trước MovieRepository và RoomRepository. Dừng chương trình là giới hạn của destructor `noexcept` từ `IRepository<Showtime>`; không thể trả lỗi khôi phục cho caller qua destructor.
+`unlinkAll()` gỡ các con trỏ Movie/Room trong lúc Showtime còn tồn tại. Destructor không ném ra ngoài; hai `catch` ghi `cerr` và gọi `terminate()` nếu gỡ liên kết thất bại. `override` ở header yêu cầu destructor của interface là virtual. Đây là hành vi hiện tại, không phải cơ chế phục hồi khi destructor lỗi.
 
-### 8.3. `load()`
+### 8.3. Hàm load()
 
-**Tổng quan:** Không tham số, trả `bool` nếu điều kiện nạp/file thành công hoặc thất bại; ném exception nếu dữ liệu, tham chiếu hay lịch lỗi. Rollback mọi liên kết đã tạo khi lỗi sau `repo.load()`.
+**Chữ ký:** `bool load() override`. Không có tham số; trả false khi dependency chưa load hoặc `repo.load()` từ chối; ném lỗi dữ liệu/liên kết.
 
 ```text
-Movie/Room chưa load? → false → repo.load thất bại? → false
-→ mỗi Showtime: tìm Movie/Room → tham chiếu tồn tại? → lịch không trùng?
-→ linkMovie, linkRoom ─ lỗi tại bước nào → catch
-→ true
-catch → unlinkAll thành công? ─ có → repo.clear → throw lỗi gốc
-                          └ không → ném lỗi unlink, không clear
+Movie/Room repo loaded? ─không→ false
+↓ có
+repo.load()? ─false→ false
+↓ true
+try: duyệt Showtime đã parse
+├─ thiếu Movie/Room → throw
+├─ xung đột lịch → throw
+├─ linkMovie/linkRoom false → throw
+↓ duyệt xong
+true
+exception trong try → unlinkAll() → repo.clear() → throw lại
 ```
 
-**Giải thích code:** Kiểm dependency trước khi đọc file để không tạo dữ liệu chưa nối. `repo.load()` tự xử lý loaded, TXT, ID rỗng/trùng và giải phóng khi parse lỗi; `false` được trả nguyên. Một vòng `for` lấy `showtime`, tra Movie/Room đúng một lần, kiểm null, dùng `hasScheduleConflict(showtime, showtime->getShowtimeId())` để bỏ chính suất, rồi link hai phía. Vì helper kiểm toàn bộ danh sách đã nạp, không phụ thuộc vào thứ tự đã link. Nếu `linkMovie()` thành công nhưng `linkRoom()` thất bại hoặc ném lỗi, `unlinkAll()` thấy con trỏ Movie của suất vừa xử lý. Chỉ khi mọi unlink thành công, `repo.clear()` xóa Showtime và `throw` chuyển lỗi gốc. Nếu unlink thất bại, exception mới được báo và không clear để tránh con trỏ treo. Không gọi `isValidReference()` ở đây vì load cũ chỉ yêu cầu tham chiếu tồn tại; phim/phòng lịch sử có thể đã inactive. Không ghi file hoặc liên kết Ticket/Invoice trong hàm này.
+**Bước 1:** Kiểm dependency trước `repo.load()` để không tạo Showtime với tham chiếu chưa sẵn sàng. Parser đã kiểm thuộc tính và generic Repository kiểm ID, nên vòng sau không làm lại các kiểm tra đó.
 
-### 8.4. `save()`
+**Bước 2:** Với từng `repo.getAt(i)`, tìm Movie/Room bằng ID, kiểm null, gọi `hasScheduleConflict(showtime, showtime->getShowtimeId())` để bỏ chính suất nhưng so với mọi suất còn lại, rồi tạo hai liên kết qua Model.
 
-**Tổng quan:** Không tham số, trả kết quả `bool` của `repo.save()`.
+**Bước 3:** `catch (...)` gọi `unlinkAll()` trước `repo.clear()` để không để Movie/Room giữ con trỏ treo. Nếu `unlinkAll()` tự ném, `repo.clear()` và `throw;` không chạy; trạng thái có thể còn nạp một phần và ngoại lệ ban đầu bị thay thế. Đây là giới hạn rollback hiện tại. Lỗi từ `repo.load()` xảy ra trước `try`, do generic Repository xử lý theo hợp đồng của nó.
+
+```cpp
+catch (...)
+{
+    unlinkAll();
+    repo.clear();
+    throw;
+}
+```
+
+### 8.4. Hàm save()
+
+**Chữ ký:** `bool save() override`. Không có tham số, trả trực tiếp `repo.save()`.
 
 ```text
-save → Repository<Showtime>::save → serialize từng suất → FileIO ghi TXT → bool
+repo.save() → return kết quả hoặc truyền exception
 ```
 
-**Giải thích code:** `return repo.save();` chuyển lời gọi; Repository chung chặn khi chưa load và trả kết quả ghi. Callback `showtimeToString()` validate mỗi bản ghi, có thể ném exception; hàm không nuốt lỗi.
+`Repository<Showtime>` dùng `showtimeToString()` để tạo sáu trường rồi ghi TXT. Hàm không tự lưu sau `add()` hoặc `update()`.
 
-### 8.5. `add()`
+### 8.5. Hàm add()
 
-**Tổng quan:** Nhận `Showtime*`, trả `bool`. Khi thất bại trước `repo.add()` hoặc `repo.add()` trả false, caller vẫn sở hữu con trỏ mới. Nếu rollback unlink thất bại, ném `runtime_error` thay vì báo `false` giả.
+**Chữ ký:** `bool add(Showtime* showtime) override`. Nhận con trỏ caller sở hữu trước khi thêm; trả true khi `repo` nhận quyền sở hữu, false khi bị từ chối, hoặc ném khi rollback lỗi.
 
 ```text
-chưa load / Model sai / đã link / ID trùng / tham chiếu sai / trùng lịch? → false
-→ lấy Movie/Room để link
-→ linkMovie rồi linkRoom; nếu cả hai thành công thì repo.add
-→ added=false: unlinkReferences(showtime) → false (unlink lỗi → throw)
-→ added=true: Repository sở hữu Showtime → true
-exception khi link/add → unlinkReferences(showtime) → throw (unlink lỗi → báo lỗi rollback)
+loaded và thuộc tính hợp lệ? ─không→ false
+↓ có
+đã liên kết Movie/Room? ─có→ false
+↓ không
+ID đã có? ─có→ false
+↓ không
+tham chiếu hợp lệ và không trùng lịch? ─không→ false
+↓ có
+tìm Movie/Room → try linkMovie rồi linkRoom → repo.add()
+├─ true → return true
+├─ false → unlinkReferences() → return false
+└─ exception → unlinkReferences() → throw lại
 ```
 
-**Giải thích code:** Kiểm `repo.isLoaded()` sớm vì phải tạo liên kết **trước** `repo.add()`; tránh link rồi mới phát hiện chưa load. `isValidShowtime()` bảo vệ null/dữ liệu. Hai getter con trỏ chặn đối tượng đã liên kết; tìm ID trước khi link tránh thay đổi Model cho khóa trùng. `isValidReference()` không lặp validation thuộc tính; `hasScheduleConflict()` dùng chung. `movie`/`room` là con trỏ mượn để link. Trong `try`, toán tử `&&` chỉ gọi link Room sau khi link Movie thành công; `repo.add()` chỉ chạy khi cả hai link thành công. `added` ghi kết quả nhận quyền sở hữu. Khi exception xảy ra, `catch (...)` gọi `unlinkReferences(showtime)` rồi ném tiếp lỗi gốc nếu gỡ thành công. Khi `added` false, gọi cùng helper bên ngoài `try` rồi trả false. Helper thử gỡ cả hai cạnh hiện có và ném lỗi rõ ràng nếu một unlink trả false. Không `delete` con trỏ của caller; `Repository<T>` vẫn kiểm trùng con trỏ và khóa tại điểm nhận đối tượng.
+**Bước 1 — kiểm trước liên kết:** `repo.isLoaded()` cần thiết vì hàm thay đổi liên kết trước khi gọi `repo.add()`. `isValidShowtime()` chặn null. Kiểm con trỏ liên kết hiện có và ID trùng trước khi tạo cạnh mới; `isValidReference()` kiểm Movie/Room và `hasScheduleConflict()` kiểm lịch.
 
-### 8.6. `update()`
+**Bước 2 — tạo cạnh và thêm:** `movieRepo.findById()` cùng `roomRepo.findById()` lấy con trỏ mượn. Trong `try`, phép `&&` gọi `linkRoom()` chỉ khi `linkMovie()` thành công; chỉ khi cả hai true mới gọi `repo.add()`.
 
-**Tổng quan:** Nhận `const Showtime& newValues`, trả `bool`; giữ nguyên `showtimeId` và địa chỉ `Showtime*`, cho phép đổi Movie, Room, thời gian và status khi dữ liệu, tham chiếu và lịch hợp lệ. Validation thất bại trước khi sửa trả `false`; lỗi trong lúc đổi liên kết được rollback rồi ném exception. ShowtimeService phải kiểm tra điều kiện đã bắt đầu và lịch sử Ticket/Invoice trước khi gọi.
+**Bước 3 — rollback:** Nếu thao tác trong `try` ném hoặc `repo.add()` trả false, `unlinkReferences(showtime)` gỡ các cạnh đã tạo. Chỉ nhánh `repo.add()` true chuyển quyền sở hữu. Nếu chính việc gỡ ném, ngoại lệ gốc có thể bị thay thế; hàm không bảo đảm khôi phục đầy đủ trong trường hợp đó.
+
+```cpp
+catch (...)
+{
+    unlinkReferences(showtime);
+    throw;
+}
+if (!added)
+{
+    unlinkReferences(showtime);
+    return false;
+}
+```
+
+### 8.6. Hàm update()
+
+**Chữ ký:** `bool update(const Showtime& newValues) override`. Nhận dữ liệu mới chỉ đọc, sửa tại chỗ và giữ địa chỉ/ID; false nếu điều kiện trước sửa không đạt, ném khi thao tác hoặc khôi phục lỗi.
 
 ```text
-chưa load / dữ liệu mới sai / không tìm thấy? → false
-tham chiếu mới sai / lịch trùng (bỏ current)? → false
-lấy oldMovie, oldRoom, newMovie, newRoom; một con trỏ null? → false
-movieChanged = oldMovie != newMovie; roomChanged = oldRoom != newRoom
-tạo Showtime oldValues
-movieChanged? → unlink oldMovie → setMovieId(newValues.getMovieId()) → link newMovie
-roomChanged? → unlink oldRoom → setRoomId(newValues.getRoomId()) → link newRoom
-một bước trả false → ném runtime_error vào catch
-một bước ném exception → catch
-catch → restoreShowtime(current, oldValues, oldMovie, oldRoom) → throw
-không lỗi → setStartAt/EndAt/Status bằng getter của newValues → true
+loaded và newValues hợp lệ? ─không→ false
+↓ có
+tìm current theo ID ─null→ false
+↓ có
+tham chiếu hợp lệ, không xung đột lịch? ─không→ false
+↓ có
+lấy oldMovie/oldRoom và newMovie/newRoom ─có null→ false
+↓ đủ
+lưu movieChanged, roomChanged, oldValues
+↓
+try: nếu đổi Movie → gỡ cũ, đổi ID, nối mới
+↓
+nếu đổi Room → gỡ cũ, đổi ID, nối mới
+↓
+setStartAt, setEndAt, setStatus → true
+exception → restoreShowtime() → throw lại
 ```
 
-**Giải thích code:** `Repository<T>` không có `update()` nên kiểm loaded tại đây. `isValidShowtime(&newValues)` kiểm thuộc tính; `&` lấy địa chỉ tham số. `repo.findById(newValues.getShowtimeId())` định vị đúng đối tượng; không có setter đổi `showtimeId`, nên ID bất biến. `isValidReference()` tra Movie/Room mới và trạng thái active cho `SCHEDULED`; `hasScheduleConflict()` bỏ chính ID hiện tại. Bản `update()` đang làm chuẩn lấy `oldMovie`, `oldRoom`, `newMovie`, `newRoom` rồi trả false nếu một con trỏ null. Nó không có bước đối chiếu ID của Model cũ với ID lưu trong Showtime; các nhánh unlink/link của Model sẽ từ chối khi quan hệ không nhất quán.
+**Bước 1 — validation:** `isValidShowtime(&newValues)` kiểm thuộc tính; `repo.findById()` kiểm suất hiện có; `isValidReference()` và `hasScheduleConflict(..., current->getShowtimeId())` kiểm đối tượng tham chiếu, trạng thái hoạt động và lịch, bỏ chính suất đang sửa. Các phép kiểm liên kết cần chạy trước thay đổi để tránh trạng thái dở dang.
 
-**Giải thích code tiếp:** `newMovie`/`newRoom` được tra bằng getter của `newValues` và là con trỏ mượn; kiểm null sau khi tra là điểm bảo vệ trước link. `movieChanged`/`roomChanged` so sánh con trỏ cũ với mới để quyết định cạnh nào cần đổi. `Showtime oldValues(...)` tạo bản sao độc lập của ID, Movie ID, Room ID, thời gian và status cũ; không sao chép liên kết. Các getter của `newValues` được dùng trực tiếp khi đặt ID, thời gian và status; cạnh không đổi không bị unlink rồi link lại. Nếu `newValues` chính là `*current`, hai cặp con trỏ bằng nhau và không có thao tác đổi liên kết.
+**Bước 2 — snapshot:** Lưu bốn con trỏ Movie/Room cũ/mới, từ chối null; hai cờ quyết định có cần đổi cạnh. `Showtime oldValues(...)` sao chép ID, khóa liên kết, thời gian và status để phục hồi. Không thay thế đối tượng `current`.
 
-**Giải thích rollback:** Trong `try`, ba phép nối bằng `||` dùng short circuit: nếu unlink cũ thất bại thì không đổi ID; nếu đổi ID thất bại thì không link mới. Mỗi nhánh `false` được chuyển thành `runtime_error` để đi chung đường `catch (...)`. Movie được đổi trước Room, sau đó ba setter cập nhật thời gian/status. `catch (...)` gọi `restoreShowtime()` đúng một nơi rồi `throw;` ném lại lỗi gốc khi khôi phục thành công. Nếu helper ném, lỗi khôi phục được báo thay cho lỗi gốc. Không thay con trỏ `Showtime*`, không xóa Model và không tự save. Các trường hợp validation trước `try` vẫn trả `false` và không cần rollback.
+**Bước 3 — thay đổi:** Khi Movie/Room đổi, thứ tự là `unlinkShowtime(current)`, `current->setMovieId/RoomId(...)`, `current->linkMovie/Room(new...)`. Bất kỳ kết quả false nào ném lỗi. Sau đó ba setter cập nhật thời gian và status.
 
-**Điều kiện gọi từ Service:** Với thao tác đổi phim, phòng hoặc thời gian, Service phải từ chối suất đã bắt đầu hoặc từng phát sinh **bất kỳ** Ticket, kể cả vé `CANCELLED`; kiểm Invoice liên quan và tính nhất quán tham chiếu trước khi gọi Repository. Service cũng phải kiểm ngày chiếu thuộc khoảng phát hành, `endAt` theo thời lượng Movie, Permission và quy tắc trạng thái. Bản `.cpp` đề xuất không thể tự xác minh lịch sử Ticket/Invoice vì không có dependency hai Repository này; gọi trực tiếp `update()` từ nơi khác mà bỏ qua Service sẽ không bảo đảm các ràng buộc nghiệp vụ trên.
+**Bước 4 — rollback:** `catch (...)` gọi `restoreShowtime(current, oldValues, oldMovie, oldRoom)` rồi `throw;`. Nếu khôi phục thành công, exception gốc được truyền tiếp. Nếu khôi phục ném, exception khôi phục thay thế exception gốc và có thể còn liên kết hoặc thuộc tính dở dang. Code hiện tại không có cơ chế khôi phục tiếp.
 
-### 8.7. `removeById()`
+```cpp
+catch (...)
+{
+    restoreShowtime(current, oldValues, oldMovie, oldRoom);
+    throw;
+}
+```
 
-**Tổng quan:** Nhận ID, trả `bool`; gỡ liên kết Movie/Room rồi xóa đối tượng nếu cả hai bước thành công. Chưa kiểm tra Ticket/Invoice; xem mục 9.
+### 8.7. Hàm removeById()
+
+**Chữ ký:** `bool removeById(const string& showtimeId) override`. Nhận ID; false khi chưa load, không tìm thấy, thiếu cạnh hoặc xóa/gỡ bị từ chối; true khi `repo.removeById()` xóa đối tượng.
 
 ```text
-chưa load / không tìm thấy / thiếu Movie hoặc Room? → false
-→ unlink Movie thất bại? → false
-→ unlink Room thất bại? → link lại Movie; lỗi khôi phục → throw; còn lại false
-→ repo.removeById thất bại? → link lại Movie/Room; lỗi khôi phục → throw; còn lại false
-→ true
+loaded? ─không→ false → tìm Showtime ─null→ false
+↓ có
+Movie/Room liên kết? ─thiếu→ false
+↓ đủ
+gỡ Movie ─false→ false
+↓ true
+gỡ Room ─false→ khôi phục Movie ─thất bại→ throw; thành công→ false
+↓ true
+repo.removeById() ─true→ true
+↓ false
+khôi phục Movie và Room ─thất bại→ throw; thành công→ false
 ```
 
-**Giải thích code:** Loaded được kiểm trước khi unlink vì thao tác có tác dụng phụ. `showtime` được kiểm null trước khi đọc hai con trỏ Model; thiếu một cạnh thì từ chối xóa. Sau khi `movie->unlinkShowtime`, nếu Room không unlink được, `movie->linkShowtime` khôi phục cạnh đầu. Nếu xóa trong `repo` thất bại, hai biến `movieRestored`/`roomRestored` buộc **cả hai** lệnh link được thử trước khi kiểm kết quả; cách này tránh short circuit để lại một cạnh chưa được thử khôi phục. Lỗi khôi phục ném `runtime_error` thay vì báo thành công. Chỉ `Repository<Showtime>::removeById()` giải phóng Showtime; không `delete` trực tiếp. Luồng này giữ hành vi hiện tại, không tự thêm chính sách giao dịch.
+**Bước 1:** `repo.isLoaded()` và `repo.findById()` chặn truy cập sai. Kiểm hai con trỏ trước khi gỡ, vì gỡ một cạnh rồi mới phát hiện cạnh kia null sẽ khó khôi phục.
 
-### 8.8. `findById()`
+**Bước 2:** Gỡ Movie trước rồi Room. Nếu Room từ chối, gọi `movie->linkShowtime(showtime)` để phục hồi; lỗi phục hồi ném `runtime_error`.
 
-**Tổng quan:** Nhận ID, trả `Showtime*` mượn hoặc null.
+**Bước 3:** Chỉ sau khi gỡ cả hai cạnh mới gọi `repo.removeById()`, thao tác này có thể giải phóng Showtime. Nếu trả false, gọi cả `movie->linkShowtime()` và `room->linkShowtime()`, sau đó kiểm kết quả. Nếu một lời gọi khôi phục ném ngoại lệ, mã hiện tại không có `catch` riêng cho nhánh này.
+
+```cpp
+if (!repo.removeById(showtimeId))
+{
+    bool movieRestored = movie->linkShowtime(showtime);
+    bool roomRestored = room->linkShowtime(showtime);
+    if (!movieRestored || !roomRestored)
+    {
+        throw runtime_error("Khong the khoi phuc lien ket Showtime");
+    }
+    return false;
+}
+return true;
+```
+
+**Điều kiện trước khi gọi:** Showtime phải **chưa từng phát sinh Ticket**, kể cả vé đã hủy, và **không có Invoice tham chiếu**. `ShowtimeService` chịu trách nhiệm kiểm tra lịch sử theo mã suất trước khi gọi `removeById()`; phần này sẽ được hoàn thiện sau khi refactor `TicketRepository` và `InvoiceRepository`. Hàm Repository ở mục 5 giữ nguyên logic, chỉ gỡ Movie/Room và xóa dữ liệu; nó không tự kiểm Ticket/Invoice. Nếu gọi trực tiếp khi vẫn có Ticket hoặc Invoice giữ `Showtime*`, việc xóa có thể tạo con trỏ treo. Model Showtime không bổ sung liên kết ngược đến Ticket/Invoice, và ShowtimeRepository không nhận thêm hai Repository đó làm dependency.
+
+**Giới hạn rollback:** Khi gỡ Room thất bại, hàm chỉ thử nối lại Movie; khi `repo.removeById()` trả false, hàm thử nối lại cả Movie và Room. Nếu thao tác khôi phục trả false hoặc ném ngoại lệ, liên kết có thể còn dở dang. Không coi nhánh rollback thất bại là đã bảo đảm trạng thái nguyên vẹn.
+
+### 8.8. Hàm findById()
+
+**Chữ ký:** `Showtime* findById(const string& showtimeId) override`. Trả con trỏ mượn hoặc null.
 
 ```text
-findById → repo.findById → Showtime* / nullptr
+repo.findById(showtimeId) → return kết quả
 ```
 
-**Giải thích code:** Chuyển lời gọi; không kiểm lại loaded hoặc quyền truy cập. Caller không được xóa con trỏ mượn.
+Generic Repository tra ID; caller không sở hữu con trỏ trả về.
 
-### 8.9. `getAt()`
+### 8.9. Hàm getAt()
 
-**Tổng quan:** Nhận chỉ số, trả `Showtime*` mượn hoặc null nếu ngoài phạm vi.
+**Chữ ký:** `Showtime* getAt(int index) override`. Trả con trỏ mượn ở vị trí hợp lệ hoặc null.
 
 ```text
-getAt(index) → repo.getAt(index) → Showtime* / nullptr
+repo.getAt(index) → return kết quả
 ```
 
-**Giải thích code:** Repository chung kiểm vị trí qua `DoublyLinkedList`; không chuyển sở hữu.
+Kiểm biên vị trí thuộc `Repository<Showtime>`; hàm không tạo đối tượng mới.
 
-### 8.10. `count()`
+### 8.10. Hàm count()
 
-**Tổng quan:** Không tham số; trả số suất trong danh sách.
+**Chữ ký:** `int count() override`. Trả số Showtime hiện được `repo` quản lý.
 
 ```text
-count → repo.count → int
+repo.count() → return số lượng
 ```
 
-**Giải thích code:** Không đổi trạng thái và không cần lặp vòng đếm trong Concrete Repository.
+Không truy cập file hoặc duyệt liên kết Movie/Room.
 
-### 8.11. `isLoaded()`
+### 8.11. Hàm isLoaded()
 
-**Tổng quan:** Không tham số; trả trạng thái nạp dữ liệu.
+**Chữ ký:** `bool isLoaded() override`. Trả trạng thái nạp của `repo`.
 
 ```text
-isLoaded → repo.isLoaded → bool
+repo.isLoaded() → return bool
 ```
 
-**Giải thích code:** Chuyển trạng thái của Repository chung; ShowtimeRepository không giữ cờ loaded thứ hai.
+Không có cờ loaded riêng trong ShowtimeRepository; file rỗng có thể loaded true với count bằng 0.
 
 ## 9. Quản lý bộ nhớ và ràng buộc Ticket/Invoice
 
 `Repository<Showtime>` sở hữu `Showtime*` sau add/load thành công; caller sở hữu con trỏ mới khi add thất bại. Movie/Room chỉ giữ liên kết không sở hữu. `unlinkAll()` gỡ hai cạnh trước khi destructor xóa Showtime hoặc `load()` gọi `repo.clear()`; `removeById()` gỡ hai cạnh trước khi xóa một suất. Các Repository nền phải còn sống khi destructor chạy.
 
-**Vấn đề cần nhóm quyết định, không được coi đã giải quyết:** `Ticket` và `Invoice` giữ con trỏ `Showtime*` cùng `showtimeId`, nhưng `Showtime` không có danh sách ngược Ticket/Invoice. `ShowtimeRepository` hiện chỉ có dependency Movie/Room; nó không thể kiểm tra trực tiếp lịch sử vé/hóa đơn trước khi `removeById()` giải phóng Showtime. `ShowtimeService::removeShowtime()` hiện luôn trả `false` sau khi kiểm quyền/tồn tại, với TODO về suất đã từng có vé. Gọi trực tiếp Repository để xóa sau khi Ticket/Invoice đã link có thể để con trỏ treo. Quy tắc bảo vệ lịch sử giao dịch trong `business_rules.md` cần được thiết kế và CHỐT riêng trước khi mở luồng xóa thực tế; bản này **giữ nguyên hành vi xóa hiện tại** và không tự thêm dependency/API/quy tắc xóa.
+**Điều kiện gọi đã thống nhất:** Chỉ gọi `removeById()` khi Showtime chưa từng phát sinh Ticket, gồm cả vé đã hủy, và không có Invoice tham chiếu. `ShowtimeService` sẽ kiểm tra cả hai điều kiện sau khi refactor `TicketRepository` và `InvoiceRepository`; hiện `ShowtimeService::removeShowtime()` vẫn trả `false` với TODO về lịch sử vé. `Ticket` và `Invoice` giữ `Showtime*` trực tiếp, còn `Showtime` không giữ danh sách ngược. Thiết kế không bổ sung liên kết hai chiều với Ticket/Invoice vào Model, cũng không bổ sung dependency TicketRepository/InvoiceRepository cho ShowtimeRepository. Bởi vậy gọi trực tiếp Repository khi còn tham chiếu có thể gây con trỏ treo; đây là giới hạn của API hiện tại, không phải điều kiện đã được Repository tự bảo đảm.
 
 `unlinkReferences()` kiểm kết quả gỡ cả hai cạnh của một Showtime, dùng lại trong `unlinkAll()` và rollback `add()`. Trong `load()`, lỗi từ helper ngăn `repo.clear()` để tránh xóa Showtime còn được tham chiếu; trong destructor nó được báo ra `cerr` rồi `terminate()` vì không thể ném qua destructor của interface. Đây là xử lý trạng thái lỗi rõ ràng, không khẳng định đã tự sửa được quan hệ Model hỏng sẵn.
 
@@ -945,18 +1158,27 @@ isLoaded → repo.isLoaded → bool
 
 ## 10. Áp dụng Dependency Inversion Principle
 
-Trước refactor, ShowtimeRepository giữ `MovieRepository&` và `RoomRepository&`. Bản đề xuất giữ đúng lời gọi `isLoaded()`/`findById()` nhưng chuyển thành `IRepository<Movie>&` và `IRepository<Room>&`; constructor nhận dependency từ nơi khởi tạo. `ShowtimeRepository` kế thừa `IRepository<Showtime>` cho Service dùng. `Repository<Showtime>` tiếp tục là thành viên composition, không thêm `update()` vào lớp dùng chung.
+Thiết kế DIP hiện có được giữ nguyên: `ShowtimeRepository` kế thừa `IRepository<Showtime>` cho Service sử dụng, nhận `IRepository<Movie>&` và `IRepository<Room>&` từ constructor, và giữ `Repository<Showtime>` bằng composition. Hai dependency được gọi qua `isLoaded()` và `findById()` của interface. Không thêm `update()` vào Repository chung hoặc thay đổi sơ đồ phụ thuộc trong bản chuẩn hóa này.
 
 ## 11. Nội dung thay đổi dự kiến
 
-- `.h`: Kế thừa interface, thêm `override`, đổi hai tham chiếu/constructor sang interface, khai báo `unlinkReferences()`, `unlinkAll()` và `restoreShowtime()`; giữ `Repository<Showtime> repo` và chữ ký public hiện có.
-- `.cpp`: Dùng `unlinkReferences()` cho rollback `add()` và từng Showtime trong `unlinkAll()`; destructor và catch của `load()` tiếp tục gọi `unlinkAll()`. Bỏ lần gọi `isValidShowtime()` bên trong `isValidReference()`; dùng `hasScheduleConflict()` trong load/add/update. `load()` dùng một vòng: tìm Movie/Room, kiểm tham chiếu, kiểm lịch, link. `removeById()` thử khôi phục cả hai cạnh; `update()` giữ nguyên bản do nhóm vừa chỉnh với `Showtime oldValues` và `restoreShowtime()` trong `catch (...)`.
-- Giữ các kiểm tra trước link/unlink và cập nhật cần thiết: loaded ở add/update/remove, dữ liệu Model, trạng thái liên kết sẵn, trùng ID trước link, con trỏ Movie/Room, ràng buộc lịch, rollback khi link, update hoặc xóa thất bại.
-- Giữ schema TXT, mã ID, Permission ở Service, quyền sở hữu con trỏ và hành vi xóa hiện tại. Kiểm tra lịch sử Ticket/Invoice trước update là điều kiện gọi thuộc ShowtimeService khi refactor Business; ràng buộc xóa Ticket/Invoice vẫn chưa được giải quyết trong phạm vi thiết kế này.
+### 11.1. Header
+
+- Bổ sung `override` cho destructor, nhóm rõ callback chuyển đổi, validation và helper liên kết.
+- Căn thẳng các tham số constructor và `restoreShowtime()`; giữ nguyên kiểu, thứ tự và public API còn lại.
+
+### 11.2. File triển khai
+
+- Chuẩn hóa khoảng trắng và căn tham số constructor; không đổi câu lệnh, nhánh điều kiện hoặc thứ tự rollback.
+- Giữ các kiểm tra trước link/unlink: loaded, Model hợp lệ, ID trùng, tham chiếu, lịch và trạng thái liên kết.
+
+### 11.3. Thành phần giữ nguyên và điểm review
+
+`isValidReference()`, `unlinkReferences()`, `unlinkAll()`, `restoreShowtime()`, schema TXT, quyền sở hữu con trỏ và cơ chế rollback hiện tại được giữ nguyên. `removeById()` cũng giữ nguyên; điều kiện không có bất kỳ Ticket nào trong lịch sử và không có Invoice tham chiếu là tiền điều kiện do ShowtimeService kiểm tra sau khi hai Repository liên quan được refactor. Không bổ sung liên kết ngược trong Showtime hoặc dependency mới vào ShowtimeRepository. Giới hạn khi rollback tự phát sinh ngoại lệ được ghi tại mục 7–9.
 
 ## 12. Kế hoạch kiểm thử
 
-Chưa chạy test cho mã đã triển khai; mọi mục dưới đây còn chờ kiểm chứng. Dùng file TXT test riêng và không sửa test để tạo PASS.
+Chưa có kết quả kiểm thử thực tế được xác nhận cho bản chuẩn hóa Markdown này; mọi mục dưới đây còn chờ kiểm chứng. Dùng file TXT test riêng và không sửa test để tạo PASS.
 
 ### 12.1. Load và save
 
@@ -981,19 +1203,19 @@ Chưa chạy test cho mã đã triển khai; mọi mục dưới đây còn ch�
 
 - [ ] Remove hợp lệ, ID không tồn tại, trước load, thiếu cạnh Movie/Room, lỗi unlink Room và lỗi `repo.removeById()`; kiểm cả hai cạnh đều được thử khôi phục, không xóa Model khi thất bại.
 - [ ] Destructor dùng `unlinkAll()`/`unlinkReferences()` để gỡ liên kết Movie/Room trước khi xóa Showtime; nếu unlink lỗi thì báo qua `cerr` và dừng trước khi `repo` hủy. Kiểm `findById()`, `getAt()` biên âm/vượt giới hạn, `count()`, `isLoaded()` qua interface.
-- [ ] Rà soát riêng trường hợp đã có Ticket/Invoice trước khi cho phép xóa thực tế; kiểm không còn con trỏ treo sau khi chính sách xóa được nhóm chốt. **Chưa có thiết kế/test để đánh dấu PASS.**
-- [ ] Biên dịch từng test với toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp`; chạy `test_showtime_repository.cpp`, `test_showtime_link.cpp` và kiểm hồi quy các module liên quan nếu có.
+- [ ] Sau khi refactor TicketRepository/InvoiceRepository, kiểm thử ShowtimeService từ chối xóa nếu từng có Ticket SOLD hoặc CANCELLED, hoặc còn Invoice tham chiếu; chỉ gọi `removeById()` khi cả hai điều kiện tiền đề đạt. Chưa có kết quả để đánh dấu PASS.
+- [ ] Biên dịch từng test với toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp`; xây dựng/chạy bài test hiện hành cho ShowtimeRepository và liên kết, rồi kiểm hồi quy module liên quan. Các bài `test_showtime_repository.cpp` và `test_showtime_link.cpp` hiện nằm trong `tests/legacy_test/`, chưa được dùng làm bằng chứng PASS cho bản này.
 
 ## 13. Tiến độ triển khai
 
 - [x] Rà soát mã nguồn, Model, quy tắc validation, nghiệp vụ và định dạng TXT.
 - [x] Viết mã `.h/.cpp` đề xuất và giải thích theo bố cục MovieRepository.
 - [x] Ghi nhận giới hạn Ticket/Invoice và vòng đời liên kết.
-- [x] Thống nhất ShowtimeService kiểm lịch sử Ticket/Invoice khi refactor Business; thiết kế `Showtime oldValues` và helper `restoreShowtime()` cho rollback trong Markdown.
-- [x] Review và **CHỐT MARKDOWN**.
-- [x] Triển khai code đúng 100% theo Markdown sau khi chốt.
+- [x] Ghi rõ điều kiện xóa liên quan Ticket/Invoice do ShowtimeService kiểm tra sau refactor; giữ `Showtime oldValues`, `restoreShowtime()` và rollback như code hiện tại.
+- [ ] Review và **CHỐT MARKDOWN** cho bản chuẩn hóa này.
+- [ ] Triển khai code đúng 100% theo Markdown sau khi chốt.
 - [ ] Biên dịch, chạy test liên quan, đối chiếu code/tài liệu và ghi kết quả thực tế.
 
 ## 14. Kết luận
 
-Thiết kế đã chốt áp dụng một interface `IRepository<T>`, giữ `Repository<Showtime>` bằng composition, dùng một vòng trong `load()` và cho `update()` đổi Movie/Room có rollback. Mã `.h/.cpp` đã được triển khai theo Markdown nhưng chưa kiểm thử; ShowtimeService còn phải triển khai kiểm tra lịch sử Ticket/Invoice trước update, còn ràng buộc xóa vẫn cần quyết định riêng.
+Bản Markdown dự kiến giữ DIP, `Repository<Showtime>` bằng composition, luồng `load()` một vòng và rollback hiện tại. Trước khi gọi `removeById()`, ShowtimeService phải xác nhận chưa từng có Ticket, kể cả vé đã hủy, và không có Invoice tham chiếu; việc kiểm tra sẽ hoàn thiện sau refactor hai Repository liên quan. Bản này chờ CHỐT MARKDOWN trước khi đưa các thay đổi trình bày và `override` vào `.h/.cpp`.

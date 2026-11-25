@@ -16,20 +16,31 @@ private:
     IRepository<Movie>& movieRepo;
     IRepository<Room>& roomRepo;
 
+    // Chuyen doi du lieu
+
     static std::string getShowtimeId(Showtime* showtime);
     static Showtime* stringToShowtime(const std::string& line);
     static std::string showtimeToString(Showtime* showtime);
+    // Kiem tra du lieu va rang buoc
+
     static bool isValidShowtime(const Showtime* showtime);
 
     bool isValidReference(const Showtime* showtime);
     bool hasScheduleConflict(const Showtime* showtime, const std::string& excludeId = "");
+    // Quan ly lien ket va khoi phuc
+
     void unlinkReferences(Showtime* showtime);
     void unlinkAll();
-    void restoreShowtime(Showtime* showtime, const Showtime& oldValues, Movie* oldMovie, Room* oldRoom);
+    void restoreShowtime(Showtime* showtime,
+                         const Showtime& oldValues,
+                         Movie* oldMovie,
+                         Room* oldRoom);
 
 public:
-    ShowtimeRepository(const std::string& filePath, IRepository<Movie>& movieRepo, IRepository<Room>& roomRepo);
-    ~ShowtimeRepository();
+    ShowtimeRepository(const std::string& filePath,
+                       IRepository<Movie>& movieRepo,
+                       IRepository<Room>& roomRepo);
+    ~ShowtimeRepository() override;
 
     // Doc va ghi du lieu
     bool load() override;

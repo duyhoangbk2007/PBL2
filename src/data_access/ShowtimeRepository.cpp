@@ -9,7 +9,6 @@
 #include <vector>
 using namespace std;
 
-
 // Kiem tra toan bo du lieu Showtime
 bool ShowtimeRepository::isValidShowtime(const Showtime* showtime)
 {
@@ -128,9 +127,12 @@ string ShowtimeRepository::showtimeToString(Showtime* showtime)
            status;
 }
 
-ShowtimeRepository::ShowtimeRepository(const string& filePath, IRepository<Movie>& movieRepo, IRepository<Room>& roomRepo)
+ShowtimeRepository::ShowtimeRepository(const string& filePath,
+                                       IRepository<Movie>& movieRepo,
+                                       IRepository<Room>& roomRepo)
     : repo(filePath, getShowtimeId, stringToShowtime, showtimeToString),
-      movieRepo(movieRepo), roomRepo(roomRepo)
+      movieRepo(movieRepo),
+      roomRepo(roomRepo)
 {
 }
 
@@ -392,7 +394,7 @@ bool ShowtimeRepository::update(const Showtime& newValues)
 
     Movie* oldMovie = current->getMovie();
     Room* oldRoom = current->getRoom();
-    
+
     Movie* newMovie = movieRepo.findById(newValues.getMovieId());
     Room* newRoom = roomRepo.findById(newValues.getRoomId());
 

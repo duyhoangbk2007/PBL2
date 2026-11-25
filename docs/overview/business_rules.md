@@ -65,6 +65,7 @@ Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ ch�
 - Khoảng nghỉ tối thiểu 15 phút; code hiện tại khai báo `DateTime::BREAK_MINUTES = 15`. Hai suất cùng phòng trùng nếu các khoảng `[bắt đầu, kết thúc + khoảng nghỉ)` giao nhau. Bỏ qua suất hủy và chính suất đang sửa.
 - Không sửa phim/phòng/thời gian của suất đã từng có vé, kể cả vé hủy; không sửa suất đã bắt đầu.
 - Chỉ hủy suất chưa bắt đầu và không còn vé SOLD. Người có Permission hủy suất phải xử lý vé trước, không ngầm hủy hàng loạt.
+- Chỉ xóa hẳn suất chiếu khi suất **chưa từng phát sinh Ticket**, kể cả Ticket đã hủy, và **không có Invoice tham chiếu**. Trước khi gọi `ShowtimeRepository::removeById()`, `ShowtimeService` phải kiểm tra cả lịch sử Ticket và Invoice theo mã suất; trách nhiệm này sẽ được hoàn thiện sau khi refactor `TicketRepository` và `InvoiceRepository`. Quy tắc xóa này khác thao tác hủy suất ở trên.
 - Chặn đổi sơ đồ phòng nếu có suất tương lai chưa hủy đã từng phát sinh vé. Không đổi/xóa mã ghế từng xuất hiện trong vé; sơ đồ mới không tương thích cần tạo phòng mới.
 
 ## 3. Giá, ưu đãi và thành viên
