@@ -2,7 +2,6 @@
 #define PBL2_CORE_DATA_STRUCTURES_DOUBLY_LINKED_LIST_H
 
 #include <iostream>
-using namespace std;
 
 template <typename T>
 struct ListNode
@@ -55,10 +54,10 @@ template <typename T>
 void DoublyLinkedList<T>::show() const {
     ListNode<T>* temp = head;
     while (temp != nullptr) {
-        cout << temp->data << " ";
+        std::cout << temp->data << " ";
         temp = temp->next;
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
 template <typename T>

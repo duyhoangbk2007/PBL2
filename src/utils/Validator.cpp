@@ -1,6 +1,6 @@
 #include "Validator.h"
-
 using namespace std;
+
 
 // Kiem tra chuoi hop le de luu vao file TXT
 bool Validator::isValidText(const string& text)

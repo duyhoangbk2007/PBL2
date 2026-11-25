@@ -5,19 +5,18 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 
 class RolePermissionRepository
 {
 private:
-    string filePath;
-    vector<string> permissions;
+    std::string filePath;
+    std::vector<std::string> permissions;
     bool loaded = false;
 
 public:
-    RolePermissionRepository(const string& filePath);
+    RolePermissionRepository(const std::string& filePath);
     bool load();
-    bool hasPermission(const string& role,const string& permission) const;
+    bool hasPermission(const std::string& role,const std::string& permission) const;
     bool isLoaded() const;
 };
 

@@ -1,6 +1,6 @@
 #include "SeatService.h"
-
 using namespace std;
+
 
 SeatService::SeatService(SeatRepository& seatRepo, AuthService& authService)
     : seatRepo(seatRepo), authService(authService)

@@ -8,7 +8,7 @@ Trách nhiệm riêng: kiểm tra Room hợp lệ, chuyển đổi Room ↔ TXT,
 
 **File liên quan:** `src/data_access/IRepository.h`, `Repository.h`, `RoomRepository.h`, `RoomRepository.cpp`, `src/models/Room.h`, `src/models/Seat.h`, `src/utils/Validator.h`.
 
-**Trạng thái:** Đã **CHỐT MARKDOWN**. Mã ở mục 5 là bản chuẩn để triển khai vào `.h/.cpp`; chưa kiểm thử.
+**Trạng thái:** Đã **CHỐT MARKDOWN**, triển khai và kiểm thử trong phạm vi `tests/test_room_repository.cpp` ngày 25/11/2026: **72 PASS, 0 FAIL**. Hai khối mã `.h/.cpp` ở mục 5 đã đối chiếu và khớp mã nguồn thực tế.
 
 ## 2. Kiến trúc
 
@@ -100,21 +100,20 @@ Tất cả là `static`, vì không cần truy cập thành viên `repo` của m
 #include "Repository.h"
 #include "../models/Room.h"
 
-using namespace std;
 
 class RoomRepository : public IRepository<Room>
 {
 private:
     Repository<Room> repo;
 
-    static string getRoomId(Room* room);
-    static Room* stringToRoom(const string& line);
-    static string roomToString(Room* room);
+    static std::string getRoomId(Room* room);
+    static Room* stringToRoom(const std::string& line);
+    static std::string roomToString(Room* room);
 
     static bool isValidRoom(const Room* room);
 
 public:
-    RoomRepository(const string& filePath);
+    RoomRepository(const std::string& filePath);
 
     // Doc va ghi du lieu
     bool load() override;
@@ -123,10 +122,10 @@ public:
     // Quan ly du lieu
     bool add(Room* room) override;
     bool update(const Room& newValues) override;
-    bool removeById(const string& roomId) override;
+    bool removeById(const std::string& roomId) override;
 
     // Truy van du lieu
-    Room* findById(const string& roomId) override;
+    Room* findById(const std::string& roomId) override;
     Room* getAt(int index) override;
     int count() override;
     bool isLoaded() override;
@@ -139,7 +138,7 @@ public:
 
 **Đường dẫn:** `src/data_access/RoomRepository.cpp`.
 
-Mã dưới đây đã **CHỐT MARKDOWN**: giữ logic parse/serialize, truy vấn và liên kết hiện có; chuẩn hóa thứ tự, định dạng và bỏ validation lưu trữ trùng với `Repository<Room>`. Khi triển khai phải chép khớp 100%.
+Mã dưới đây đã **CHỐT MARKDOWN** và khớp mã nguồn đã triển khai: giữ logic parse/serialize, truy vấn và liên kết hiện có; chuẩn hóa thứ tự, định dạng và bỏ validation lưu trữ trùng với `Repository<Room>`.
 
 ```cpp
 #include "RoomRepository.h"
@@ -147,8 +146,8 @@ Mã dưới đây đã **CHỐT MARKDOWN**: giữ logic parse/serialize, truy v�
 #include "../models/Seat.h"
 #include <stdexcept>
 #include <vector>
-
 using namespace std;
+
 
 // Kiem tra toan bo du lieu Room
 bool RoomRepository::isValidRoom(const Room* room)
@@ -598,7 +597,7 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 ### 10.1. Trước khi refactor
 
-Phiên bản ban đầu là lớp concrete độc lập. Mã nguồn hiện tại đã khai báo `RoomRepository : public IRepository<Room>`; `RoomService` vẫn nhận `RoomRepository&`.
+Thiết kế trước khi áp dụng DIP dùng lớp concrete độc lập; mã nguồn hiện tại đã khai báo `RoomRepository : public IRepository<Room>`. `RoomService` vẫn nhận `RoomRepository&`.
 
 ### 10.2. Sau khi refactor Repository
 
@@ -609,7 +608,7 @@ Thiết kế tiếp tục kế thừa `IRepository<Room>` và ghi `override` cho
 ### 11.1. Thay đổi trong RoomRepository.h
 
 - Giữ `#include "IRepository.h"`, `class RoomRepository : public IRepository<Room>` và chín hàm `override` đã có.
-- Thêm `using namespace std;` theo mẫu MovieRepository, bỏ `std::` ở các chữ ký; sắp xếp callback, validation và nhóm public theo cùng thứ tự, thêm comment nhóm.
+- Header không dùng `using namespace std;`, viết `std::string` trong các chữ ký; sắp xếp callback, validation và nhóm public theo cùng thứ tự, thêm comment nhóm.
 
 ### 11.2. Thay đổi trong RoomRepository.cpp
 
@@ -621,45 +620,49 @@ Sắp xếp định nghĩa và comment theo MovieRepository. `isValidRoom()` g�
 
 ## 12. Kế hoạch kiểm thử
 
+**Kết quả thực tế:** Biên dịch C++17 với `tests/test_room_repository.cpp` và các `.cpp` trong `src/` (trừ `main.cpp`), chạy ngày 25/11/2026: **72 PASS, 0 FAIL**, exit code 0. Kiệt triển khai DIP ở `RoomRepository`; Hoàng rà soát, chuẩn hóa tài liệu và kiểm thử lại. Các ô dưới đây chỉ đánh dấu khi bài test hiện tại có kiểm tra tương ứng.
+
 ### 12.1. Kiểm thử nạp dữ liệu
 
-- [ ] Load file hợp lệ, rỗng, thiếu, sai số trường, ID sai/trùng, số hàng/cột sai, active khác 0/1.
-- [ ] Load hai lần; lỗi parse báo file/dòng; dữ liệu không bị nạp dở.
+- [x] Load file hợp lệ, rỗng, thiếu, sai số trường, ID sai/trùng, số hàng/cột sai, active khác 0/1.
+- [x] Load hai lần; dữ liệu không bị nạp dở khi parse lỗi.
+- [ ] Xác minh riêng nội dung exception có tên file/dòng.
 
 ### 12.2. Kiểm thử thêm phòng
 
-- [ ] Thêm Room hợp lệ, chưa load, null, ID trùng, con trỏ trùng, tên/kích thước không hợp lệ.
-- [ ] Xác minh quyền sở hữu con trỏ ở cả nhánh thành công và thất bại.
+- [x] Thêm Room hợp lệ, chưa load, null, ID trùng, con trỏ trùng, tên/kích thước không hợp lệ.
+- [x] Xác minh con trỏ được giữ sau khi thêm thành công và caller giải phóng con trỏ khi thêm thất bại.
 
 ### 12.3. Kiểm thử cập nhật phòng
 
-- [ ] Update thành công, ID không tồn tại, chưa load, dữ liệu invalid.
+- [x] Update thành công, ID không tồn tại, chưa load, dữ liệu invalid.
 - [ ] Tăng riêng số hàng, tăng riêng số cột và tăng cả hai: thành công, không cần duyệt ghế; giữ danh sách ghế.
 - [ ] Giảm riêng số hàng, giảm riêng số cột và giảm cả hai: từ chối khi có ghế ngoài phạm vi mới, chấp nhận khi mọi ghế vẫn nằm trong phạm vi. Kiểm ghế null trong nhánh thu nhỏ.
 - [ ] Đổi tên/trạng thái hoặc giữ nguyên kích thước: không duyệt ghế; dữ liệu sai phải bị từ chối trước setter.
-- [ ] Giữ nguyên ID, địa chỉ Room và liên kết Seat/Showtime.
+- [x] Giữ nguyên ID, địa chỉ Room và liên kết Seat/Showtime trong trường hợp đã kiểm thử.
 - [ ] Khi refactor RoomService, kiểm Permission và các ràng buộc Showtime/Ticket trước khi cho thay đổi sơ đồ phòng; chưa đánh dấu PASS ở bước tài liệu.
 
 ### 12.4. Kiểm thử xóa phòng
 
-- [ ] Xóa phòng không còn liên kết; từ chối nếu còn Seat hoặc Showtime.
-- [ ] Xóa ID không tồn tại/chưa load; xác minh số lượng và con trỏ sau xóa.
+- [x] Xóa phòng không còn liên kết; từ chối nếu còn Seat hoặc Showtime.
+- [x] Xóa ID không tồn tại/chưa load; xác minh số lượng và kết quả tra cứu sau xóa.
 
 ### 12.5. Kiểm thử truy vấn
 
-- [ ] `findById` tồn tại/không tồn tại; `getAt` chỉ số hợp lệ/âm/vượt phạm vi.
-- [ ] `count` và `isLoaded` trước/sau load, add, remove.
+- [x] `findById` tồn tại/không tồn tại; `getAt` chỉ số hợp lệ/âm/vượt phạm vi.
+- [x] `count` và `isLoaded` trước/sau load, add, remove trong các trường hợp bài test sử dụng.
 
 ### 12.6. Kiểm thử lưu dữ liệu
 
-- [ ] Save trước load; save Room hợp lệ; đối chiếu 5 trường và 0/1; load lại để so sánh.
+- [x] Save trước load; save Room hợp lệ và load lại để so sánh thuộc tính.
+- [ ] Đối chiếu trực tiếp nội dung file TXT theo 5 trường và 0/1.
 - [ ] Save khi dữ liệu bị thay đổi thành invalid (exception từ serializer); lỗi mở/ghi file (`false` từ `FileIO`).
 
 ### 12.7. Kiểm thử IRepository
 
-- [ ] Biên dịch `RoomRepository` với `IRepository<Room>&` và `IRepository<Room>*`.
-- [ ] Gọi đủ 9 phương thức qua interface; kiểm tra destructor ảo.
-- [ ] Chạy lại các test RoomRepository liên quan, không sửa test để tạo PASS.
+- [x] Biên dịch `RoomRepository` với `IRepository<Room>&` và `IRepository<Room>*`.
+- [x] Gọi đủ 9 phương thức qua interface; kiểm tra destructor ảo và xóa qua con trỏ interface.
+- [x] Chạy `tests/test_room_repository.cpp`: 72 PASS, 0 FAIL.
 
 ## 13. Tiến độ triển khai
 
@@ -668,10 +671,10 @@ Sắp xếp định nghĩa và comment theo MovieRepository. `isValidRoom()` g�
 - [x] Xác định phạm vi chỉ refactor Repository.
 - [x] Viết bản thiết kế Markdown theo bố cục 14 mục của mẫu MovieRepository.
 - [x] Review và **CHỐT MARKDOWN**.
-- [ ] Đối chiếu code triển khai khớp Markdown đã chốt.
-- [ ] Biên dịch và kiểm thử thực tế.
-- [ ] Cập nhật tiến độ sau kiểm thử.
+- [x] Đối chiếu hai khối code ở mục 5 khớp `.h/.cpp` thực tế.
+- [x] Biên dịch và kiểm thử thực tế ngày 25/11/2026: 72 PASS, 0 FAIL.
+- [x] Cập nhật tiến độ sau kiểm thử.
 
 ## 14. Kết luận
 
-`RoomRepository` tiếp tục triển khai `IRepository<Room>` bằng public inheritance, giữ `Repository<Room>` theo composition. Bản thiết kế chuẩn hóa `.h/.cpp`, dùng lại validation lưu trữ của lớp chung và chỉ duyệt ghế khi thu nhỏ phòng; không thay đổi nghiệp vụ RoomService. Markdown **đã chốt**; việc kiểm thử chưa thực hiện.
+`RoomRepository` triển khai `IRepository<Room>` bằng public inheritance, giữ `Repository<Room>` theo composition. Mã `.h/.cpp` khớp Markdown đã chốt; bài test RoomRepository đạt **72 PASS, 0 FAIL**. Phần refactor DIP của Repository và việc Hoàng rà soát, chuẩn hóa, kiểm thử lại đã hoàn thành trong phạm vi này. Các trường hợp còn để trống ở mục 12 và DIP của `RoomService` chưa được xác nhận hoàn thành.

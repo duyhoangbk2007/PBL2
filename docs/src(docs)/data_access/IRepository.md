@@ -144,7 +144,6 @@ Các Concrete Repository bắt buộc phải định nghĩa lại đầy đủ c
 
 #include <string>
 
-using namespace std;
 
 template <typename T>
 class IRepository
@@ -159,10 +158,10 @@ public:
     // Quan ly du lieu
     virtual bool add(T* item) = 0;
     virtual bool update(const T& newValues) = 0;
-    virtual bool removeById(const string& key) = 0;
+    virtual bool removeById(const std::string& key) = 0;
 
     // Truy van du lieu
-    virtual T* findById(const string& key) = 0;
+    virtual T* findById(const std::string& key) = 0;
     virtual T* getAt(int index) = 0;
     virtual int count() = 0;
     virtual bool isLoaded() = 0;
@@ -200,13 +199,12 @@ Kết thúc phạm vi Header Guard.
 
 ```cpp
 #include <string>
-
-using namespace std;
+// Header sử dụng std::string trong các chữ ký.
 ```
 
 Thư viện `<string>` được sử dụng để khai báo kiểu dữ liệu `string` trong các hàm tìm kiếm và xóa đối tượng theo khóa.
 
-`using namespace std;` cho phép sử dụng `string` thay vì phải viết `std::string`.
+Header dùng `std::string` trực tiếp và khai báo `#include <string>` để không phụ thuộc namespace của header khác.
 
 ### 6.3. Template
 

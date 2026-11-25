@@ -189,6 +189,7 @@ if (!Validator::isValidDateTime(showtime.getStartAt()))
 
 ```cpp
 #include "utils/Validator.h"
+using namespace std;
 
 bool isMovieInputValid(const string& movieId,
                        const string& title,

@@ -5,8 +5,8 @@
 
 #include <vector>
 #include <cmath>
-
 using namespace std;
+
 
 PricingRepository::PricingRepository(const string& filePath)
     : filePath(filePath), loaded(false)
@@ -73,7 +73,7 @@ bool PricingRepository::load()
             return false;
         }
 
-        if (!std::isfinite(values[index])) //kiểm tra có hữu hạn hay k
+        if (!isfinite(values[index])) //kiểm tra có hữu hạn hay k
         {
             return false;
         }

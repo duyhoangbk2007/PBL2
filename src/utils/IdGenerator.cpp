@@ -1,8 +1,8 @@
 ﻿
 #include "IdGenerator.h"
 #include <stdexcept>
-
 using namespace std;
+
 
 string IdGenerator::generateNextId(const string& entity,
                                    const vector<string>& existingIds)

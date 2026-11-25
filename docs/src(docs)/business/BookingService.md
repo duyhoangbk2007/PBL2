@@ -337,7 +337,6 @@ Duyệt từng `BookingItem`, tìm ghế theo phòng và mã ghế.
         {
             return false;
         }
-
 ```
 
 Vé `SOLD` cùng suất/ghế khiến lựa chọn không hợp lệ.
@@ -498,7 +497,6 @@ Gọi `calculateBooking()` để kiểm tra lại ghế và giá tại lúc bán
     {
         member = memberRepo.findById(memberId);
     }
-
 ```
 
 Lấy người bán từ phiên đăng nhập và thời điểm hiện tại; Member có thể là `nullptr`.
@@ -518,7 +516,6 @@ Lấy người bán từ phiên đăng nhập và thời điểm hiện tại; M
         invoiceIds.push_back(invoice->getInvoiceId());
     }
     string newInvoiceId = IdGenerator::generateNextId("INV", invoiceIds);
-
 ```
 
 Duyệt ID đang nạp rồi sinh ID kế tiếp.
@@ -610,7 +607,6 @@ Chặn tràn điểm, chuẩn bị giá gốc và điểm của từng Ticket.
             throw;
         }
         invoiceAdded = true;
-
 ```
 
 `new` cấp phát; Service xóa nếu Repository chưa nhận quyền sở hữu.

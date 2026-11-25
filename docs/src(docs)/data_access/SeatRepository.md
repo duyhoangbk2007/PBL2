@@ -312,7 +312,6 @@ Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định ti�
     {
         size_t pos1 = 0;
         size_t pos2 = 0;
-
 ```
 
 `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa.
@@ -342,7 +341,6 @@ Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định ti�
     }
 
     SeatType seatType;
-
 ```
 
 `try/catch` xử lý ngoại lệ trong phạm vi hiện tại; code dọn các thay đổi trước khi trả lỗi hoặc ném lại, nên thứ tự dọn có ý nghĩa. `throw` báo lỗi bằng ngoại lệ cho bên gọi, khác với kết quả `false` thông thường.

@@ -202,7 +202,7 @@ Vòng lặp xét từng bản ghi; điều kiện bên trong quyết định ti�
 ```cpp
         }
 
-        if (!std::isfinite(values[index])) //kiểm tra có hữu hạn hay k
+        if (!isfinite(values[index])) //kiểm tra có hữu hạn hay k
         {
             return false;
         }

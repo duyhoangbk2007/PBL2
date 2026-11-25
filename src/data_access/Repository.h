@@ -6,41 +6,40 @@
 #include <string>
 #include "../data_structures/DoublyLinkedList.h"
 
-using namespace std;
 
 template <typename T>
 class Repository
 {
 private:
-    string filePath;
+    std::string filePath;
     DoublyLinkedList<T*> items;
     bool loaded; // đánh dấu repo đã nạp dữ liệu chưa
     
-    string (*getId)(T*); //con trỏ hàm - getId là 1 con trỏ trỏ đến hàm nhận tham số T* và trả về string
-    T* (*parse)(const string&); //chuyển txt sang đối tượng cụ thể
-    string (*serialize)(T*); //chuyển đối tượng sang txt
+    std::string (*getId)(T*); //con trỏ hàm - getId là 1 con trỏ trỏ đến hàm nhận tham số T* và trả về string
+    T* (*parse)(const std::string&); //chuyển txt sang đối tượng cụ thể
+    std::string (*serialize)(T*); //chuyển đối tượng sang txt
 public:
-    Repository(const string& filePath, string (*getId)(T*), T* (*parse)(const string&), string (*serialize)(T*));
+    Repository(const std::string& filePath, std::string (*getId)(T*), T* (*parse)(const std::string&), std::string (*serialize)(T*));
     ~Repository();
 
     bool load();
     bool save();
 
     bool add(T* item);
-    bool removeById(const string& id);
+    bool removeById(const std::string& id);
     
-    T* findById(const string& id);
+    T* findById(const std::string& id);
     T* getAt(int index);
     int count();
     bool isLoaded();
     void clear();
-    const string& getFilePath() const;
+    const std::string& getFilePath() const;
 };
 
 //----
 
 template <typename T>
-Repository<T>::Repository(const string& filePath, string (*getId)(T*), T* (*parse)(const string&), string (*serialize)(T*))
+Repository<T>::Repository(const std::string& filePath, std::string (*getId)(T*), T* (*parse)(const std::string&), std::string (*serialize)(T*))
     : filePath(filePath), loaded(false), getId(getId), parse(parse), serialize(serialize)
 {
 }
@@ -83,7 +82,7 @@ bool Repository<T>::isLoaded()
     return loaded;
 }
 template <typename T>
-T* Repository<T>::findById(const string& id)
+T* Repository<T>::findById(const std::string& id)
 {
     for (int i = 0; i < count(); i++)
     {
@@ -110,7 +109,7 @@ bool Repository<T>::add(T* item)
             return false;
         }
     }
-    string id = getId(item);
+    std::string id = getId(item);
     if (id.empty())
     {
         return false;
@@ -124,7 +123,7 @@ bool Repository<T>::add(T* item)
 }
 
 template <typename T>
-bool Repository<T>::removeById(const string& id)
+bool Repository<T>::removeById(const std::string& id)
 {
     if (!loaded)
     {
@@ -150,7 +149,7 @@ bool Repository<T>::load()
     {
         return false;
     }
-    vector<string> lines;
+    std::vector<std::string> lines;
     if (!FileIO::readLines(filePath, lines))
     {
         return false;
@@ -166,12 +165,12 @@ bool Repository<T>::load()
                 item = parse(lines[i]);
                 if (item == nullptr)
                 {
-                    throw runtime_error("Du lieu khong hop le");
+                    throw std::runtime_error("Du lieu khong hop le");
                 }
-                string id = getId(item);
+                std::string id = getId(item);
                 if (id.empty())
                 {
-                    throw runtime_error("ID rong");
+                    throw std::runtime_error("ID rong");
                 }
                 // Kiem tra ID trung trong danh sach tam
                 for (int j = 0; j < tempItems.nodeCount(); j++)
@@ -179,20 +178,20 @@ bool Repository<T>::load()
                     T* current = tempItems.getAt(j)->data;
                     if (getId(current) == id)
                     {
-                        throw runtime_error("Trung ID");
+                        throw std::runtime_error("Trung ID");
                     }
                 }
                 tempItems.pushBack(item);
                 // Tu day tempItems quan ly item
                 item = nullptr;
             }
-            catch (const exception& e)
+            catch (const std::exception& e)
             {
                 // giải phóng đối tượng bị lỗi
                 delete item;
-                throw runtime_error(
+                throw std::runtime_error(
                     "Loi doc file " + filePath +
-                    " tai dong " + to_string(i + 1) +
+                    " tai dong " + std::to_string(i + 1) +
                     ": " + e.what()
                 );
             }
@@ -226,17 +225,17 @@ bool Repository<T>::save()
     {
         return false;
     }
-    vector<string> lines;
+    std::vector<std::string> lines;
     for (int i = 0; i < count(); i++)
     {
         T* item = getAt(i);
-        string line = serialize(item);
+        std::string line = serialize(item);
         lines.push_back(line);
     }
     return FileIO::writeLines(filePath, lines);
 }
 template <typename T>
-const string& Repository<T>::getFilePath() const
+const std::string& Repository<T>::getFilePath() const
 {
     return filePath;
 }

@@ -7,7 +7,7 @@
 ## `getCurrentDateTime()`
 
 ```cpp
-static std::string getCurrentDateTime();
+static string getCurrentDateTime();
 ```
 
 Hàm lấy thời gian hệ thống bằng `std::time(nullptr)`, chuyển sang **giờ địa phương của máy đang chạy** bằng `std::localtime`, rồi định dạng bằng `std::strftime` thành `YYYY-MM-DDTHH:MM:SS`. Ví dụ một kết quả có thể là `2026-11-10T14:30:05`; đây là ví dụ định dạng, không phải thời gian cố định mà hàm trả về.

@@ -4,17 +4,16 @@
 #include <string>
 #include "../models/Pricing.h"
 
-using namespace std;
 
 class PricingRepository
 {
 private:
-    string filePath;
+    std::string filePath;
     Pricing pricing;
     bool loaded;
 
 public:
-    PricingRepository(const string& filePath);
+    PricingRepository(const std::string& filePath);
     bool load();
     bool save();
     bool update(const Pricing& newPricing);

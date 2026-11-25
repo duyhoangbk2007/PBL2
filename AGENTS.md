@@ -83,7 +83,8 @@ Các thành phần chưa tuân thủ sẽ được refactor theo kế hoạch, k
 - Kiểm tra `nullptr` trước khi truy cập con trỏ.
 - Sử dụng ngoặc nhọn cho `if`, `for`, `while`; thụt lề 4 dấu cách.
 - Comment ngắn gọn, giải thích mục đích hoặc lý do xử lý.
-- Chỉ `#include` thư viện cần thiết; tránh `using namespace std;` trong header mới.
+- File `.h`: không dùng `using namespace std;`; viết đầy đủ `std::` cho thành phần thư viện chuẩn và khai báo trực tiếp các `#include` cần thiết, không phụ thuộc vào namespace hoặc include truyền tiếp từ header khác.
+- File `.cpp`: nếu cần, đặt `using namespace std;` sau toàn bộ các dòng `#include`; không dùng tiền tố `std::` dư thừa khi đã có chỉ thị này.
 - Tái sử dụng Validator, `Repository<T>` và các tiện ích hiện có; không viết lại chức năng trùng lặp.
 - Không tự ý thêm hoặc thay đổi public API, quy tắc xóa/sửa, định dạng dữ liệu hay ID.
 

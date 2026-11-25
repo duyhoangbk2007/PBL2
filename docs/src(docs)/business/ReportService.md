@@ -241,7 +241,6 @@ Invoice* ReportService::requireInvoiceForTicket(Ticket* ticket)
     {
         throw runtime_error("Du lieu ve bao cao khong hop le");
     }
-
 ```
 
 Kiểm tra con trỏ Ticket và các khoản tiền hữu hạn, không âm trước khi truy cập. Nếu dữ liệu sai, hàm ném `runtime_error` thay vì bỏ vé khỏi thống kê.
@@ -261,7 +260,6 @@ Kiểm tra con trỏ Ticket và các khoản tiền hữu hạn, không âm trư
     }
 
     validateInvoice(invoice);
-
 ```
 
 Tra Invoice và Showtime bằng ID lưu trên vé, đối chiếu các con trỏ liên kết và `showtimeId`; sau đó kiểm tra ngày lập và tổng tiền Invoice bằng `validateInvoice()`. Thiếu liên kết hoặc sai tham chiếu đều ném lỗi.
@@ -354,7 +352,6 @@ double ReportService::calculateMovieRevenue(const string& movieId, const string&
         {
             throw runtime_error("Suat chieu khong lien ket phim hop le");
         }
-
 ```
 
 Đặt cờ `hasSoldTicket` về `false` và tổng về 0. Duyệt từng vé, dùng `requireInvoiceForTicket()` xác nhận Invoice/Showtime, rồi tra Movie theo suất; phim thiếu hoặc liên kết sai ném lỗi.
@@ -369,7 +366,6 @@ double ReportService::calculateMovieRevenue(const string& movieId, const string&
         {
             continue;
         }
-
 ```
 
 Các vé không còn SOLD, khác phim hoặc hóa đơn lập ngoài `[from, to)` được bỏ qua bằng `continue`. Điều kiện dùng ngày **bán** của Invoice, không dùng ngày hủy hay ngày suất chiếu.

@@ -5,7 +5,6 @@
 #include "../data_access/MovieRepository.h"
 #include "AuthService.h"
 
-using namespace std;
 
 class MovieService
 {
@@ -22,17 +21,17 @@ public:
     // Them phim
     bool addMovie(Movie* movie);
     bool updateMovie(const Movie& newValues);
-    bool removeMovie(const string& movieId);
-    bool setMovieActive(const string& movieId, bool active);
+    bool removeMovie(const std::string& movieId);
+    bool setMovieActive(const std::string& movieId, bool active);
 
     // Tra cuu phim
-    const Movie* findMovieById(const string& movieId);
+    const Movie* findMovieById(const std::string& movieId);
     const Movie* getMovieAt(int index);
     int getMovieCount();
 
-    vector<const Movie*> getNowShowingMovies();
-    vector<const Movie*> getComingSoonMovies();
-    vector<const Movie*> searchMoviesByTitle(const string& keyword);
+    std::vector<const Movie*> getNowShowingMovies();
+    std::vector<const Movie*> getComingSoonMovies();
+    std::vector<const Movie*> searchMoviesByTitle(const std::string& keyword);
 };
 
 #endif

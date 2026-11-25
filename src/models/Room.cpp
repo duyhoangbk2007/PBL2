@@ -163,7 +163,7 @@ bool Room::unlinkShowtime(Showtime* showtime)
     return false;
 }
 
-Showtime* Room::findShowtime(const std::string& showtimeId) {
+Showtime* Room::findShowtime(const string& showtimeId) {
     int n = this->showtimes.nodeCount();
     for (int i = 0; i < n; i++) {
         Showtime* current = this->showtimes.getAt(i)->data;

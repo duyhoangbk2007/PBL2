@@ -6,8 +6,8 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-
 using namespace std;
+
 
 ReportService::ReportService(InvoiceRepository& invoiceRepo,
                              TicketRepository& ticketRepo,

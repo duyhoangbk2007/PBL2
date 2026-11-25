@@ -5,7 +5,6 @@
 #include "../data_access/MemberRepository.h"
 #include "AuthService.h"
 
-using namespace std;
 
 class MemberService
 {
@@ -22,8 +21,8 @@ public:
     bool addMember(Member* member);
     bool updateMember(const Member& newValues);
 
-    const Member* findMemberById(const string& memberId);
-    const Member* findMemberByPhone(const string& phone);
+    const Member* findMemberById(const std::string& memberId);
+    const Member* findMemberByPhone(const std::string& phone);
     const Member* getMemberAt(int index);
     int getMemberCount();
 };

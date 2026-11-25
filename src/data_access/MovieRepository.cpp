@@ -2,8 +2,8 @@
 #include "../utils/Validator.h"
 #include <stdexcept>
 #include <vector>
-
 using namespace std;
+
 
 // Kiem tra toan bo du lieu Movie
 bool MovieRepository::isValidMovie(const Movie* movie)

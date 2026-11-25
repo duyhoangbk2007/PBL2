@@ -2,8 +2,8 @@
 #include "../utils/Validator.h"
 #include <stdexcept>
 #include <vector>
-
 using namespace std;
+
 
 SeatRepository::SeatRepository(const string& filePath, RoomRepository& roomRepo)
     : repo(filePath, getSeatKey, stringToSeat, seatToString), roomRepo(roomRepo)

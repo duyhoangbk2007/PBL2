@@ -373,7 +373,6 @@ vector<Invoice*> InvoiceService::getInvoiceHistory(const string& from,
             throw runtime_error("Staff khong duoc loc hoa don cua nhan vien khac");
         }
     }
-
 ```
 
 `substr(0, 10)` lấy phần ngày hiện tại; cộng 24 giờ để có mốc 00:00 ngày kế. Staff phải truyền khoảng nằm trong ngày này. Nếu chỉ định `staffId` khác ID đang đăng nhập, Service từ chối thay vì tin bộ lọc GUI.

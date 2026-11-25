@@ -52,24 +52,23 @@ Các helper private: `getUserId`, `stringToUser`, `userToString`, `isValidUser`.
 #include "Repository.h"
 #include "../models/User.h"
 
-using namespace std;
 
 class UserRepository : public IRepository<User> {
 private:
     Repository<User> repo;
 
-    unordered_map<string, User*> usersById; // tìm user bằng id
-    unordered_map<string, User*> usersByUsername; //tìm user bằng tên đăng nhập
+    std::unordered_map<std::string, User*> usersById; // tìm user bằng id
+    std::unordered_map<std::string, User*> usersByUsername; //tìm user bằng tên đăng nhập
 
-    static string getUserId(User* user);
-    static User* stringToUser(const string& line);
-    static string userToString(User* user);
+    static std::string getUserId(User* user);
+    static User* stringToUser(const std::string& line);
+    static std::string userToString(User* user);
 
     // Kiem tra du lieu User
     static bool isValidUser(const User* user);
 
 public:
-    UserRepository(const string& filePath);
+    UserRepository(const std::string& filePath);
 
     bool load() override;
     bool save() override;
@@ -77,11 +76,11 @@ public:
     // Quan ly tai khoan
     bool add(User* user) override;
     bool update(const User& newValues) override;
-    bool removeById(const string& userId) override;
+    bool removeById(const std::string& userId) override;
 
     // Truy van tai khoan
-    User* findById(const string& userId) override;
-    User* findByUsername(const string& username);
+    User* findById(const std::string& userId) override;
+    User* findByUsername(const std::string& username);
     User* getAt(int index) override;
     int count() override;
     bool isLoaded() override;
@@ -99,8 +98,8 @@ public:
 #include "../utils/Validator.h"
 #include <stdexcept>
 #include <vector>
-
 using namespace std;
+
 
 // Kiem tra du lieu User
 bool UserRepository::isValidUser(const User* user)

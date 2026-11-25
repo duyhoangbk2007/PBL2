@@ -51,14 +51,15 @@ double Pricing::getMemberDiscount() const
 
 #include "Pricing.h"
 #include <cmath>
+using namespace std;
 
 bool Pricing::isValid() const
 {
-    if (!std::isfinite(standardPrice) ||
-        !std::isfinite(vipPrice) ||
-        !std::isfinite(couplePrice) ||
-        !std::isfinite(studentDiscount) ||
-        !std::isfinite(memberDiscount))
+    if (!isfinite(standardPrice) ||
+        !isfinite(vipPrice) ||
+        !isfinite(couplePrice) ||
+        !isfinite(studentDiscount) ||
+        !isfinite(memberDiscount))
     {
         return false;
     }

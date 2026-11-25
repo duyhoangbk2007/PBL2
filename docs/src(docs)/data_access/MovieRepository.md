@@ -176,7 +176,6 @@ Các hàm trên được khai báo `static` vì không cần truy cập trực t
 #include "Repository.h"
 #include "../models/Movie.h"
 
-using namespace std;
 
 class MovieRepository : public IRepository<Movie>
 {
@@ -184,15 +183,15 @@ private:
     Repository<Movie> repo;
 
     // Cac ham cung cap cho Repository<Movie>
-    static string getMovieId(Movie* movie);
-    static Movie* stringToMovie(const string& line);
-    static string movieToString(Movie* movie);
+    static std::string getMovieId(Movie* movie);
+    static Movie* stringToMovie(const std::string& line);
+    static std::string movieToString(Movie* movie);
 
     // Kiem tra du lieu Movie
     static bool isValidMovie(const Movie* movie);
 
 public:
-    MovieRepository(const string& filePath);
+    MovieRepository(const std::string& filePath);
 
     // Doc va ghi du lieu
     bool load() override;
@@ -201,10 +200,10 @@ public:
     // Quan ly phim
     bool add(Movie* movie) override;
     bool update(const Movie& newValues) override;
-    bool removeById(const string& movieId) override;
+    bool removeById(const std::string& movieId) override;
 
     // Truy van phim
-    Movie* findById(const string& movieId) override;
+    Movie* findById(const std::string& movieId) override;
     Movie* getAt(int index) override;
     int count() override;
     bool isLoaded() override;
@@ -224,8 +223,8 @@ Giữ nguyên logic triển khai hiện tại vì chữ ký của các hàm đã
 #include "../utils/Validator.h"
 #include <stdexcept>
 #include <vector>
-
 using namespace std;
+
 
 // Kiem tra toan bo du lieu Movie
 
@@ -471,6 +470,7 @@ bool MovieRepository::isLoaded()
 
 ```cpp
 #include <string>
+using namespace std;
 ```
 
 Cung cấp kiểu dữ liệu `string` và các hàm xử lý chuỗi.
@@ -487,6 +487,7 @@ Các hàm được sử dụng:
 
 ```cpp
 #include <vector>
+using namespace std;
 ```
 
 `vector` là cấu trúc dữ liệu có khả năng tự thay đổi kích thước.

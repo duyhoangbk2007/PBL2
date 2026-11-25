@@ -1,8 +1,8 @@
 #include "PricingService.h"
 #include <stdexcept>
 #include <cmath>
-
 using namespace std;
+
 
 PricingService::PricingService(PricingRepository& pricingRepo, AuthService& authService)
     : pricingRepo(pricingRepo), authService(authService)
