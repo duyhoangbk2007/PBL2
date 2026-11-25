@@ -68,7 +68,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Nhân viên | UserRepository, UserService | UserRepository đã CHỐT MARKDOWN, triển khai DIP, bỏ hai `unordered_map`, chuẩn hóa validation và kiểm thử `test_user_repository.cpp` ngày 25/11/2026 (69 PASS, 0 FAIL); UserService còn theo kế hoạch |
 | Xác thực | AuthService và các thành phần liên quan | Chuẩn hóa xác thực, Permission |
 | Phân quyền | RolePermissionRepository và các thành phần liên quan | Refactor và kiểm thử quyền |
-| Thành viên | MemberRepository, MemberService | Refactor và hoàn thiện nghiệp vụ |
+| Thành viên | MemberRepository, MemberService | MemberRepository đã refactor DIP, bỏ map ID, giữ map phone, chuẩn hóa validation, mã nguồn và tài liệu; `test_member_repository.cpp` ngày 25/11/2026 đạt 204 PASS, 0 FAIL. Liên kết Invoice chưa kiểm thử; MemberService còn theo kế hoạch |
 | Giá vé | PricingRepository, PricingService | Refactor và hoàn thiện nghiệp vụ |
 
 **Trọng tâm:** Các nghiệp vụ quản lý dữ liệu nền tảng, người dùng, phân quyền, thành viên và giá vé.

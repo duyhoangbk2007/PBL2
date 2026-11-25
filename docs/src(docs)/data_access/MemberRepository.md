@@ -1,102 +1,234 @@
-# MemberRepository — thiết kế refactor đã CHỐT MARKDOWN
+# MemberRepository
 
 ## 1. Tổng quan
 
-`MemberRepository` thuộc Data Access, kế thừa `IRepository<Member>` và chứa `Repository<Member>` để quản lý `Member*`. Tài liệu đã **CHỐT MARKDOWN**; hai khối mã ở mục 5 là bản chuẩn để triển khai. Chưa ghi nhận kết quả kiểm thử cho bản refactor.
+`MemberRepository` là lớp thuộc tầng Data Access, chịu trách nhiệm quản lý dữ liệu thành viên trong hệ thống PBL2.
 
-Lớp thực hiện bốn nhóm trách nhiệm: kiểm tra thuộc tính Member và số điện thoại duy nhất; chuyển đổi giữa Member và dòng TXT; điều phối `Repository<Member>` khi nạp, lưu, thêm và truy vấn; giữ chỉ mục phone nhất quán với danh sách Member. Lớp không cấp Permission, sinh ID, cộng/trừ điểm nghiệp vụ hoặc sở hữu hóa đơn.
+Lớp kế thừa `IRepository<Member>` để triển khai hợp đồng chung của Repository, đồng thời sử dụng `Repository<Member>` thông qua composition để quản lý danh sách đối tượng và đọc ghi file TXT.
 
-**File liên quan:** `src/data_access/IRepository.h`, `Repository.h`, `MemberRepository.h/.cpp`, `src/models/Member.h`, `src/utils/Validator.h`. Cần phân biệt mã đã triển khai ở mục 5 với các bài test đang nằm trong kế hoạch mục 12.
+MemberRepository chịu trách nhiệm:
 
-Phạm vi đã thống nhất: bỏ `membersById`, giữ `membersByPhone` cho tra cứu số điện thoại; dùng `Repository<Member>` làm nơi lưu và sở hữu đối tượng duy nhất. Giữ schema `members.txt`, các chữ ký public và chính sách chưa xóa thành viên. Mã cho `load()`, `add()` và `update()` đã được chốt. Service xử lý Permission và nghiệp vụ điểm; Repository kiểm tính hợp lệ và toàn vẹn dữ liệu.
+- Kiểm tra tính hợp lệ của dữ liệu thành viên.
+- Chuyển đổi dữ liệu giữa đối tượng Member và chuỗi TXT.
+- Thêm, cập nhật và truy vấn thành viên.
+- Kiểm tra tính duy nhất của số điện thoại.
+- Quản lý chỉ mục tìm kiếm thành viên theo số điện thoại.
+- Triển khai đầy đủ các hàm của `IRepository<Member>`.
 
-Đối chiếu: [MovieRepository.md](MovieRepository.md), [UserRepository.md](UserRepository.md), [validation_rules.md](../../architecture/validation_rules.md), [business_rules.md](../../overview/business_rules.md), [data_format.md](../../overview/data_format.md).
+MemberRepository không trực tiếp xử lý phân quyền, sinh mã thành viên hoặc các nghiệp vụ tích điểm thuộc tầng Business Logic.
+
+**File liên quan:**
+
+- `src/data_access/IRepository.h`
+- `src/data_access/Repository.h`
+- `src/data_access/MemberRepository.h`
+- `src/data_access/MemberRepository.cpp`
+- `src/models/Member.h`
+- `src/utils/Validator.h`
+- `src/utils/Validator.cpp`
+
+**Trạng thái:** CHỐT MARKDOWN; đã triển khai mã nguồn `.h` và `.cpp` theo thiết kế refactor. Chưa xác nhận kết quả kiểm thử.
 
 ## 2. Kiến trúc
 
 ### 2.1. Quan hệ giữa các lớp
 
 ```text
-Service → IRepository<Member> ← MemberRepository
-                                      │ composition
-                                      ▼
-                              Repository<Member>
-                                      │ sở hữu Member*
-                                      ▼
-                           DoublyLinkedList<Member*>
-
-MemberRepository → membersByPhone → Member* mượn
+MemberService (du kien)
+     |
+     | Dependency Injection
+     v
+IRepository<Member>
+     ^
+     | Public Inheritance
+     |
+MemberRepository
+     |
+     | Composition
+     v
+Repository<Member>
+     |
+     v
+DoublyLinkedList<Member*>
 ```
 
-### 2.2. Quan hệ với `IRepository<Member>`
+Ngoài ra, MemberRepository sử dụng `unordered_map` để hỗ trợ tìm kiếm thành viên theo số điện thoại.
 
-Kế thừa công khai cho phép dùng một `MemberRepository` qua `IRepository<Member>&` hoặc `IRepository<Member>*`. Chín phương thức chung có `override`; `findByPhone()` là API riêng của concrete Repository và không được thêm vào interface chung. Interface không giữ dữ liệu hay quyền sở hữu `Member*`. `MemberService` hiện còn phụ thuộc concrete Repository; tài liệu này chỉ xác nhận DIP tại tầng Repository.
+```text
+MemberRepository
+     |
+     +-- Repository<Member>
+     |        |
+     |        v
+     |   DoublyLinkedList<Member*>
+     |
+     +-- membersByPhone
+              |
+              v
+         Member* (con tro muon)
+```
 
-### 2.3. Quan hệ với `Repository<Member>` và chỉ mục phone
+### 2.2. Quan hệ với IRepository
 
-`Repository<Member>` đã tra ID bằng callback `getMemberId`, nên `membersById` lặp lại chức năng lưu trữ chung và phải đồng bộ thêm khi load/add. `findById()` chuyển tiếp trực tiếp đến `repo.findById()`. Số điện thoại là thuộc tính duy nhất ngoài ID; generic Repository không lập chỉ mục theo phone. Vì vậy giữ `membersByPhone` để tra cứu nhanh và kiểm tra trùng số. Map chỉ giữ con trỏ mượn, không được `delete` Member. Mã đã triển khai đồng bộ map khi load, add và update; rollback ở `update()` chỉ hoàn tác chỉ mục mới nếu setter ném, chưa bảo đảm hoàn tác toàn bộ thuộc tính.
+MemberRepository kế thừa công khai từ `IRepository<Member>`.
 
-Theo [validation_rules.md](../../architecture/validation_rules.md), `Repository<Member>` kiểm loaded, null, trùng con trỏ, ID rỗng/trùng, vị trí và lỗi lưu trữ. `MemberRepository` kiểm ID đúng dạng, tên, số điện thoại duy nhất, điểm không âm và các ràng buộc riêng khi thêm/cập nhật. Service kiểm Permission, điều kiện nghiệp vụ và sinh ID. Không kiểm lặp điều kiện tầng dưới đã bảo đảm nếu không cần cho an toàn ở tầng hiện tại.
+```cpp
+class MemberRepository : public IRepository<Member>
+```
+
+MemberRepository phải triển khai đầy đủ 9 hàm thuần ảo được khai báo trong interface.
+
+Các hàm ghi đè được khai báo bằng từ khóa `override`.
+
+Ngoài các hàm của interface, MemberRepository cung cấp thêm hàm `findByPhone()` để tìm kiếm thành viên theo số điện thoại.
+
+Hàm `removeById()` vẫn được triển khai để đáp ứng interface nhưng không hỗ trợ xóa thành viên.
+
+### 2.3. Quan hệ với Repository
+
+MemberRepository chứa một đối tượng `Repository<Member>`.
+
+```cpp
+Repository<Member> repo;
+```
+
+Đây là quan hệ composition.
+
+`Repository<Member>` chịu trách nhiệm:
+
+- Quản lý danh sách thành viên.
+- Quản lý bộ nhớ của các đối tượng Member.
+- Đọc và ghi file TXT.
+- Thêm và tìm kiếm đối tượng.
+- Quản lý trạng thái nạp dữ liệu.
+
+MemberRepository bổ sung các logic riêng của Member mà Repository chung không thể xử lý.
+
+Theo `docs/architecture/validation_rules.md`, `Repository<Member>` kiểm tra trạng thái loaded và các điều kiện lưu trữ chung; MemberRepository kiểm tra thuộc tính Member, tính duy nhất của số điện thoại và các ràng buộc riêng khi thêm hoặc cập nhật thành viên.
+
+### 2.4. Chỉ mục tìm kiếm theo số điện thoại
+
+MemberRepository sử dụng một `unordered_map`.
+
+```cpp
+std::unordered_map<std::string, Member*> membersByPhone;
+```
+
+Trong đó:
+
+- Key: Số điện thoại của thành viên.
+- Value: Con trỏ đến đối tượng Member.
+
+Ví dụ:
+
+```text
+0912345678 --> Member MEM0001
+0987654321 --> Member MEM0002
+0901234567 --> Member MEM0003
+```
+
+Việc sử dụng `unordered_map` giúp tìm kiếm thành viên theo số điện thoại nhanh hơn so với duyệt toàn bộ danh sách.
+
+MemberRepository không sử dụng `membersById` vì chức năng tìm kiếm theo mã đã được cung cấp bởi `Repository<Member>`.
+
+Map chỉ lưu con trỏ đến các đối tượng đang được Repository quản lý, không tạo thêm đối tượng Member.
+
+Chỉ mục phải được đồng bộ khi thực hiện:
+
+- `load()`.
+- `add()`.
+- `update()`.
 
 ## 3. Định dạng dữ liệu
 
-Mỗi dòng `members.txt` có bốn trường theo đúng thứ tự, phân cách bằng `|`, không có header:
+Dữ liệu thành viên được lưu dưới dạng TXT.
+
+Mỗi dòng chứa một thành viên với 4 trường, phân cách bằng ký tự `|`.
 
 ```text
 memberId|fullName|phone|points
-MEM0001|Nguyen Van A|0912345678|0
 ```
 
-| STT | Trường | Kiểu trong Model | Kiểm tra khi parse |
+| STT | Trường | Kiểu dữ liệu | Ý nghĩa |
 |---|---|---|---|
-| 1 | `memberId` | `std::string` | `Validator::isValidId(..., "MEM")` |
-| 2 | `fullName` | `std::string` | `Validator::isValidText()` |
-| 3 | `phone` | `std::string` | `Validator::isValidPhone()`, duy nhất giữa Member |
-| 4 | `points` | `int` | Chuỗi không rỗng, chỉ có chữ số; `stoi` trong miền `int`; giá trị không âm |
+| 1 | memberId | string | Mã thành viên |
+| 2 | fullName | string | Họ và tên thành viên |
+| 3 | phone | string | Số điện thoại |
+| 4 | points | int | Điểm tích lũy |
 
-ID có tiền tố `MEM` và bốn chữ số. Tên phải là văn bản hợp lệ; phone đúng mười chữ số và bắt đầu bằng `0`; points là số nguyên không âm. `stringToMember()` phải kiểm số trường và parse points trước khi tạo `Member`, rồi gọi `isValidMember()`. **Chuỗi points phải không rỗng và chỉ gồm chữ số ASCII `0`–`9`**; không nhận dấu `+`, dấu `-`, khoảng trắng hoặc chữ. `stoi` chuyển chuỗi số và báo lỗi nếu vượt phạm vi `int`. Không đổi schema, cách cấp ID hoặc nghiệp vụ điểm trong đợt này.
+Ví dụ:
+
+```text
+MEM0001|Nguyen Van A|0912345678|0
+MEM0002|Tran Van B|0987654321|150
+```
+
+Quy định:
+
+- Mã thành viên sử dụng tiền tố `MEM`.
+- Họ và tên phải đáp ứng quy định của Validator.
+- Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng 0.
+- Số điện thoại không được trùng giữa các thành viên.
+- Điểm tích lũy không được âm.
+- Trường points trong file TXT không được rỗng và chỉ chứa chữ số từ 0 đến 9.
+- Thành viên mới phải có điểm tích lũy bằng 0 khi gọi `add()`.
+
+Số điện thoại được lưu dưới dạng `string` thay vì kiểu số nguyên để giữ nguyên chữ số 0 ở đầu.
+
+Quá trình refactor không thay đổi định dạng dữ liệu hiện tại.
 
 ## 4. Thiết kế lớp
 
 ### 4.1. Thuộc tính
 
-| Thành phần | Vai trò |
-|---|---|
-| `Repository<Member> repo` | Lưu trữ và sở hữu mọi `Member*` |
-| `std::unordered_map<std::string, Member*> membersByPhone` | Chỉ mục mượn theo phone, không sở hữu Member |
-| `getMemberId`, `stringToMember`, `memberToString` | Callback ID, parse, serialize cho generic Repository |
-| `isValidMember` | Validation riêng của Member |
+| Thuộc tính | Kiểu dữ liệu | Phạm vi | Chức năng |
+|---|---|---|---|
+| repo | Repository<Member> | private | Quản lý dữ liệu thành viên |
+| membersByPhone | unordered_map<string, Member*> | private | Chỉ mục tìm kiếm theo số điện thoại |
 
-Header không có `membersById`; chỉ giữ `<unordered_map>` vì `membersByPhone` vẫn cần. Header dùng `std::` đầy đủ và tự include `<string>`, `<unordered_map>`. `.cpp` dùng `using namespace std;` sau toàn bộ include. Thứ tự nhóm: callback, validation, constructor, load/save, add/update/remove, truy vấn.
+MemberRepository không khai báo lại danh sách thành viên, đường dẫn file hoặc trạng thái nạp dữ liệu vì các thuộc tính này đã được quản lý bởi `Repository<Member>`.
+
+`membersByPhone` chỉ hỗ trợ tìm kiếm và kiểm tra trùng số điện thoại, không chịu trách nhiệm quản lý bộ nhớ của các đối tượng Member.
 
 ### 4.2. Các hàm private
 
-| Hàm | Trả về | Vai trò |
+| Hàm | Kiểu trả về | Chức năng |
 |---|---|---|
-| `getMemberId(Member*)` | `std::string` | Callback lấy ID, null trả chuỗi rỗng |
-| `stringToMember(const std::string&)` | `Member*` | Parse một dòng TXT, cấp phát Member hợp lệ |
-| `memberToString(Member*)` | `std::string` | Serialize Member thành một dòng TXT |
-| `isValidMember(const Member*)` | `bool` | Kiểm thuộc tính Member bằng Validator và điểm không âm |
+| getMemberId(Member* member) | string | Lấy mã thành viên |
+| stringToMember(const string& line) | Member* | Chuyển chuỗi TXT thành Member |
+| memberToString(Member* member) | string | Chuyển Member thành chuỗi TXT |
+| isValidMember(const Member* member) | bool | Kiểm tra tính hợp lệ của thành viên |
 
-Các helper đều `static`, không truy cập trực tiếp trạng thái của `MemberRepository`. `getMemberId`, `stringToMember`, `memberToString` được truyền vào constructor của `Repository<Member>` dưới dạng callback.
+Các hàm trên được khai báo `static` vì không cần truy cập trực tiếp vào thuộc tính của MemberRepository.
+
+Ba hàm `getMemberId()`, `stringToMember()` và `memberToString()` được cung cấp cho `Repository<Member>` thông qua con trỏ hàm.
+
+Việc kiểm tra số điện thoại được thực hiện thông qua `Validator::isValidPhone()`.
 
 ### 4.3. Các hàm public
 
-| Nhóm | Hàm | Trả về | Vai trò |
+| Hàm | Kiểu trả về | Chức năng | Override |
 |---|---|---|---|
-| Khởi tạo | `MemberRepository(filePath)` | — | Tạo `repo` và map rỗng, chưa load |
-| TXT | `load()`, `save()` | `bool` | Nạp và ghi dữ liệu |
-| Chỉnh sửa | `add(member)`, `update(newValues)`, `removeById(memberId)` | `bool` | Thêm, sửa; xóa luôn bị từ chối |
-| Truy vấn | `findById(memberId)`, `findByPhone(phone)`, `getAt(index)` | `Member*` | Trả con trỏ mượn hoặc null |
-| Trạng thái | `count()`, `isLoaded()` | `int`, `bool` | Đếm và xem trạng thái loaded |
+| MemberRepository(const string& filePath) | Không có | Constructor | Không |
+| load() | bool | Nạp dữ liệu | Có |
+| save() | bool | Lưu dữ liệu | Có |
+| add(Member* member) | bool | Thêm thành viên | Có |
+| update(const Member& newValues) | bool | Cập nhật thành viên | Có |
+| removeById(const string& memberId) | bool | Không hỗ trợ xóa thành viên | Có |
+| findById(const string& memberId) | Member* | Tìm thành viên theo mã | Có |
+| findByPhone(const string& phone) | Member* | Tìm thành viên theo số điện thoại | Không |
+| getAt(int index) | Member* | Lấy thành viên theo vị trí | Có |
+| count() | int | Đếm số lượng thành viên | Có |
+| isLoaded() | bool | Kiểm tra trạng thái nạp | Có |
 
-`load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded` là chín phương thức của interface. `findByPhone` phục vụ kiểm tra thuộc tính duy nhất ngoài ID.
+Hàm `findByPhone()` là hàm riêng của MemberRepository, không thuộc `IRepository<Member>`.
 
-## 5. Mã nguồn đã chốt
+Hàm `removeById()` luôn trả về `false` vì hệ thống không hỗ trợ xóa thành viên nhằm bảo toàn lịch sử giao dịch.
+## 5. Mã nguồn
 
-Các khối sau đã **CHỐT MARKDOWN**, bao gồm định nghĩa của `load()`, `add()` và `update()`. `Validator::isValidPhone()` đã tồn tại trong mã hiện tại với cùng logic helper cục bộ; MemberRepository gọi lại hàm này mà không thay đổi Validator.
+### 5.1. MemberRepository.h
 
-### 5.1. `MemberRepository.h`
+**Đường dẫn:** `src/data_access/MemberRepository.h`
 
 ```cpp
 #ifndef MEMBER_REPOSITORY_H
@@ -143,7 +275,11 @@ public:
 #endif
 ```
 
-### 5.2. `MemberRepository.cpp`
+### 5.2. MemberRepository.cpp
+
+**Đường dẫn:** `src/data_access/MemberRepository.cpp`
+
+MemberRepository sử dụng Repository chung để quản lý danh sách thành viên, đồng thời duy trì chỉ mục số điện thoại trong các thao tác load, add và update.
 
 ```cpp
 #include "MemberRepository.h"
@@ -417,263 +553,541 @@ bool MemberRepository::isLoaded()
 }
 ```
 
-## 6. Thư viện và cú pháp
+## 6. Giải thích các thư viện và từ khóa
 
-### 6.1. Thư viện và include
-
-| Include | Nơi dùng | Lý do |
-|---|---|---|
-| `<string>` | Header | Khai báo `std::string` cho đường dẫn, ID và phone; header tự đủ include |
-| `<unordered_map>` | Header | Khai báo `std::unordered_map<std::string, Member*> membersByPhone` |
-| `IRepository.h` | Header | Kế thừa interface `IRepository<Member>` |
-| `Repository.h` | Header | Thành viên `Repository<Member> repo` cần kiểu đầy đủ |
-| `Member.h` | Header | Chữ ký, callback và validation dùng Model `Member` |
-| `Validator.h` | `.cpp` | Gọi `isValidId`, `isValidText`, `isValidPhone` |
-| `<vector>` | `.cpp` | `vector<string> fields` giữ bốn trường của một dòng TXT |
-| `<stdexcept>` | `.cpp` | `runtime_error` báo lỗi parse và serialize |
-
-Header dùng `std::string` và `std::unordered_map` theo quy ước namespace, không dùng `using namespace std;`. Sau toàn bộ `#include`, `.cpp` khai báo `using namespace std;`, nên dùng `string`, `vector`, `runtime_error` trong định nghĩa. `std::string` là kiểu lưu chuỗi, `to_string(int)` tạo trường points khi ghi; `stoi(string)` chuyển points khi đọc. Không include thư viện chỉ vì header khác tình cờ đã include.
-
-### 6.2. `unordered_map` và `iterator`
-
-`unordered_map<Key, Value>` là bảng băm của thư viện chuẩn. Ở đây `Key` là `std::string` phone, `Value` là `Member*` mượn. `membersByPhone[phone] = member` tạo hoặc thay entry theo khóa; nó không sao chép hay sở hữu đối tượng Member. `find(phone)` trả **iterator**, tức vị trí của entry khi tìm được; nếu không có, nó trả `end()`. `end()` là vị trí đánh dấu sau phần tử cuối, không được dereference. Vì vậy `findByPhone()` so `it == membersByPhone.end()` trước khi dùng `it->second`. `auto` để compiler suy ra kiểu iterator dài của `unordered_map` mà không đổi hành vi.
-
-Map cho phép tra phone trung bình O(1), nhưng vẫn phải giữ nhất quán với `repo`, nơi sở hữu và quản lý ID. Map không giữ quyền sở hữu, nên phải xóa entry trước khi `repo.clear()` giải phóng Member khi load lỗi. Trong `add()` và `update()`, `erase(key)` gỡ **chỉ mục**, không `delete Member*`. Trường hợp ngoại lệ khi setter trong `update()` đã làm đổi Model được mô tả riêng ở mục 8.5.
-
-### 6.3. Từ khóa và cú pháp C++17
-
-`static` trên helper cho phép truyền callback vào constructor generic Repository mà không cần một instance `MemberRepository`. `override` yêu cầu compiler kiểm chữ ký khớp hàm ảo của interface. `const Member*` và `const string&` ngăn sửa đầu vào qua tham số; `&newValues` lấy địa chỉ tham chiếu để gọi validator. `nullptr` là giá trị con trỏ rỗng; phải kiểm trước toán tử `->`. Danh sách khởi tạo sau `:` tạo `repo` trước thân constructor. `try`/`catch (...)` trong `load`, `add`, `update` phục vụ dọn chỉ mục và ném lại bằng `throw;`; không chuyển lỗi thành thành công. `catch (const exception&)` ở parser gom lỗi `stoi` thành lỗi points. `new` tạo `Member` trên heap; `delete` giải phóng khi validation sau parse thất bại. `(void)memberId;` đánh dấu tham số cố ý chưa dùng trong hàm xóa luôn từ chối.
-
-## 7. Giải thích các hàm private
-
-### 7.1. `isValidMember(const Member* member)`
-
-**Chữ ký:** `static bool isValidMember(const Member* member)`; tham số là con trỏ chỉ đọc, có thể null. Hàm trả `true` khi ID, tên, phone và điểm hợp lệ; ngược lại trả `false`.
-
-**A. Luồng xử lý**
-
-```text
-member == nullptr? ─có→ false
-↓ không
-ID hợp lệ với tiền tố MEM? ─không→ false
-↓ có
-fullName hợp lệ? ─không→ false
-↓ có
-phone hợp lệ? ─không→ false
-↓ có
-points < 0? ─có→ false
-↓ không
-true
-```
-
-**B. Giải thích code**
-
-1. Chặn null trước khi đọc thuộc tính:
-
-   ```cpp
-   if (member == nullptr)
-   {
-       return false;
-   }
-   ```
-
-2. Kiểm ID và tên bằng Validator; mỗi điều kiện sai kết thúc ngay:
-
-   ```cpp
-   if (!Validator::isValidId(member->getMemberId(), "MEM"))
-   {
-       return false;
-   }
-   if (!Validator::isValidText(member->getFullName()))
-   {
-       return false;
-   }
-   ```
-
-3. Kiểm phone và điểm rồi trả kết quả. Tính duy nhất của phone do `load/add/update` kiểm:
-
-   ```cpp
-   if (!Validator::isValidPhone(member->getPhone()))
-   {
-       return false;
-   }
-   if (member->getPoints() < 0)
-   {
-       return false;
-   }
-   return true;
-   ```
-
-### 7.2. `getMemberId(Member* member)`
-
-**Chữ ký:** `static string getMemberId(Member* member)` trong `.cpp` (`std::string` trong header). Callback nhận con trỏ Member, trả bản sao ID hoặc chuỗi rỗng nếu null.
-
-**A. Luồng xử lý**
-
-```text
-member == nullptr? ─có→ return ""
-↓ không
-return member->getMemberId()
-```
-
-**B. Giải thích code**
+### 6.1. Thư viện string
 
 ```cpp
-if (member == nullptr)
+#include <string>
+```
+
+Cung cấp kiểu dữ liệu `string` và các hàm xử lý chuỗi.
+
+Các hàm được sử dụng:
+
+- `find()`: Tìm vị trí xuất hiện của ký tự.
+- `substr()`: Lấy một phần của chuỗi.
+- `empty()`: Kiểm tra chuỗi có rỗng hay không.
+- `stoi()`: Chuyển chuỗi thành số nguyên.
+- `to_string()`: Chuyển số thành chuỗi.
+
+Trong MemberRepository, các hàm này được sử dụng chủ yếu để chuyển đổi dữ liệu giữa đối tượng Member và dòng TXT.
+
+### 6.2. Thư viện vector
+
+```cpp
+#include <vector>
+```
+
+`vector` là cấu trúc dữ liệu có khả năng tự thay đổi kích thước.
+
+Trong MemberRepository, vector được sử dụng để lưu các trường dữ liệu sau khi tách một dòng TXT.
+
+```cpp
+vector<string> fields;
+```
+
+Các hàm được sử dụng:
+
+- `push_back()`: Thêm phần tử vào cuối vector.
+- `size()`: Lấy số lượng phần tử.
+- `fields[index]`: Truy cập phần tử theo vị trí.
+
+Ví dụ, sau khi tách dòng:
+
+```text
+MEM0001|Nguyen Van A|0912345678|150
+```
+
+Vector chứa:
+
+| Vị trí | Giá trị |
+|---|---|
+| fields[0] | MEM0001 |
+| fields[1] | Nguyen Van A |
+| fields[2] | 0912345678 |
+| fields[3] | 150 |
+
+Vector chỉ được sử dụng tạm thời trong quá trình chuyển đổi dữ liệu.
+
+Danh sách thành viên chính vẫn được quản lý bằng DoublyLinkedList thông qua Repository.
+
+### 6.3. Thư viện unordered_map
+
+```cpp
+#include <unordered_map>
+```
+
+`unordered_map` là cấu trúc dữ liệu lưu trữ các phần tử dưới dạng cặp khóa và giá trị (key-value).
+
+```cpp
+std::unordered_map<std::string, Member*> membersByPhone;
+```
+
+Trong đó:
+
+- `string`: Kiểu dữ liệu của khóa, tương ứng với số điện thoại.
+- `Member*`: Kiểu dữ liệu của giá trị, tương ứng với con trỏ Member.
+
+Mỗi khóa trong map là duy nhất.
+
+`unordered_map` sử dụng bảng băm (hash table), giúp tìm kiếm, thêm và xóa phần tử với độ phức tạp trung bình O(1).
+
+Các phương thức và toán tử được sử dụng:
+
+**Toán tử []**
+
+```cpp
+membersByPhone[phone] = member;
+```
+
+Thêm một cặp số điện thoại và con trỏ Member vào map.
+
+Nếu khóa đã tồn tại, giá trị tương ứng sẽ được cập nhật. Vì vậy, cần kiểm tra trùng số điện thoại trước khi thực hiện thao tác này.
+
+**Hàm find()**
+
+```cpp
+auto it = membersByPhone.find(phone);
+```
+
+Tìm phần tử có khóa tương ứng với số điện thoại.
+
+Hàm trả về iterator đến phần tử nếu tìm thấy, ngược lại trả về `membersByPhone.end()`.
+
+**Hàm end()**
+
+```cpp
+if (it == membersByPhone.end())
+```
+
+`end()` trả về iterator biểu thị vị trí sau phần tử cuối cùng.
+
+Điều kiện trên được sử dụng để xác định số điện thoại không tồn tại trong map.
+
+**Hàm erase()**
+
+```cpp
+membersByPhone.erase(phone);
+```
+
+Xóa phần tử có khóa tương ứng với số điện thoại.
+
+Hàm được sử dụng khi thay đổi số điện thoại hoặc rollback thao tác thất bại.
+
+**Hàm clear()**
+
+```cpp
+membersByPhone.clear();
+```
+
+Xóa toàn bộ phần tử trong map.
+
+Do map chỉ lưu con trỏ, `erase()` và `clear()` không giải phóng các đối tượng Member mà những con trỏ này trỏ đến.
+
+### 6.4. Iterator và từ khóa auto
+
+```cpp
+auto it = membersByPhone.find(phone);
+```
+
+Iterator là đối tượng hỗ trợ truy cập các phần tử trong container.
+
+Từ khóa `auto` cho phép trình biên dịch tự xác định kiểu dữ liệu của biến dựa trên giá trị khởi tạo.
+
+Câu lệnh trên tương đương với:
+
+```cpp
+unordered_map<string, Member*>::iterator it =
+    membersByPhone.find(phone);
+```
+
+Mỗi phần tử trong `unordered_map` gồm hai thành phần:
+
+- `it->first`: Khóa của phần tử.
+- `it->second`: Giá trị của phần tử.
+
+Trong MemberRepository:
+
+```cpp
+return it->second;
+```
+
+Trả về con trỏ Member tương ứng với số điện thoại đã tìm thấy.
+
+Cần kiểm tra iterator khác `end()` trước khi truy cập `first` hoặc `second`.
+
+### 6.5. Thư viện stdexcept
+
+```cpp
+#include <stdexcept>
+```
+
+Cung cấp các lớp exception tiêu chuẩn của C++.
+
+MemberRepository sử dụng `runtime_error` để thông báo lỗi khi dữ liệu không hợp lệ.
+
+Ví dụ:
+
+```cpp
+throw runtime_error("Sai so luong truong Member");
+```
+
+Exception được truyền về lớp gọi để xử lý.
+
+### 6.6. Cơ chế try-catch
+
+Khối `try-catch` được sử dụng để xử lý ngoại lệ phát sinh trong quá trình thực hiện chương trình.
+
+Ví dụ:
+
+```cpp
+try
 {
-    return "";
+    points = stoi(fields[3]);
 }
-return member->getMemberId();
+catch (const exception&)
+{
+    throw runtime_error("Points Member khong hop le");
+}
 ```
 
-Điều kiện null ngăn dereference; nhánh còn lại dùng getter qua `->`. Generic Repository gọi callback để tra và kiểm ID; nó không chuyển quyền sở hữu con trỏ cho callback.
+Nếu quá trình chuyển đổi points xảy ra lỗi, khối `catch` sẽ bắt ngoại lệ và ném một `runtime_error` với thông báo phù hợp.
 
-### 7.3. `stringToMember(const string& line)`
+Ngoài ra, MemberRepository sử dụng:
 
-**Chữ ký:** `static Member* stringToMember(const string& line)` trong `.cpp` (`std::string` trong header). Hàm nhận một dòng TXT qua tham chiếu chỉ đọc, trả `Member*` mới hoặc ném `runtime_error`.
-
-**A. Luồng xử lý**
-
-```text
-Tách line bằng '|' vào fields
-↓
-fields.size() == 4? ─không→ throw
-↓ có
-points không rỗng và chỉ gồm '0'..'9'? ─không→ throw
-↓ có
-stoi(fields[3]) ─exception→ catch → throw runtime_error
-↓ thành công
-new Member → isValidMember(member)? ─không→ delete member → throw
-↓ có
-return member
+```cpp
+catch (...)
+{
+    membersByPhone.clear();
+    repo.clear();
+    throw;
+}
 ```
 
-**B. Giải thích code**
+Trong đó:
 
-1. Tách chuỗi và đếm trường:
+- `catch (...)`: Bắt mọi loại ngoại lệ.
+- `throw;`: Ném lại ngoại lệ đang được xử lý.
 
-   ```cpp
-   vector<string> fields;
-   size_t start = 0;
-   while (true)
-   {
-       size_t pos = line.find('|', start);
-       if (pos == string::npos)
-       {
-           fields.push_back(line.substr(start));
-           break;
-       }
-       fields.push_back(line.substr(start, pos - start));
-       start = pos + 1;
-   }
-   ```
+Cơ chế này giúp khôi phục trạng thái dữ liệu trước khi truyền lỗi về lớp gọi.
 
-   `start` đánh dấu đầu trường; `find` và `substr` giữ cả trường cuối rỗng. Kiểm số trường trước khi đọc `fields[3]`:
+Việc khôi phục trạng thái khi thao tác thất bại được gọi là rollback.
 
-   ```cpp
-   if (fields.size() != 4)
-   {
-       throw runtime_error("Sai so luong truong Member");
-   }
-   ```
-2. Kiểm chuỗi points rồi chuyển sang `int`:
+### 6.7. Từ khóa static
 
-   ```cpp
-   if (fields[3].empty())
-   {
-       throw runtime_error("Points Member khong hop le");
-   }
-   for (char c : fields[3])
-   {
-       if (c < '0' || c > '9')
-       {
-           throw runtime_error("Points Member khong hop le");
-       }
-   }
-   ```
-
-   Vòng ký tự loại dấu, khoảng trắng và hậu tố; do đó `stoi` không cần tham số `pos`. `catch` đổi lỗi chuyển số hoặc tràn `int` thành lỗi points. Chuỗi `"0001"` được nhận là 1:
-
-   ```cpp
-   int points;
-   try
-   {
-       points = stoi(fields[3]);
-   }
-   catch (const exception&)
-   {
-       throw runtime_error("Points Member khong hop le");
-   }
-   ```
-
-3. Cấp phát đối tượng và kiểm lại các thuộc tính. Nếu sai, giải phóng trước khi ném; nếu đúng, generic Repository nhận quyền sở hữu trong quá trình load. ID trùng do generic Repository kiểm, phone trùng do `MemberRepository::load()` kiểm:
-
-   ```cpp
-   Member* member = new Member(
-       fields[0],
-       fields[1],
-       fields[2],
-       points
-   );
-   if (!isValidMember(member))
-   {
-       delete member;
-       throw runtime_error("Du lieu Member khong hop le");
-   }
-   return member;
-   ```
-
-### 7.4. `memberToString(Member* member)`
-
-**Chữ ký:** `static string memberToString(Member* member)` trong `.cpp`. Hàm nhận con trỏ Member, trả một dòng TXT bốn trường hoặc ném `runtime_error` khi dữ liệu sai.
-
-**A. Luồng xử lý**
-
-```text
-isValidMember(member)? ─không→ throw runtime_error
-↓ có
-Nối memberId|fullName|phone|points
-↓
-return string
+```cpp
+static std::string getMemberId(Member* member);
 ```
 
-**B. Giải thích code**
+Hàm thành viên static thuộc về lớp thay vì thuộc về một đối tượng cụ thể.
 
-1. Kiểm cả null và thuộc tính sai trước khi dùng getter:
+Hàm static không có con trỏ `this` và không thể trực tiếp truy cập các thuộc tính không static của lớp.
 
-   ```cpp
-   if (!isValidMember(member))
-   {
-       throw runtime_error("Member khong hop le khi ghi file");
-   }
-   ```
+Các hàm `getMemberId()`, `stringToMember()` và `memberToString()` được khai báo static để có thể truyền vào Repository dưới dạng con trỏ hàm thông thường.
 
-2. Nối đúng thứ tự schema và chuyển điểm sang chuỗi. Callback tạo dòng TXT; `repo.save()` chịu trách nhiệm ghi file:
+Hàm `isValidMember()` cũng được khai báo static vì chỉ kiểm tra đối tượng Member được truyền vào.
 
-   ```cpp
-   return member->getMemberId() + "|" +
-          member->getFullName() + "|" +
-          member->getPhone() + "|" +
-          to_string(member->getPoints());
-   ```
+### 6.8. Từ khóa override
+
+```cpp
+bool load() override;
+```
+
+Từ khóa `override` xác nhận rằng hàm của MemberRepository đang ghi đè một hàm ảo trong `IRepository<Member>`.
+
+Nếu chữ ký không tương thích, trình biên dịch sẽ báo lỗi.
+
+Từ khóa `override` chỉ được sử dụng tại phần khai báo hàm trong lớp, không sử dụng tại phần định nghĩa hàm trong file `.cpp`.
+
+### 6.9. Public inheritance
+
+```cpp
+class MemberRepository : public IRepository<Member>
+```
+
+MemberRepository kế thừa công khai từ interface.
+
+Nhờ đó, có thể sử dụng đối tượng MemberRepository thông qua tham chiếu hoặc con trỏ `IRepository<Member>`.
+
+Ví dụ:
+
+```cpp
+MemberRepository memberRepo("data/members.txt");
+
+IRepository<Member>& repo = memberRepo;
+
+repo.load();
+```
+
+Hàm được thực hiện là `MemberRepository::load()`.
+
+Hàm `findByPhone()` không được khai báo trong `IRepository<Member>`, vì vậy không thể gọi hàm này trực tiếp thông qua tham chiếu interface.
+## 7. Giải thích các hàm private
+
+### 7.1. Hàm isValidMember()
+
+```cpp
+static bool isValidMember(const Member* member);
+```
+
+**Chức năng:**
+
+Kiểm tra toàn bộ dữ liệu của một đối tượng Member.
+
+**Tham số:**
+
+- `member`: Con trỏ đến đối tượng Member cần kiểm tra.
+
+**Giá trị trả về:**
+
+- `true`: Dữ liệu hợp lệ.
+- `false`: Dữ liệu không hợp lệ.
+
+**Quy trình xử lý:**
+
+1. Kiểm tra con trỏ khác `nullptr`.
+2. Kiểm tra mã thành viên bằng `Validator::isValidId()`.
+3. Kiểm tra họ và tên bằng `Validator::isValidText()`.
+4. Kiểm tra số điện thoại bằng `Validator::isValidPhone()`.
+5. Kiểm tra điểm tích lũy không âm.
+6. Trả về `true` nếu tất cả điều kiện đều hợp lệ.
+
+Hàm nhận `const Member*` vì chỉ đọc dữ liệu, không thay đổi thông tin thành viên.
+
+Hàm được sử dụng trong:
+
+- `stringToMember()`.
+- `memberToString()`.
+- `add()`.
+- `update()`.
+
+Việc sử dụng chung một hàm kiểm tra giúp tránh lặp lại logic validation.
+
+Hàm không kiểm tra trùng mã hoặc trùng số điện thoại vì đây là các điều kiện phụ thuộc vào danh sách thành viên hiện tại.
+
+### 7.2. Hàm getMemberId()
+
+```cpp
+static string getMemberId(Member* member);
+```
+
+**Chức năng:**
+
+Lấy khóa định danh của đối tượng Member.
+
+**Giá trị trả về:**
+
+- Mã thành viên nếu con trỏ khác `nullptr`.
+- Chuỗi rỗng nếu con trỏ là `nullptr`.
+
+Repository chung không biết mỗi Model sử dụng hàm getter nào để lấy ID.
+
+Vì vậy, MemberRepository cung cấp hàm `getMemberId()` cho `Repository<Member>`.
+
+Repository sử dụng hàm này để xác định khóa, kiểm tra trùng khóa và tìm kiếm đối tượng.
+
+### 7.3. Hàm stringToMember()
+
+```cpp
+static Member* stringToMember(const string& line);
+```
+
+**Chức năng:**
+
+Chuyển một dòng dữ liệu TXT thành đối tượng Member.
+
+Hàm này còn được gọi là hàm parse.
+
+**Tham số:**
+
+- `line`: Dòng dữ liệu thành viên đọc từ file TXT.
+
+**Giá trị trả về:**
+
+Con trỏ đến đối tượng Member mới được tạo.
+
+Nếu dữ liệu không hợp lệ, hàm ném `runtime_error`.
+
+**Bước 1: Tách các trường dữ liệu**
+
+```cpp
+vector<string> fields;
+size_t start = 0;
+```
+
+- `fields`: Lưu các trường sau khi tách.
+- `start`: Vị trí bắt đầu của trường hiện tại.
+
+```cpp
+size_t pos = line.find('|', start);
+```
+
+Tìm ký tự `|` đầu tiên kể từ vị trí `start`.
+
+`size_t` là kiểu số nguyên không dấu thường được sử dụng để biểu diễn kích thước hoặc vị trí trong chuỗi và các container.
+
+```cpp
+if (pos == string::npos)
+{
+    fields.push_back(line.substr(start));
+    break;
+}
+```
+
+`string::npos` là giá trị đặc biệt biểu thị không tìm thấy vị trí phù hợp.
+
+Khi không còn ký tự `|`, lấy phần chuỗi còn lại làm trường cuối cùng và kết thúc vòng lặp.
+
+Nếu vẫn tìm thấy ký tự phân cách:
+
+```cpp
+fields.push_back(line.substr(start, pos - start));
+start = pos + 1;
+```
+
+- `substr(start, pos - start)` lấy nội dung của trường hiện tại.
+- `start = pos + 1` chuyển sang trường tiếp theo.
+
+**Bước 2: Kiểm tra số lượng trường**
+
+```cpp
+if (fields.size() != 4)
+{
+    throw runtime_error("Sai so luong truong Member");
+}
+```
+
+Mỗi dòng dữ liệu Member phải có đúng 4 trường.
+
+Nếu thiếu hoặc thừa trường, dữ liệu được xem là không hợp lệ.
+
+**Bước 3: Kiểm tra định dạng points**
+
+```cpp
+if (fields[3].empty())
+{
+    throw runtime_error("Points Member khong hop le");
+}
+```
+
+Không cho phép trường points là chuỗi rỗng.
+
+```cpp
+for (char c : fields[3])
+{
+    if (c < '0' || c > '9')
+    {
+        throw runtime_error("Points Member khong hop le");
+    }
+}
+```
+
+Duyệt từng ký tự để bảo đảm chuỗi points chỉ chứa chữ số từ `0` đến `9`.
+
+Ví dụ:
+
+| Giá trị | Kết quả |
+|---|---|
+| `"0"` | Hợp lệ |
+| `"150"` | Hợp lệ |
+| `"-10"` | Không hợp lệ |
+| `"+10"` | Không hợp lệ |
+| `"10.5"` | Không hợp lệ |
+| `"100abc"` | Không hợp lệ |
+| `" 100"` | Không hợp lệ |
+
+Việc kiểm tra trước giúp loại bỏ các chuỗi không đúng định dạng trước khi gọi `stoi()`.
+
+**Bước 4: Chuyển đổi points thành số nguyên**
+
+```cpp
+int points;
+try
+{
+    points = stoi(fields[3]);
+}
+catch (const exception&)
+{
+    throw runtime_error("Points Member khong hop le");
+}
+```
+
+Hàm `stoi()` chuyển chuỗi points thành số nguyên.
+
+Do chuỗi đã được kiểm tra chỉ chứa chữ số, không cần sử dụng tham số thứ hai của `stoi()` để kiểm tra số ký tự đã xử lý.
+
+Khối `try-catch` xử lý lỗi chuyển đổi, đặc biệt khi giá trị vượt quá phạm vi của kiểu `int`.
+
+**Bước 5: Tạo đối tượng Member**
+
+```cpp
+Member* member = new Member(
+    fields[0],
+    fields[1],
+    fields[2],
+    points
+);
+```
+
+Sử dụng `new Member(...)` để cấp phát đối tượng trên vùng nhớ động.
+
+**Bước 6: Kiểm tra đối tượng**
+
+```cpp
+if (!isValidMember(member))
+{
+    delete member;
+    throw runtime_error("Du lieu Member khong hop le");
+}
+```
+
+Nếu dữ liệu không hợp lệ, phải giải phóng đối tượng vừa tạo trước khi ném exception để tránh rò rỉ bộ nhớ.
+
+Nếu hợp lệ, trả về con trỏ để Repository tiếp nhận và quản lý.
+
+### 7.4. Hàm memberToString()
+
+```cpp
+static string memberToString(Member* member);
+```
+
+**Chức năng:**
+
+Chuyển một đối tượng Member thành một dòng dữ liệu TXT.
+
+Hàm này còn được gọi là hàm serialize.
+
+**Tham số:**
+
+- `member`: Con trỏ đến đối tượng cần chuyển đổi.
+
+**Giá trị trả về:**
+
+Chuỗi chứa đầy đủ 4 trường dữ liệu của Member.
+
+**Quy trình xử lý:**
+
+1. Kiểm tra tính hợp lệ của Member.
+2. Lấy dữ liệu thông qua các getter.
+3. Chuyển điểm tích lũy thành chuỗi bằng `to_string()`.
+4. Ghép các trường bằng ký tự `|`.
+5. Trả về chuỗi kết quả.
+
+```cpp
+return member->getMemberId() + "|" +
+       member->getFullName() + "|" +
+       member->getPhone() + "|" +
+       to_string(member->getPoints());
+```
+
+Hàm `to_string()` được sử dụng vì points có kiểu `int`, trong khi dữ liệu cần ghi xuống file có kiểu `string`.
+
+MemberRepository chỉ tạo chuỗi dữ liệu. Việc ghi chuỗi xuống file do Repository thực hiện.
 
 ## 8. Giải thích các hàm public
 
-### 8.1. Constructor `MemberRepository(const string& filePath)`
-
-**Chữ ký:** `MemberRepository(const string& filePath)` trong `.cpp` (`std::string` trong header). Nhận đường dẫn TXT, không có giá trị trả về và không tự load.
-
-**A. Luồng xử lý**
-
-```text
-Nhận filePath
-↓
-Khởi tạo repo(filePath, getMemberId, stringToMember, memberToString)
-↓
-Khởi tạo membersByPhone rỗng → kết thúc
-```
-
-**B. Giải thích code**
+### 8.1. Constructor
 
 ```cpp
 MemberRepository::MemberRepository(const string& filePath)
@@ -682,81 +1096,175 @@ MemberRepository::MemberRepository(const string& filePath)
 }
 ```
 
-Danh sách khởi tạo cung cấp đường dẫn và ba callback cho `repo`; map được khởi tạo mặc định rỗng. Chưa có Member nào được nạp hoặc cấp phát.
+**Chức năng:**
 
-### 8.2. `load()`
+Khởi tạo MemberRepository và đối tượng `Repository<Member>` bên trong.
 
-**Chữ ký:** `bool load() override`. Không có tham số; trả `false` nếu `repo.load()` từ chối, `true` khi map hoàn chỉnh; lỗi parse hoặc phone trùng được ném ra.
+**Tham số:**
 
-**A. Luồng xử lý**
+- `filePath`: Đường dẫn file lưu dữ liệu thành viên.
+
+Constructor sử dụng danh sách khởi tạo thành viên (member initializer list) để khởi tạo trực tiếp thuộc tính `repo`.
+
+Repository nhận 4 tham số:
+
+| Tham số | Chức năng |
+|---|---|
+| filePath | Đường dẫn file dữ liệu |
+| getMemberId | Hàm lấy khóa của Member |
+| stringToMember | Hàm chuyển chuỗi thành Member |
+| memberToString | Hàm chuyển Member thành chuỗi |
+
+Ba hàm cuối được truyền dưới dạng con trỏ hàm.
+
+Thuộc tính `membersByPhone` được khởi tạo mặc định là một map rỗng.
+
+Constructor không trực tiếp nạp dữ liệu. Việc nạp dữ liệu được thực hiện thông qua `load()`.
+
+### 8.2. Hàm load()
+
+```cpp
+bool load() override;
+```
+
+**Chức năng:**
+
+Nạp dữ liệu thành viên từ file TXT vào bộ nhớ và xây dựng chỉ mục tìm kiếm theo số điện thoại.
+
+**Giá trị trả về:**
+
+- `true`: Nạp dữ liệu thành công.
+- `false`: Nạp dữ liệu không thành công hoặc không được phép nạp lại.
+
+Nếu dữ liệu không hợp lệ hoặc xảy ra ngoại lệ trong quá trình xây dựng chỉ mục, hàm truyền exception về lớp gọi.
+
+**Quy trình xử lý:**
+
+Bước 1: Nạp dữ liệu thông qua Repository chung.
+
+```cpp
+if (!repo.load())
+{
+    return false;
+}
+```
+
+Repository sử dụng `stringToMember()` để chuyển từng dòng TXT thành đối tượng Member.
+
+Repository đồng thời kiểm tra các điều kiện lưu trữ chung, bao gồm mã thành viên không được trùng.
+
+Nếu `repo.load()` trả về `false`, hàm kết thúc ngay.
+
+Bước 2: Duyệt danh sách thành viên.
+
+```cpp
+for (int i = 0; i < repo.count(); i++)
+{
+    Member* member = repo.getAt(i);
+```
+
+Duyệt từng đối tượng Member đã được nạp để xây dựng chỉ mục số điện thoại.
+
+Không cần kiểm tra lại dữ liệu Member vì các đối tượng đã được kiểm tra trong quá trình parse.
+
+Bước 3: Kiểm tra trùng số điện thoại.
+
+```cpp
+if (findByPhone(member->getPhone()) != nullptr)
+{
+    throw runtime_error("Trung phone trong file Member");
+}
+```
+
+Nếu số điện thoại đã tồn tại trong map, dữ liệu được xem là không hợp lệ.
+
+Repository chung chỉ kiểm tra trùng ID nên MemberRepository phải tự kiểm tra điều kiện này.
+
+Bước 4: Thêm thành viên vào chỉ mục.
+
+```cpp
+membersByPhone[member->getPhone()] = member;
+```
+
+Sử dụng số điện thoại làm khóa và con trỏ Member làm giá trị.
+
+Map chỉ lưu con trỏ đến đối tượng đã được Repository quản lý, không tạo thêm đối tượng Member.
+
+Bước 5: Xử lý ngoại lệ.
+
+```cpp
+catch (...)
+{
+    membersByPhone.clear();
+    repo.clear();
+    throw;
+}
+```
+
+Nếu xảy ra lỗi trong quá trình xây dựng chỉ mục:
+
+- `membersByPhone.clear()`: Xóa toàn bộ chỉ mục số điện thoại.
+- `repo.clear()`: Giải phóng danh sách Member và đặt lại trạng thái loaded.
+- `throw;`: Ném lại ngoại lệ ban đầu.
+
+Chỉ mục được xóa trước khi giải phóng các đối tượng Member để không giữ lại các con trỏ không hợp lệ.
+
+Bước 6: Trả về kết quả.
+
+```cpp
+return true;
+```
+
+Sau khi duyệt thành công toàn bộ danh sách, dữ liệu Member và chỉ mục số điện thoại đã được đồng bộ.
+
+**Luồng hoạt động chi tiết:**
 
 ```text
-repo.load() ─false→ return false
-↓ true
-try: duyệt i từ 0 đến repo.count()-1
-↓ mỗi Member
-findByPhone(phone) khác null? ─có→ throw runtime_error
-↓ không
-membersByPhone[phone] = member → lặp
-↓ duyệt hết
+load()
+    |
+    v
+repo.load()
+    |
+    +-- Trả false --> return false
+    |
+    +-- Ném exception --> Truyền lỗi về lớp gọi
+    |
+    v
+Duyệt từng Member
+    |
+    v
+Kiểm tra trùng số điện thoại
+    |
+    +-- Trùng --> Ném exception
+    |
+    v
+Thêm vào membersByPhone
+    |
+    +-- Còn Member --> Tiếp tục duyệt
+    |
+    v
 return true
-Ngoại lệ trong try → catch (...) → membersByPhone.clear()
-↓
-repo.clear() → throw lại
+
+Nếu xảy ra exception khi xây dựng map:
+    |
+    v
+membersByPhone.clear()
+    |
+    v
+repo.clear()
+    |
+    v
+throw
 ```
 
-**B. Giải thích code**
+**Lưu ý:**
 
-1. Gọi tầng lưu trữ:
+- Không cần xây dựng chỉ mục theo mã thành viên.
+- Không cần kiểm tra lại toàn bộ thuộc tính Member sau khi nạp.
+- Nếu xây dựng chỉ mục thất bại, không giữ lại danh sách được nạp dở dang.
+- Có thể thực hiện lại `load()` sau khi dữ liệu lỗi đã được sửa và Repository đã rollback.
 
-   ```cpp
-   if (!repo.load())
-   {
-       return false;
-   }
-   ```
-
-   Generic Repository đã xử lý file, trạng thái loaded, parse và ID trùng. Hàm không xóa map trước load; nếu `repo.load()` trả false thì map và repo giữ nguyên trạng thái của nhánh đó.
-2. Duyệt dữ liệu đã nạp và lập chỉ mục:
-
-   ```cpp
-   for (int i = 0; i < repo.count(); i++)
-   {
-       Member* member = repo.getAt(i);
-       if (findByPhone(member->getPhone()) != nullptr)
-       {
-           throw runtime_error("Trung phone trong file Member");
-       }
-       membersByPhone[member->getPhone()] = member;
-   }
-   ```
-
-   `findByPhone` chỉ thấy các Member trước đó trong map; gặp phone trùng thì ném lỗi. Toán tử `[]` thêm con trỏ mượn; không kiểm lại ID vì `repo.load()` đã làm.
-3. Nếu bước 2 ném, dọn map **trước** khi `repo.clear()` giải phóng Member, rồi ném lại. Chỉ sau khi duyệt hết mới trả `true`. Ngoại lệ từ `repo.load()` xảy ra trước `try` và do generic Repository tự dọn danh sách tạm:
-
-   ```cpp
-   catch (...)
-   {
-       membersByPhone.clear();
-       repo.clear();
-       throw;
-   }
-   return true;
-   ```
-
-### 8.3. `save()`
-
-**Chữ ký:** `bool save() override`. Không có tham số; trả kết quả của generic Repository, có thể truyền exception từ serializer.
-
-**A. Luồng xử lý**
-
-```text
-repo.save()
-↓
-return true/false; exception từ serializer → truyền ra
-```
-
-**B. Giải thích code**
+### 8.3. Hàm save()
 
 ```cpp
 bool MemberRepository::save()
@@ -765,388 +1273,823 @@ bool MemberRepository::save()
 }
 ```
 
-Generic Repository kiểm loaded, serialize từng Member rồi ghi TXT. Hàm không dùng map và không tự save từ `add()` hay `update()`; kết quả false hoặc exception không bị đổi thành công.
+**Chức năng:**
 
-### 8.4. `add(Member* member)`
+Lưu danh sách thành viên hiện tại xuống file TXT.
 
-**Chữ ký:** `bool add(Member* member) override`. Nhận con trỏ do caller sở hữu trước khi thêm; trả `true` khi repo nhận quyền sở hữu, `false` khi điều kiện không đạt; exception được truyền lại sau dọn map.
+**Giá trị trả về:**
 
-**A. Luồng xử lý**
+- `true`: Lưu thành công.
+- `false`: Lưu thất bại.
 
-```text
-loaded và isValidMember? ─không→ false
-↓ có
-points == 0? ─không→ false
-↓ có
-phone chưa có trong map? ─không→ false
-↓ có
-Sao chép phone → chèn membersByPhone[phone] = member
-↓
-try: repo.add(member) ─true→ return true
-↓ false                              └─exception→ catch → erase(phone) → throw
-erase(phone) → return false
-```
+Repository sử dụng `memberToString()` để chuyển từng đối tượng Member thành chuỗi trước khi ghi file.
 
-**B. Giải thích code**
+MemberRepository không trực tiếp sử dụng `ofstream` hoặc tự triển khai cơ chế ghi file.
 
-1. Kiểm trước khi thay trạng thái:
+Chỉ mục `membersByPhone` không được ghi xuống file vì có thể xây dựng lại khi gọi `load()`.
 
-   ```cpp
-   if (!repo.isLoaded() || !isValidMember(member))
-   {
-       return false;
-   }
-   if (member->getPoints() != 0)
-   {
-       return false;
-   }
-   if (findByPhone(member->getPhone()) != nullptr)
-   {
-       return false;
-   }
-   ```
-
-   Loaded được kiểm vì map sẽ chèn trước `repo.add()`. `isValidMember` chặn null; điểm ban đầu bằng 0 và phone duy nhất là quy tắc riêng. Generic Repository kiểm ID/con trỏ trùng.
-2. Giữ khóa cần rollback rồi thêm con trỏ mượn. Nếu chèn map ném trước `try`, `repo.add()` chưa chạy và caller vẫn sở hữu Member:
-
-   ```cpp
-   string phone = member->getPhone();
-   membersByPhone[phone] = member;
-   ```
-
-3. `repo.add(member)` thành công thì trả `true` và repo nhận quyền sở hữu. Nếu ném, xóa key và ném lại; nếu trả false, xóa key bên ngoài `try` rồi trả false:
-
-   ```cpp
-   try
-   {
-       if (repo.add(member))
-       {
-           return true;
-       }
-   }
-   catch (...)
-   {
-       membersByPhone.erase(phone);
-       throw;
-   }
-   membersByPhone.erase(phone);
-   return false;
-   ```
-
-### 8.5. `update(const Member& newValues)`
-
-**Chữ ký:** `bool update(const Member& newValues) override`. Nhận giá trị mới chỉ đọc; trả false khi chưa load, dữ liệu sai, ID thiếu, điểm khác hoặc phone thuộc Member khác; trả true sau sửa. Setter có thể ném exception.
-
-**A. Luồng xử lý**
-
-```text
-loaded và isValidMember(&newValues)? ─không→ false
-↓ có
-repo.findById(ID) ─null→ false
-↓ có Member
-points bằng nhau? ─không→ false
-↓ có
-phone mới thuộc Member khác? ─có→ false
-↓ không
-Lưu oldPhone, newPhone
-↓
-phone không đổi? ─có→ setFullName → true
-↓ đổi
-membersByPhone[newPhone] = member
-↓
-try: setFullName → setPhone ─exception→ catch → erase(newPhone) → throw
-↓ thành công
-erase(oldPhone) → true
-```
-
-**B. Giải thích code**
-
-1. Kiểm loaded và dữ liệu trước khi sửa Model; tìm đúng đối tượng theo ID bất biến:
-
-   ```cpp
-   if (!repo.isLoaded() || !isValidMember(&newValues))
-   {
-       return false;
-   }
-   Member* member = repo.findById(newValues.getMemberId());
-   if (member == nullptr)
-   {
-       return false;
-   }
-   ```
-
-2. Chặn sửa điểm trực tiếp. Phone mới được dùng nếu chưa có hoặc đang thuộc chính Member này; các nhánh false chưa gọi setter:
-
-   ```cpp
-   if (member->getPoints() != newValues.getPoints())
-   {
-       return false;
-   }
-   Member* existingMember = findByPhone(newValues.getPhone());
-   if (existingMember != nullptr && existingMember != member)
-   {
-       return false;
-   }
-   ```
-
-3. Lưu hai khóa trước khi sửa. Nếu phone giữ nguyên, chỉ đổi tên; map và phone không đổi:
-
-   ```cpp
-   string oldPhone = member->getPhone();
-   string newPhone = newValues.getPhone();
-   if (oldPhone == newPhone)
-   {
-       member->setFullName(newValues.getFullName());
-       return true;
-   }
-   ```
-
-4. Khi đổi phone, thêm key mới trước, rồi gọi hai setter theo thứ tự. Thành công thì bỏ key cũ; ID, địa chỉ và liên kết Invoice vẫn giữ nguyên:
-
-   ```cpp
-   membersByPhone[newPhone] = member;
-   try
-   {
-       member->setFullName(newValues.getFullName());
-       member->setPhone(newPhone);
-   }
-   ```
-
-5. Nếu setter ném, chỉ xóa key mới và ném lại; sau khi setter thành công mới xóa key cũ. **Giới hạn rollback:** tên hoặc phone có thể đã đổi trước ngoại lệ; mã không phục hồi toàn bộ Model, nên map có thể không còn khớp thuộc tính nếu setter sửa rồi ném:
-
-   ```cpp
-   catch (...)
-   {
-       membersByPhone.erase(newPhone);
-       throw;
-   }
-   membersByPhone.erase(oldPhone);
-   return true;
-   ```
-
-### 8.6. `removeById(const string& memberId)`
-
-**Chữ ký:** `bool removeById(const string& memberId) override`. Nhận ID nhưng luôn trả false để giữ lịch sử giao dịch.
-
-**A. Luồng xử lý**
-
-```text
-Nhận memberId
-↓
-(void)memberId
-↓
-return false
-```
-
-**B. Giải thích code**
+### 8.4. Hàm add()
 
 ```cpp
-(void)memberId;
+bool add(Member* member) override;
+```
+
+**Chức năng:**
+
+Thêm một thành viên mới vào Repository và cập nhật chỉ mục số điện thoại.
+
+**Tham số:**
+
+- `member`: Con trỏ đến đối tượng Member cần thêm.
+
+**Giá trị trả về:**
+
+- `true`: Thêm thành công.
+- `false`: Thêm thất bại.
+
+**Quy trình xử lý:**
+
+Bước 1: Kiểm tra trạng thái Repository và dữ liệu Member.
+
+```cpp
+if (!repo.isLoaded() || !isValidMember(member))
+{
+    return false;
+}
+```
+
+Kiểm tra Repository đã được nạp và đối tượng Member có dữ liệu hợp lệ.
+
+Cần kiểm tra loaded tại đây vì MemberRepository sẽ thay đổi chỉ mục trước khi gọi `repo.add()`.
+
+Bước 2: Kiểm tra điểm tích lũy ban đầu.
+
+```cpp
+if (member->getPoints() != 0)
+{
+    return false;
+}
+```
+
+Thành viên mới phải có điểm tích lũy bằng 0.
+
+Điều kiện này chỉ áp dụng khi thêm thành viên mới, không áp dụng khi nạp dữ liệu từ file.
+
+Bước 3: Kiểm tra trùng số điện thoại.
+
+```cpp
+if (findByPhone(member->getPhone()) != nullptr)
+{
+    return false;
+}
+```
+
+Không cho phép thêm thành viên nếu số điện thoại đã được sử dụng.
+
+Bước 4: Thêm vào chỉ mục số điện thoại.
+
+```cpp
+string phone = member->getPhone();
+membersByPhone[phone] = member;
+```
+
+Lưu số điện thoại vào biến `phone` để sử dụng khi cần rollback.
+
+Thêm con trỏ Member vào map trước khi chuyển quyền sở hữu cho Repository.
+
+Bước 5: Thêm thành viên vào Repository.
+
+```cpp
+try
+{
+    if (repo.add(member))
+    {
+        return true;
+    }
+}
+```
+
+Repository chung kiểm tra trùng con trỏ, ID rỗng và trùng ID trước khi thêm đối tượng.
+
+MemberRepository không cần lặp lại các kiểm tra này.
+
+Nếu thêm thành công, Repository tiếp nhận quyền sở hữu Member và hàm trả về `true`.
+
+Bước 6: Rollback khi thêm thất bại.
+
+```cpp
+catch (...)
+{
+    membersByPhone.erase(phone);
+    throw;
+}
+```
+
+Nếu `repo.add()` ném exception, xóa chỉ mục vừa thêm rồi ném lại ngoại lệ.
+
+```cpp
+membersByPhone.erase(phone);
 return false;
 ```
 
-Ép sang `void` đánh dấu tham số cố ý không dùng. Hàm không gọi `repo.removeById()`, không đổi map hay giải phóng Member, kể cả khi ID tồn tại.
+Nếu `repo.add()` trả về `false`, xóa chỉ mục vừa thêm và trả về `false`.
 
-### 8.7. `findById(const string& memberId)`
+Việc rollback giúp tránh trường hợp map chứa thành viên chưa được Repository tiếp nhận.
 
-**Chữ ký:** `Member* findById(const string& memberId) override`. Nhận ID, trả con trỏ mượn hoặc `nullptr`.
-
-**A. Luồng xử lý**
+**Luồng hoạt động chi tiết:**
 
 ```text
-Nhận memberId
-↓
-repo.findById(memberId)
-↓
-return Member*/nullptr
+add(member)
+    |
+    v
+Kiểm tra loaded và dữ liệu Member
+    |
+    +-- Không hợp lệ --> false
+    |
+    v
+Kiểm tra points bằng 0
+    |
+    +-- Không hợp lệ --> false
+    |
+    v
+Kiểm tra trùng số điện thoại
+    |
+    +-- Trùng --> false
+    |
+    v
+Thêm vào membersByPhone
+    |
+    v
+repo.add(member)
+    |
+    +-- Thành công --> true
+    |
+    +-- Trả false --> Xóa chỉ mục --> false
+    |
+    +-- Exception --> Xóa chỉ mục --> throw
 ```
 
-**B. Giải thích code**
+**Lưu ý:**
+
+- MemberRepository không tự sinh mã thành viên.
+- Mã thành viên phải được chuẩn bị trước khi gọi `add()`.
+- Khi thêm thành công, Repository tiếp nhận quyền sở hữu đối tượng.
+- Khi thêm thất bại, đối tượng mới chưa được Repository tiếp nhận vẫn thuộc quyền sở hữu của bên gọi.
+- Hàm không tự động lưu dữ liệu xuống file.
+
+### 8.5. Hàm update()
 
 ```cpp
-return repo.findById(memberId);
+bool update(const Member& newValues) override;
 ```
 
-Generic Repository duyệt danh sách bằng callback ID. Không cần map ID; caller không sở hữu con trỏ trả về.
+**Chức năng:**
 
-### 8.8. `findByPhone(const string& phone)`
+Cập nhật thông tin của một thành viên đã tồn tại và đồng bộ chỉ mục khi thay đổi số điện thoại.
 
-**Chữ ký:** `Member* findByPhone(const string& phone)`. Nhận phone, trả con trỏ mượn hoặc `nullptr`.
+**Tham số:**
 
-**A. Luồng xử lý**
+- `newValues`: Đối tượng chứa thông tin mới của thành viên.
+
+Sử dụng `const Member&` để tránh sao chép đối tượng và không thay đổi dữ liệu đầu vào thông qua tham số.
+
+**Giá trị trả về:**
+
+- `true`: Cập nhật thành công.
+- `false`: Cập nhật thất bại.
+
+**Quy trình xử lý:**
+
+Bước 1: Kiểm tra trạng thái Repository và dữ liệu mới.
+
+```cpp
+if (!repo.isLoaded() || !isValidMember(&newValues))
+{
+    return false;
+}
+```
+
+Toán tử `&` lấy địa chỉ của đối tượng `newValues` để truyền vào hàm `isValidMember()`.
+
+Bước 2: Tìm thành viên cần cập nhật.
+
+```cpp
+Member* member = repo.findById(newValues.getMemberId());
+if (member == nullptr)
+{
+    return false;
+}
+```
+
+Mã thành viên trong `newValues` được sử dụng để xác định đối tượng cần cập nhật.
+
+Nếu thành viên không tồn tại, hàm trả về `false`.
+
+Bước 3: Kiểm tra điểm tích lũy.
+
+```cpp
+if (member->getPoints() != newValues.getPoints())
+{
+    return false;
+}
+```
+
+Không cho phép thay đổi điểm tích lũy trực tiếp thông qua hàm cập nhật thông tin thành viên.
+
+Việc cộng hoặc trừ điểm thuộc nghiệp vụ của tầng Business Logic.
+
+Bước 4: Kiểm tra trùng số điện thoại.
+
+```cpp
+Member* existingMember = findByPhone(newValues.getPhone());
+if (existingMember != nullptr && existingMember != member)
+{
+    return false;
+}
+```
+
+Không cho phép sử dụng số điện thoại đã thuộc về một thành viên khác.
+
+Nếu số điện thoại tìm được thuộc chính thành viên đang cập nhật, dữ liệu vẫn hợp lệ.
+
+Bước 5: Xử lý trường hợp không thay đổi số điện thoại.
+
+```cpp
+string oldPhone = member->getPhone();
+string newPhone = newValues.getPhone();
+if (oldPhone == newPhone)
+{
+    member->setFullName(newValues.getFullName());
+    return true;
+}
+```
+
+Nếu số điện thoại không thay đổi, chỉ cần cập nhật họ và tên.
+
+Không cần thêm hoặc xóa phần tử trong map.
+
+Bước 6: Thêm chỉ mục số điện thoại mới và cập nhật thông tin.
+
+```cpp
+membersByPhone[newPhone] = member;
+try
+{
+    member->setFullName(newValues.getFullName());
+    member->setPhone(newPhone);
+}
+```
+
+Thêm số điện thoại mới vào map trước khi cập nhật đối tượng Member.
+
+Chỉ mục cũ vẫn được giữ lại trong quá trình cập nhật để có thể rollback nếu xảy ra ngoại lệ.
+
+Bước 7: Xử lý ngoại lệ.
+
+```cpp
+catch (...)
+{
+    membersByPhone.erase(newPhone);
+    throw;
+}
+```
+
+Nếu setter ném exception, xóa chỉ mục số điện thoại mới và ném lại ngoại lệ.
+
+Chỉ mục số điện thoại cũ vẫn được giữ lại.
+
+Bước 8: Xóa chỉ mục số điện thoại cũ.
+
+```cpp
+membersByPhone.erase(oldPhone);
+return true;
+```
+
+Sau khi cập nhật thành công, xóa số điện thoại cũ khỏi map.
+
+Lúc này chỉ mục số điện thoại mới trỏ đến đối tượng Member đã được cập nhật.
+
+**Luồng hoạt động chi tiết:**
 
 ```text
-membersByPhone.find(phone)
-↓
-iterator == end()? ─có→ return nullptr
-↓ không
-return it->second
+update(newValues)
+    |
+    v
+Kiểm tra loaded và dữ liệu mới
+    |
+    +-- Không hợp lệ --> false
+    |
+    v
+Tìm Member theo ID
+    |
+    +-- Không tồn tại --> false
+    |
+    v
+Kiểm tra points không thay đổi
+    |
+    +-- Thay đổi --> false
+    |
+    v
+Kiểm tra trùng số điện thoại
+    |
+    +-- Thuộc Member khác --> false
+    |
+    v
+So sánh số điện thoại cũ và mới
+    |
+    +-- Giống nhau --> Cập nhật họ tên --> true
+    |
+    v
+Thêm chỉ mục số điện thoại mới
+    |
+    v
+Cập nhật họ tên và số điện thoại
+    |
+    +-- Exception --> Xóa chỉ mục mới --> throw
+    |
+    v
+Xóa chỉ mục số điện thoại cũ
+    |
+    v
+return true
 ```
 
-**B. Giải thích code**
+**Lý do cập nhật trực tiếp đối tượng:**
+
+Member có thể đang được các đối tượng Invoice tham chiếu.
+
+Nếu xóa Member cũ và tạo Member mới, các con trỏ đang tham chiếu đến Member cũ có thể trở thành con trỏ không hợp lệ.
+
+Cập nhật trực tiếp bằng setter giúp giữ nguyên địa chỉ của đối tượng và các liên kết hiện tại.
+
+**Lưu ý:**
+
+- Không thay đổi mã thành viên.
+- Không thay đổi điểm tích lũy.
+- Không thay thế đối tượng Member hiện tại bằng đối tượng mới.
+- Phải đồng bộ chỉ mục khi thay đổi số điện thoại.
+- Rollback hiện tại chỉ hoàn tác chỉ mục số điện thoại mới, không bảo đảm hoàn tác họ tên nếu setter họ tên đã thành công trước khi setter số điện thoại ném exception.
+- Hàm không tự động lưu dữ liệu xuống file.
+
+### 8.6. Hàm removeById()
+
+```cpp
+bool MemberRepository::removeById(const string& memberId)
+{
+    (void)memberId;
+    return false;
+}
+```
+
+**Chức năng:**
+
+Triển khai hàm xóa theo hợp đồng của `IRepository<Member>`.
+
+**Tham số:**
+
+- `memberId`: Mã thành viên cần xóa.
+
+**Giá trị trả về:**
+
+Luôn trả về `false`.
+
+Hệ thống không hỗ trợ xóa thành viên nhằm bảo toàn thông tin thành viên và lịch sử hóa đơn liên quan.
+
+Do đó, hàm không thực hiện tìm kiếm, xóa đối tượng hoặc thay đổi chỉ mục số điện thoại.
+
+```cpp
+(void)memberId;
+```
+
+Biểu thức trên được sử dụng để tránh cảnh báo tham số không được sử dụng khi biên dịch.
+
+Hàm vẫn phải được triển khai vì `removeById()` là hàm thuần ảo trong `IRepository<Member>`.
+
+### 8.7. Hàm findById()
+
+```cpp
+Member* MemberRepository::findById(const string& memberId)
+{
+    return repo.findById(memberId);
+}
+```
+
+**Chức năng:**
+
+Tìm thành viên dựa trên mã thành viên.
+
+**Tham số:**
+
+- `memberId`: Mã thành viên cần tìm.
+
+**Giá trị trả về:**
+
+- Con trỏ Member nếu tìm thấy.
+- `nullptr` nếu không tìm thấy.
+
+Hàm gọi trực tiếp Repository chung vì không cần xử lý logic riêng.
+
+MemberRepository không cần sử dụng thêm map để tìm kiếm theo mã.
+
+Con trỏ trả về là con trỏ mượn.
+
+Bên gọi không được tự ý giải phóng đối tượng.
+
+### 8.8. Hàm findByPhone()
+
+```cpp
+Member* MemberRepository::findByPhone(const string& phone)
+{
+    auto it = membersByPhone.find(phone);
+    if (it == membersByPhone.end())
+    {
+        return nullptr;
+    }
+    return it->second;
+}
+```
+
+**Chức năng:**
+
+Tìm thành viên dựa trên số điện thoại.
+
+**Tham số:**
+
+- `phone`: Số điện thoại cần tìm.
+
+**Giá trị trả về:**
+
+- Con trỏ Member nếu tìm thấy.
+- `nullptr` nếu không tìm thấy.
+
+**Quy trình xử lý:**
+
+Bước 1: Tìm số điện thoại trong map.
 
 ```cpp
 auto it = membersByPhone.find(phone);
+```
+
+Hàm `find()` trả về iterator đến phần tử có khóa tương ứng với số điện thoại.
+
+Bước 2: Kiểm tra kết quả tìm kiếm.
+
+```cpp
 if (it == membersByPhone.end())
 {
     return nullptr;
 }
+```
+
+Nếu iterator bằng `end()`, số điện thoại không tồn tại trong map.
+
+Bước 3: Trả về đối tượng Member.
+
+```cpp
 return it->second;
 ```
 
-`auto` suy ra kiểu iterator của `unordered_map`; so với `end()` trước khi lấy `second` tránh dereference iterator không hợp lệ. `second` là `Member*` mượn; hàm không xác minh lại thuộc tính phone trong Model.
+`it->second` là giá trị của phần tử trong map, tương ứng với con trỏ Member.
 
-### 8.9. `getAt(int index)`
+Hàm có độ phức tạp tìm kiếm trung bình O(1).
 
-**Chữ ký:** `Member* getAt(int index) override`. Nhận vị trí từ 0, trả con trỏ mượn hoặc null nếu ngoài phạm vi.
+**Lưu ý:**
 
-**A. Luồng xử lý**
+- Không cần duyệt toàn bộ danh sách Member.
+- Không sử dụng toán tử `[]` để tìm kiếm vì toán tử này có thể tạo phần tử mới nếu khóa chưa tồn tại.
+- Con trỏ trả về là con trỏ mượn.
+- Hàm không thuộc `IRepository<Member>`.
 
-```text
-Nhận index
-↓
-repo.getAt(index)
-↓
-return Member*/nullptr
-```
-
-**B. Giải thích code**
+### 8.9. Hàm getAt()
 
 ```cpp
-return repo.getAt(index);
+Member* MemberRepository::getAt(int index)
+{
+    return repo.getAt(index);
+}
 ```
 
-Generic Repository kiểm vị trí qua danh sách liên kết; không đọc file hoặc map.
+**Chức năng:**
 
-### 8.10. `count()`
+Lấy thành viên tại một vị trí trong danh sách.
 
-**Chữ ký:** `int count() override`. Không có tham số, trả số Member đang được repo lưu.
+**Tham số:**
 
-**A. Luồng xử lý**
+- `index`: Vị trí của thành viên, bắt đầu từ 0.
 
-```text
-repo.count()
-↓
-return int
-```
+**Giá trị trả về:**
 
-**B. Giải thích code**
+- Con trỏ Member nếu vị trí hợp lệ.
+- `nullptr` nếu vị trí không hợp lệ.
+
+Hàm thường được sử dụng kết hợp với `count()` để duyệt danh sách.
+
+Ví dụ:
 
 ```cpp
-return repo.count();
+for (int i = 0; i < memberRepo.count(); i++)
+{
+    Member* member = memberRepo.getAt(i);
+
+    if (member != nullptr)
+    {
+        // Xu ly thong tin thanh vien
+    }
+}
 ```
 
-Đếm danh sách gốc thay vì entry map; trước load hoặc sau rollback có thể bằng 0.
-
-### 8.11. `isLoaded()`
-
-**Chữ ký:** `bool isLoaded() override`. Không có tham số, trả trạng thái loaded của generic Repository.
-
-**A. Luồng xử lý**
-
-```text
-repo.isLoaded()
-↓
-return bool
-```
-
-**B. Giải thích code**
+### 8.10. Hàm count()
 
 ```cpp
-return repo.isLoaded();
+int MemberRepository::count()
+{
+    return repo.count();
+}
 ```
 
-Hàm không đọc file; file rỗng vẫn có thể loaded true với `count() == 0`.
+**Chức năng:**
 
+Trả về số lượng thành viên hiện có trong Repository.
+
+Nếu danh sách rỗng, hàm trả về `0`.
+
+Hàm lấy số lượng thành viên từ Repository chung thay vì lấy kích thước của `membersByPhone`.
+
+Repository là nơi quản lý danh sách thành viên chính.
+
+### 8.11. Hàm isLoaded()
+
+```cpp
+bool MemberRepository::isLoaded()
+{
+    return repo.isLoaded();
+}
+```
+
+**Chức năng:**
+
+Kiểm tra trạng thái nạp dữ liệu.
+
+**Giá trị trả về:**
+
+- `true`: Repository đã được nạp dữ liệu.
+- `false`: Repository chưa được nạp dữ liệu.
+
+MemberRepository không khai báo thuộc tính `loaded` riêng mà sử dụng trạng thái của `Repository<Member>`.
+
+Nếu xảy ra lỗi khi xây dựng chỉ mục số điện thoại, `repo.clear()` sẽ đặt lại trạng thái loaded.
 ## 9. Quản lý bộ nhớ
 
 ### 9.1. Quyền sở hữu đối tượng
 
-`Repository<Member>` sở hữu `Member*` sau add thành công hoặc load thành công, giải phóng chúng khi clear/hủy. `membersByPhone` chỉ giữ con trỏ mượn; map không xóa Member. `findById`, `findByPhone`, `getAt` trả con trỏ mượn. Nếu add thất bại, caller vẫn sở hữu đối tượng và phải giải phóng khi thích hợp. `removeById` luôn trả `false` nên không giải phóng đối tượng.
+`Repository<Member>` chịu trách nhiệm quản lý bộ nhớ của các đối tượng Member.
 
-### 9.2. Con trỏ mượn và thứ tự hủy
+Quy định:
 
-Khi `load()` phát hiện phone trùng hoặc thao tác map ném, `catch` xóa chỉ mục trước rồi mới gọi `repo.clear()` để không giữ con trỏ treo. Nếu `add()` thất bại hoặc ném sau khi tạo key phone, hàm xóa key trước khi trả/throw; caller tiếp tục sở hữu Member. `update()` đổi phone giữ cùng địa chỉ đối tượng và đổi khóa map; khi setter ném chỉ hoàn tác key mới, **không** phục hồi toàn bộ thuộc tính. Khi hủy đối tượng Repository, map là thành viên khai báo sau `repo`, nên map bị hủy trước `repo`; không có quyền sở hữu Member trong map. Quan hệ `Member`–`Invoice` không đồng nghĩa sở hữu Invoice.
+- Đối tượng Member mới do bên gọi quản lý trước khi thêm.
+- Khi `add()` thành công, quyền sở hữu được chuyển sang Repository.
+- Khi `add()` thất bại, bên gọi chịu trách nhiệm giải phóng đối tượng mới chưa được tiếp nhận.
+- Không giải phóng lại đối tượng đã thuộc quyền sở hữu của Repository.
+- `membersByPhone` chỉ lưu con trỏ mượn, không sở hữu đối tượng Member.
 
-### 9.3. Destructor và giới hạn rollback
+### 9.2. Con trỏ mượn
 
-`MemberRepository` không khai báo destructor riêng. Destructor mặc định hủy `membersByPhone` rồi `repo` theo thứ tự ngược khai báo; generic Repository giải phóng Member mà nó sở hữu. Destructor ảo của `IRepository<Member>` cho phép xóa qua con trỏ interface. Khi `load()` lỗi sau khi nạp, `membersByPhone.clear()` rồi `repo.clear()` phục hồi trạng thái rỗng. Khi `update()` có exception giữa các setter, việc gỡ key mới không phục hồi toàn bộ Model; cần xem đây là giới hạn dữ liệu chứ không mô tả như transaction nguyên tử.
+Các hàm `findById()`, `findByPhone()` và `getAt()` trả về con trỏ mượn.
 
-## 10. Áp dụng DIP
+Ví dụ:
+
+```cpp
+Member* member = memberRepo.findByPhone("0912345678");
+```
+
+Không được thực hiện:
+
+```cpp
+delete member;
+```
+
+Việc giải phóng đối tượng thuộc trách nhiệm của Repository.
+
+Không tự ý thay đổi số điện thoại thông qua con trỏ mượn vì có thể làm mất đồng bộ với `membersByPhone`.
+
+### 9.3. Destructor
+
+MemberRepository không cần định nghĩa destructor riêng.
+
+`IRepository<T>` đã khai báo destructor ảo:
+
+```cpp
+virtual ~IRepository() = default;
+```
+
+Khi MemberRepository bị hủy, các thuộc tính được hủy theo thứ tự ngược với thứ tự khai báo:
+
+1. `membersByPhone`: Giải phóng các phần tử trong map.
+2. `repo`: Giải phóng các đối tượng Member đang quản lý.
+
+Các đối tượng Invoice đang tham chiếu đến Member phải được xử lý trước khi MemberRepository bị hủy.
+
+## 10. Áp dụng Dependency Inversion Principle
 
 ### 10.1. Trước khi refactor
 
-Mã MemberRepository trước refactor đã khai báo kế thừa `IRepository<Member>` nhưng giữ thêm hai map ID và phone. Map ID lặp việc tra ID của `Repository<Member>`; mỗi lần load/add phải đồng bộ cả hai map và danh sách gốc. Cấu trúc này làm tăng số nơi cần rollback khi lỗi.
+MemberService phụ thuộc trực tiếp vào MemberRepository.
 
-### 10.2. Sau khi refactor Repository
+```cpp
+class MemberService
+{
+private:
+    MemberRepository& memberRepo;
+};
+```
 
-Header override đủ chín hàm chung của `IRepository<Member>`: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded`. `findByPhone` là API riêng, không thêm vào interface chung. Generic `Repository<Member>` vẫn nằm trong lớp concrete theo composition. Việc Service phụ thuộc interface là công việc riêng; tài liệu này không đánh dấu Service đã hoàn tất DIP.
+MemberService phải biết lớp triển khai cụ thể là MemberRepository.
 
-Vì `MemberService` còn phụ thuộc concrete trong mã hiện tại, công việc DIP của Service chưa được nhận là hoàn tất. Map phone không thay generic Repository hay interface; nó chỉ là một chỉ mục phụ của concrete Repository.
+### 10.2. Sau khi refactor
 
-## 11. Phạm vi refactor đã triển khai
+MemberService dự kiến phụ thuộc vào interface.
 
-### 11.1. Header và cấu trúc dữ liệu
+```cpp
+class MemberService
+{
+private:
+    IRepository<Member>& memberRepo;
+};
+```
 
-- Giữ `IRepository<Member>` và `Repository<Member>`; bỏ thành viên `membersById`, giữ `membersByPhone` là con trỏ mượn.
-- Header tự include `<string>`, `<unordered_map>` và dùng đầy đủ `std::`; không thêm public API hoặc thay schema.
+MemberRepository được truyền vào MemberService thông qua constructor.
 
-### 11.2. Định nghĩa, validation và rollback
+Đây là Constructor Injection.
 
-- Dùng `Validator::isValidPhone()` đã có, bỏ helper cục bộ với cùng logic; giữ các điều kiện validation còn lại.
-- Chuẩn hóa header và `.cpp` theo thứ tự, comment, định dạng và namespace của MovieRepository.
-- `save`, `findById` chuyển tiếp trực tiếp; `findByPhone`, `getAt`, `count`, `isLoaded`, constructor, callback, serializer và chính sách không xóa giữ logic hiện tại.
-- `stringToMember` kiểm points không rỗng, chỉ chứa chữ số và gọi `stoi(fields[3])` trong `try/catch`, không kiểm `pos` vì vòng ký tự đã loại hậu tố sai.
-- `load`, `add`, `update` đã triển khai theo Markdown đã chốt, với giới hạn rollback được giải thích ở mục 8.5.
+Tuy nhiên, `findByPhone()` là hàm riêng của MemberRepository, không thuộc `IRepository<Member>`.
 
-### 11.3. Thành phần và quy tắc giữ nguyên
+Cách sử dụng chức năng tìm kiếm theo số điện thoại thông qua interface sẽ được xem xét khi refactor MemberService.
 
-Không thay Model `Member`, `IRepository<T>`, `Repository<T>`, định dạng TXT, cách cấp ID, Permission hay quy tắc nghiệp vụ điểm. `removeById()` vẫn luôn từ chối xóa để bảo vệ lịch sử. Validator chung đã có `isValidPhone()` đúng logic trước đó; refactor chỉ tái sử dụng hàm này. Service không được đánh dấu hoàn tất trong phạm vi tài liệu này.
+## 11. Các thay đổi sau refactor
+
+### 11.1. Thay đổi trong MemberRepository.h
+
+- Kế thừa công khai `IRepository<Member>`.
+- Bổ sung `override` cho 9 hàm của interface.
+- Loại bỏ thuộc tính `membersById`.
+- Giữ lại thuộc tính `membersByPhone`.
+- Sử dụng `std::` thay cho `using namespace std;` trong header.
+
+### 11.2. Thay đổi trong MemberRepository.cpp
+
+| Hàm | Nội dung thay đổi |
+|---|---|
+| isValidMember() | Sử dụng Validator::isValidPhone() |
+| stringToMember() | Kiểm tra points chỉ chứa chữ số trước khi gọi stoi() |
+| load() | Chỉ xây dựng chỉ mục số điện thoại |
+| save() | Gọi trực tiếp repo.save() |
+| add() | Loại bỏ kiểm tra lưu trữ trùng lặp và đồng bộ map |
+| update() | Đơn giản hóa quá trình cập nhật chỉ mục số điện thoại |
+| removeById() | Luôn trả về false |
+| findById() | Gọi trực tiếp repo.findById() |
+
+Hàm kiểm tra số điện thoại được chuyển sang `Validator` để có thể tái sử dụng tại các lớp khác.
+
+### 11.3. Các thành phần giữ nguyên
+
+- Thuộc tính `Repository<Member> repo`.
+- Chức năng tìm kiếm theo số điện thoại.
+- Định dạng file TXT.
+- Cấu trúc Model Member.
+- Cơ chế quản lý bộ nhớ.
+- Các liên kết giữa Member và Invoice.
+- Quy định không hỗ trợ xóa thành viên.
+
+### 11.4. Rà soát theo validation_rules.md
+
+`Repository<Member>` chịu trách nhiệm kiểm tra:
+
+- Trạng thái nạp dữ liệu.
+- Con trỏ nullptr.
+- Trùng con trỏ.
+- ID rỗng hoặc trùng ID.
+- Các điều kiện lưu trữ chung.
+
+MemberRepository chịu trách nhiệm kiểm tra:
+
+- Tính hợp lệ của dữ liệu Member.
+- Tính duy nhất của số điện thoại.
+- Điểm tích lũy ban đầu bằng 0 khi thêm.
+- Không thay đổi điểm tích lũy thông qua update().
+- Tính nhất quán của chỉ mục số điện thoại.
+
+Các kiểm tra loaded trong `add()` và `update()` được giữ lại vì hai hàm này trực tiếp thay đổi dữ liệu hoặc chỉ mục.
 
 ## 12. Kế hoạch kiểm thử
 
-Đã kiểm tra cú pháp C++17 cho các `.cpp` trong `src/` (trừ `main.cpp`), nhưng **chưa chạy test cho bản refactor**. Khi viết và chạy test, biên dịch một file test mỗi lần với các `.cpp` phù hợp trong `src/`, trừ `main.cpp`; dùng file dữ liệu test riêng, không ghi đè dữ liệu thật.
+`tests/test_member_repository.cpp` đã biên dịch với C++17 và toàn bộ `.cpp` trong `src/` (trừ `main.cpp`), chạy ngày 25/11/2026: **204 PASS, 0 FAIL**. Các ô đã đánh dấu chỉ phản ánh trường hợp có trong bài test này.
 
-### 12.1. Load và parse
+### 12.1. Kiểm thử nạp dữ liệu
 
-- [ ] Load file hợp lệ, rỗng, thiếu; trạng thái, count và truy vấn trước/sau load, load hai lần.
-- [ ] File sai số trường, ID sai/trùng, tên/phone sai, phone trùng; kiểm lỗi, map và repo cùng rỗng sau rollback, sửa file rồi retry.
-- [ ] Points rỗng, dấu `+/-`, dấu cách, chữ, ký tự điều khiển, giá trị tràn `int` và các biên `0`/`INT_MAX` theo schema.
+- [x] Nạp file hợp lệ, file rỗng và file không tồn tại.
+- [x] Nạp file thiếu hoặc thừa trường.
+- [x] Nạp file có mã thành viên không hợp lệ hoặc trùng mã.
+- [x] Nạp file có họ tên không hợp lệ.
+- [x] Nạp file có số điện thoại không hợp lệ hoặc trùng số.
+- [x] Nạp file có points rỗng, sai định dạng hoặc vượt phạm vi int.
+- [x] Kiểm tra trường hợp nạp dữ liệu nhiều lần.
+- [x] Kiểm tra rollback danh sách và map khi nạp thất bại.
+- [x] Nạp lại dữ liệu sau khi sửa file lỗi.
 
-### 12.2. Add
+### 12.2. Kiểm thử thêm thành viên
 
-- [ ] Thêm hợp lệ; từ chối chưa load, null, ID trùng, con trỏ trùng, phone trùng, điểm ban đầu khác 0 và từng thuộc tính sai.
-- [ ] Kiểm `membersByPhone` và `repo` nhất quán khi `repo.add()` trả false hoặc ném; kiểm caller giữ quyền sở hữu khi add thất bại.
+- [x] Thêm thành viên hợp lệ.
+- [x] Thêm khi Repository chưa được nạp.
+- [x] Thêm con trỏ nullptr.
+- [x] Thêm thành viên có dữ liệu không hợp lệ.
+- [x] Thêm thành viên có mã trùng.
+- [x] Thêm thành viên có số điện thoại trùng.
+- [x] Thêm thành viên có điểm tích lũy khác 0.
+- [x] Thêm lại con trỏ đã được quản lý.
+- [x] Kiểm tra chỉ mục sau khi thêm thành công.
+- [x] Kiểm tra rollback chỉ mục khi thêm thất bại do trùng ID.
 
-### 12.3. Update
+### 12.3. Kiểm thử cập nhật thành viên
 
-- [ ] Đổi tên với phone giữ nguyên; đổi phone; kiểm khóa cũ biến mất, khóa mới trỏ cùng địa chỉ Member.
-- [ ] Từ chối ID thiếu, phone thuộc Member khác, điểm thay đổi và dữ liệu sai; xác minh ID, địa chỉ, count và liên kết Invoice không đổi ở nhánh thành công.
-- [ ] Kiểm giới hạn khi setter ném: key mới bị gỡ, nhưng không khẳng định tên/phone được hoàn tác; ghi nhận trạng thái Model và map thực tế.
+- [x] Cập nhật khi Repository chưa được nạp.
+- [x] Cập nhật thành viên không tồn tại.
+- [x] Cập nhật bằng dữ liệu không hợp lệ.
+- [x] Cập nhật họ tên.
+- [x] Cập nhật số điện thoại.
+- [x] Cập nhật bằng số điện thoại của thành viên khác.
+- [x] Cập nhật khi điểm tích lũy thay đổi.
+- [x] Kiểm tra số điện thoại cũ không còn trong map.
+- [x] Kiểm tra số điện thoại mới trỏ đúng đối tượng.
+- [x] Kiểm tra mã và địa chỉ đối tượng được giữ nguyên.
+- [ ] Kiểm tra liên kết Invoice được giữ nguyên.
 
-### 12.4. Remove, truy vấn và DIP
+### 12.4. Kiểm thử xóa thành viên
 
-- [ ] `removeById()` luôn false và không đổi dữ liệu; `findById` qua generic repo, `findByPhone` qua map, `getAt` ở chỉ số hợp lệ/âm/vượt phạm vi.
-- [ ] Biên dịch và gọi chín phương thức chung qua `IRepository<Member>&` hoặc `IRepository<Member>*`; kiểm destructor ảo.
+- [x] Xóa thành viên đang tồn tại.
+- [x] Xóa thành viên không tồn tại.
+- [x] Xóa khi Repository chưa được nạp.
+- [x] Kiểm tra các trường hợp trên đều trả về false.
+- [x] Kiểm tra danh sách và chỉ mục không thay đổi.
 
-### 12.5. Save và bộ nhớ
+### 12.5. Kiểm thử truy vấn
 
-- [ ] Save trước load, save hợp lệ rồi load lại; đối chiếu bốn trường TXT và điểm.
-- [ ] Lỗi serializer/ghi file; con trỏ mượn không bị caller xóa; clear/hủy không tạo con trỏ treo trong map.
+- [x] Tìm thành viên theo mã.
+- [x] Tìm thành viên theo số điện thoại.
+- [x] Tìm thành viên không tồn tại.
+- [x] Lấy thành viên tại vị trí hợp lệ.
+- [x] Lấy thành viên tại vị trí không hợp lệ.
+- [x] Kiểm tra count().
+- [x] Kiểm tra isLoaded().
 
-Chưa ghi PASS/FAIL vì chưa chạy bài test liên quan cho bản refactor.
+### 12.6. Kiểm thử lưu dữ liệu
 
-## 13. Tiến độ
+- [x] Lưu danh sách thành viên hợp lệ.
+- [x] Lưu danh sách thành viên rỗng.
+- [x] Lưu khi Repository chưa được nạp.
+- [x] Kiểm tra đúng định dạng TXT.
+- [x] Nạp lại dữ liệu sau khi lưu.
+- [x] Kiểm tra dữ liệu và chỉ mục sau khi nạp lại.
 
-- [x] Đọc quy chuẩn, thiết kế DIP, validation, nghiệp vụ, định dạng dữ liệu và mẫu Movie/User.
-- [x] Rà soát mã MemberRepository và Validator hiện tại.
-- [x] Ghi thiết kế dự kiến cho cấu trúc một map và các hàm đã rà soát.
-- [x] Bổ sung mã dự kiến và giải thích `load()`, `add()`, `update()` theo thiết kế đã thống nhất.
-- [x] Chốt quy tắc chuỗi points không rỗng, chỉ gồm chữ số `0`–`9` và dùng `stoi(fields[3])`.
-- [x] Review toàn bộ tài liệu và xác nhận **CHỐT MARKDOWN**.
-- [x] Triển khai `.h/.cpp`, kiểm tra cú pháp C++17 và đối chiếu mã với Markdown.
-- [ ] Viết và chạy test liên quan, ghi nhận kết quả thực tế.
+### 12.7. Kiểm thử IRepository
+
+- [x] Sử dụng tham chiếu IRepository<Member>&.
+- [x] Sử dụng con trỏ IRepository<Member>*.
+- [x] Gọi đầy đủ 9 hàm thông qua interface.
+- [x] Kiểm tra destructor ảo bằng xóa qua con trỏ interface.
+
+### 12.8. Kiểm thử Validator::isValidPhone()
+
+- [x] Số điện thoại hợp lệ.
+- [x] Số điện thoại rỗng.
+- [x] Số điện thoại thiếu hoặc thừa chữ số.
+- [x] Số điện thoại không bắt đầu bằng 0.
+- [x] Số điện thoại chứa chữ cái, khoảng trắng hoặc ký tự đặc biệt.
+
+## 13. Tiến độ triển khai
+
+- [x] Thiết kế MemberRepository kế thừa IRepository.
+- [x] Xác định các hàm cần override.
+- [x] Rà soát logic MemberRepository.h và MemberRepository.cpp.
+- [x] Loại bỏ chỉ mục membersById.
+- [x] Chuẩn hóa validation.
+- [x] Thiết kế cơ chế đồng bộ và rollback chỉ mục số điện thoại.
+- [x] Xây dựng nội dung tài liệu MemberRepository.md.
+- [x] Review và CHỐT MARKDOWN.
+- [x] Triển khai MemberRepository.h.
+- [x] Triển khai MemberRepository.cpp.
+- [x] Chuẩn hóa tài liệu theo MovieRepository.md.
+- [x] Biên dịch mã nguồn cùng bài test MemberRepository bằng C++17.
+- [x] Kiểm thử MemberRepository trong phạm vi `tests/test_member_repository.cpp`.
+- [x] Kiểm thử IRepository thông qua MemberRepository.
+- [x] Cập nhật kết quả kiểm thử và tiến độ refactor.
+
+**Kết quả kiểm thử:** `tests/test_member_repository.cpp` ngày 25/11/2026: **204 PASS, 0 FAIL**. Refactor, chuẩn hóa mã nguồn, tài liệu và kiểm thử MemberRepository trong phạm vi bài test đã hoàn thành. Liên kết Invoice và tình huống setter ném ngoại lệ chưa được bài test này kiểm chứng.
 
 ## 14. Kết luận
 
-Thiết kế giữ `IRepository<Member>`, `Repository<Member>` và chỉ mục `membersByPhone`, bỏ map ID. `Validator::isValidPhone()` thay helper cục bộ cùng logic. Quy tắc points và mã `load()`, `add()`, `update()` đã **CHỐT MARKDOWN** và triển khai; rollback ở `update()` chỉ hoàn tác key mới. Hai file MemberRepository khớp mã ở mục 5 và đã qua kiểm tra cú pháp C++17; **chưa chạy test** cho bản refactor.
+MemberRepository là Concrete Repository triển khai `IRepository<Member>` và sử dụng `Repository<Member>` thông qua composition.
+
+Sau refactor, MemberRepository triển khai đầy đủ 9 hàm của interface, loại bỏ chỉ mục ID dư thừa và giữ lại chỉ mục số điện thoại.
+
+Thiết kế giúp giảm logic trùng lặp, bảo đảm tính nhất quán của dữ liệu và chuẩn bị cho việc áp dụng Dependency Inversion Principle tại tầng Business Logic.
+
+Cơ chế quản lý bộ nhớ, cấu trúc Model và định dạng file TXT được giữ nguyên.

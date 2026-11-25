@@ -260,6 +260,8 @@ if ($LASTEXITCODE -eq 0) {
 
 Kết quả PASS/FAIL cần lấy từ lần chạy kiểm thử thực tế; tài liệu này không tự xác nhận lại kết quả.
 
+`Validator::isValidPhone()` đã được kiểm thử trực tiếp trong `tests/test_member_repository.cpp` ngày 25/11/2026: các trường hợp hợp lệ, rỗng, thiếu/thừa chữ số, không bắt đầu bằng `0`, chứa chữ cái, khoảng trắng và ký tự đặc biệt đều PASS. Toàn bộ bài test đạt 204 PASS, 0 FAIL; đây là kết quả chung của bài test, không phải số ca riêng của Validator.
+
 ## 10. Lưu ý và hướng mở rộng
 
 - `isValidText()` cho phép dấu cách ở đầu/cuối; các trường có yêu cầu chặt hơn phải kiểm tra riêng.
