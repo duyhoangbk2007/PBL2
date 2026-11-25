@@ -8,7 +8,7 @@ Trách nhiệm riêng: kiểm tra Room hợp lệ, chuyển đổi Room ↔ TXT,
 
 **File liên quan:** `src/data_access/IRepository.h`, `Repository.h`, `RoomRepository.h`, `RoomRepository.cpp`, `src/models/Room.h`, `src/models/Seat.h`, `src/utils/Validator.h`.
 
-**Trạng thái:** Thiết kế dự kiến — chờ **CHỐT MARKDOWN**; chưa sửa mã nguồn hoặc kiểm thử.
+**Trạng thái:** Đã **CHỐT MARKDOWN**. Mã ở mục 5 là bản chuẩn để triển khai vào `.h/.cpp`; chưa kiểm thử.
 
 ## 2. Kiến trúc
 
@@ -30,7 +30,7 @@ DoublyLinkedList<Room*>
 
 ### 2.2. Quan hệ với IRepository
 
-`RoomRepository : public IRepository<Room>` triển khai đủ 9 hàm thuần ảo: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded`. Từ khóa `override` giúp trình biên dịch kiểm tra chữ ký. **Không thay `RoomService` sang interface trong phạm vi này**; chỉ chuẩn bị khả năng đó cho giai đoạn sau.
+`RoomRepository : public IRepository<Room>` hiện đã có trong mã nguồn và triển khai đủ 9 hàm thuần ảo: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded`. Từ khóa `override` giúp trình biên dịch kiểm tra chữ ký. **Không thay `RoomService` sang interface trong phạm vi này**.
 
 ### 2.3. Quan hệ với Repository
 
@@ -100,27 +100,33 @@ Tất cả là `static`, vì không cần truy cập thành viên `repo` của m
 #include "Repository.h"
 #include "../models/Room.h"
 
+using namespace std;
+
 class RoomRepository : public IRepository<Room>
 {
 private:
     Repository<Room> repo;
 
-    static std::string getRoomId(Room* room);
-    static Room* stringToRoom(const std::string& line);
-    static std::string roomToString(Room* room);
+    static string getRoomId(Room* room);
+    static Room* stringToRoom(const string& line);
+    static string roomToString(Room* room);
+
     static bool isValidRoom(const Room* room);
 
 public:
-    RoomRepository(const std::string& filePath);
+    RoomRepository(const string& filePath);
 
+    // Doc va ghi du lieu
     bool load() override;
     bool save() override;
 
+    // Quan ly du lieu
     bool add(Room* room) override;
     bool update(const Room& newValues) override;
-    bool removeById(const std::string& roomId) override;
+    bool removeById(const string& roomId) override;
 
-    Room* findById(const std::string& roomId) override;
+    // Truy van du lieu
+    Room* findById(const string& roomId) override;
     Room* getAt(int index) override;
     int count() override;
     bool isLoaded() override;
@@ -133,7 +139,7 @@ public:
 
 **Đường dẫn:** `src/data_access/RoomRepository.cpp`.
 
-Logic giữ nguyên; mã dưới đây chuẩn hóa khoảng trắng/comment khi trình bày. Theo quy trình Markdown-first, nếu CHỐT bản này thì nội dung code triển khai phải khớp bản chốt 100%; phương án thay đổi tối thiểu là giữ nguyên file `.cpp` hiện hành.
+Mã dưới đây đã **CHỐT MARKDOWN**: giữ logic parse/serialize, truy vấn và liên kết hiện có; chuẩn hóa thứ tự, định dạng và bỏ validation lưu trữ trùng với `Repository<Room>`. Khi triển khai phải chép khớp 100%.
 
 ```cpp
 #include "RoomRepository.h"
@@ -144,19 +150,7 @@ Logic giữ nguyên; mã dưới đây chuẩn hóa khoảng trắng/comment khi
 
 using namespace std;
 
-RoomRepository::RoomRepository(const string& filePath)
-    : repo(filePath, getRoomId, stringToRoom, roomToString)
-{}
-
-string RoomRepository::getRoomId(Room* room)
-{
-    if (room == nullptr)
-    {
-        return "";
-    }
-    return room->getRoomId();
-}
-
+// Kiem tra toan bo du lieu Room
 bool RoomRepository::isValidRoom(const Room* room)
 {
     if (room == nullptr)
@@ -171,15 +165,26 @@ bool RoomRepository::isValidRoom(const Room* room)
     {
         return false;
     }
-    if (room->getRowCount() <= 0)
-    {
-        return false;
-    }
-    if (room->getColumnCount() <= 0)
+    if (room->getRowCount() <= 0 ||
+        room->getColumnCount() <= 0)
     {
         return false;
     }
     return true;
+}
+
+RoomRepository::RoomRepository(const string& filePath)
+    : repo(filePath, getRoomId, stringToRoom, roomToString)
+{
+}
+
+string RoomRepository::getRoomId(Room* room)
+{
+    if (room == nullptr)
+    {
+        return "";
+    }
+    return room->getRoomId();
 }
 
 Room* RoomRepository::stringToRoom(const string& line)
@@ -242,6 +247,7 @@ Room* RoomRepository::stringToRoom(const string& line)
     return room;
 }
 
+// Chuyen Room thanh mot dong TXT
 string RoomRepository::roomToString(Room* room)
 {
     if (!isValidRoom(room))
@@ -255,60 +261,63 @@ string RoomRepository::roomToString(Room* room)
            (room->isActive() ? "1" : "0");
 }
 
+// Doc du lieu phong tu file
+bool RoomRepository::load()
+{
+    return repo.load();
+}
+
+// Luu du lieu phong xuong file
 bool RoomRepository::save()
 {
     return repo.save();
 }
 
-bool RoomRepository::load()
-{
-    if (repo.isLoaded())
-    {
-        return false;
-    }
-    return repo.load();
-}
-
+// Them phong moi
 bool RoomRepository::add(Room* room)
 {
-    if (!repo.isLoaded() || !isValidRoom(room))
+    if (!isValidRoom(room))
     {
         return false;
     }
-    for (int i = 0; i < repo.count(); i++)
-    {
-        if (repo.getAt(i) == room)
-        {
-            return false;
-        }
-    }
+
     return repo.add(room);
 }
 
+// Cap nhat thong tin phong
 bool RoomRepository::update(const Room& newValues)
 {
     if (!repo.isLoaded() || !isValidRoom(&newValues))
     {
         return false;
     }
+
     Room* room = repo.findById(newValues.getRoomId());
 
     if (room == nullptr)
     {
         return false;
     }
-    for (int i = 0; i < room->getSeatCount(); i++)
+
+    // Chi kiem tra ghe khi thu nho phong
+    if (newValues.getRowCount() < room->getRowCount() ||
+        newValues.getColumnCount() < room->getColumnCount())
     {
-        Seat* seat = room->getSeatAt(i);
-        if (seat == nullptr)
+        for (int i = 0; i < room->getSeatCount(); i++)
         {
-            return false;
-        }
-        if (seat->getRow() > newValues.getRowCount() || seat->getColumn() > newValues.getColumnCount())
-        {
-            return false;
+            Seat* seat = room->getSeatAt(i);
+            if (seat == nullptr)
+            {
+                return false;
+            }
+            if (seat->getRow() > newValues.getRowCount() ||
+                seat->getColumn() > newValues.getColumnCount())
+            {
+                return false;
+            }
         }
     }
+
     room->setName(newValues.getName());
     room->setRowCount(newValues.getRowCount());
     room->setColumnCount(newValues.getColumnCount());
@@ -318,16 +327,13 @@ bool RoomRepository::update(const Room& newValues)
 
 bool RoomRepository::removeById(const string& roomId)
 {
-    if (!repo.isLoaded())
-    {
-        return false;
-    }
     Room* room = repo.findById(roomId);
 
     if (room == nullptr)
     {
         return false;
     }
+    // Khong xoa neu phong con lien ket Seat hoac Showtime
     if (room->getSeatCount() > 0 ||
         room->getShowtimeCount() > 0)
     {
@@ -340,14 +346,17 @@ Room* RoomRepository::findById(const string& roomId)
 {
     return repo.findById(roomId);
 }
+
 Room* RoomRepository::getAt(int index)
 {
     return repo.getAt(index);
 }
+
 int RoomRepository::count()
 {
     return repo.count();
 }
+
 bool RoomRepository::isLoaded()
 {
     return repo.isLoaded();
@@ -388,12 +397,23 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 - **Luồng hoạt động chi tiết (ASCII):**
 
   ```text
-  `null? -> false; ID sai? -> false; tên sai? -> false; hàng <=0? -> false; cột <=0? -> false; -> true`.
+  room == nullptr? --có--> false
+      | không
+      v
+  ID sai? --có--> false
+      | không
+      v
+  tên sai? --có--> false
+      | không
+      v
+  hàng <= 0 hoặc cột <= 0? --có--> false
+      | không
+      v
+     true
   ```
 
-- **Giải thích:** `const Room*` không cho thay đổi đối tượng qua tham số; `Validator::isValidId` xác minh định dạng; `Validator::isValidText` xác minh văn bản; các getter kiểm tra giới hạn. Không kiểm tra quan hệ Seat/Showtime ở helper này.
+- **Giải thích:** `const Room*` không cho thay đổi đối tượng qua tham số; `Validator::isValidId` xác minh định dạng; `Validator::isValidText` xác minh văn bản; một điều kiện `||` kiểm tra cả số hàng và số cột phải dương. Không kiểm tra quan hệ Seat/Showtime ở helper này.
 
-**Giải thích bổ sung theo đoạn code:** Đoạn `if (room == nullptr)` bảo vệ mọi lần gọi getter sau đó. `Validator::isValidId(..., "ROM")` kiểm tra mã; `isValidText` kiểm tra tên. Hai điều kiện `<= 0` loại kích thước không dương. `return true` chỉ đến sau khi toàn bộ kiểm tra thành công.
 
 ### 7.2. `getRoomId(Room* room)`
 
@@ -406,7 +426,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** `nullptr` ngăn dereference sai; `->` truy cập getter qua con trỏ; trả về bản sao `string`.
 
-**Giải thích bổ sung theo đoạn code:** `return ""` là giá trị bảo vệ nếu con trỏ null; trường hợp hợp lệ trả về bản sao mã từ getter, không thay đổi Room.
 
 ### 7.3. `stringToRoom(const string& line)`
 
@@ -419,7 +438,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** `vector<string> fields` giữ các trường; `start`, `find`, `substr` duyệt từ trái qua phải và giữ trường rỗng cuối. `stoi` dùng `pos1/pos2` để chặn chuỗi số có hậu tố; `try/catch` chuyển lỗi thành thông báo Room. Chỉ chấp nhận `"0"` hoặc `"1"` và chuyển thành `bool`. `new Room` cấp phát heap; nếu kiểm tra thất bại phải `delete` trước khi throw; khi thành công chuyển con trỏ cho caller (`Repository<T>::load`).
 
-**Giải thích bổ sung theo đoạn code:** `start = pos + 1` dịch vị trí sau dấu `|`; khi `find` trả `npos`, `substr(start)` giữ cả trường cuối. `stoi(fields[2], &pos1)` và `stoi(fields[3], &pos2)` cần tiêu thụ hết chuỗi, nên các hậu tố như `8abc` bị loại. Sau `new Room`, `delete room` ở nhánh invalid tránh rò rỉ. Nếu hợp lệ, trả con trỏ cho bên gọi quản lý.
 
 ### 7.4. `roomToString(Room* room)`
 
@@ -432,7 +450,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** `to_string` chuyển số nguyên; toán tử `+` nối trường với `|`; toán tử ba ngôi chuyển bool thành `"1"`/`"0"`. Không ghi file trực tiếp.
 
-**Giải thích bổ sung theo đoạn code:** Trước tiên `isValidRoom` chặn serialize đối tượng lỗi. Biểu thức nối dùng đúng thứ tự năm trường; `to_string` đổi số hàng/cột; `(room->isActive() ? "1" : "0")` chuẩn hóa boolean.
 
 ## 8. Giải thích các hàm public
 
@@ -448,20 +465,24 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** Danh sách khởi tạo sau dấu `:` xây dựng thành viên `repo` trước thân constructor `{}`. Callback dùng khi tra ID, parse và serialize; chưa cấp phát `Room`.
 
-**Giải thích bổ sung theo đoạn code:** Danh sách khởi tạo `: repo(...)` chạy trước thân hàm rỗng. Không gọi `load`, không tạo Room. Các tên hàm static được truyền như con trỏ hàm, để generic Repository dùng khi cần.
 
 ### 8.2. `load()`
 
-- **Mục đích:** Nạp TXT một lần; trả `false` nếu đã load hoặc `repo.load()` thất bại.
+- **Mục đích:** Chuyển yêu cầu nạp TXT cho `Repository<Room>`; trả nguyên kết quả của `repo.load()`.
 - **Luồng hoạt động chi tiết (ASCII):**
 
   ```text
-  `repo.isLoaded()? --có--> false; --không--> repo.load() -> trả kết quả`.
+  repo.load() -> đã load hoặc không đọc được file? --có--> false
+      | không
+      v
+  parse từng dòng vào danh sách tạm -> lỗi? --có--> ném exception
+      | không
+      v
+  swap danh sách, đặt loaded = true -> true
   ```
 
-- **Giải thích:** Điều kiện chặn nạp lặp. `Repository<T>::load()` đọc file, parse vào danh sách tạm, kiểm tra ID trùng, rồi swap; lỗi parse có thể ném exception kèm file/dòng. Không tự tạo file thiếu.
+- **Giải thích:** `Repository<T>::load()` tự chặn nạp lặp, đọc file, parse vào danh sách tạm, kiểm tra ID trùng, rồi swap; lỗi parse có thể ném exception kèm file/dòng. Không tự tạo file thiếu.
 
-**Giải thích bổ sung theo đoạn code:** `if (repo.isLoaded()) return false` chặn nạp lần hai. `repo.load()` đọc toàn file vào danh sách tạm, parse từng dòng, từ chối ID trùng, và chỉ đổi danh sách chính sau khi thành công; exception parse được truyền ra.
 
 ### 8.3. `save()`
 
@@ -474,20 +495,18 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** `Repository<T>::save()` gọi callback `roomToString` cho từng đối tượng rồi `FileIO::writeLines`; không phải transaction nguyên tử và có thể ném exception nếu dữ liệu sai.
 
-**Giải thích bổ sung theo đoạn code:** `return repo.save()` chuyển nguyên kết quả ghi file; generic Repository serialize từng Room rồi gọi `FileIO::writeLines`. Không tự gọi save sau add/update/remove.
 
 ### 8.4. `add(Room* room)`
 
-- **Mục đích:** Thêm Room mới nếu repo đã load, dữ liệu hợp lệ và không trùng con trỏ/ID.
+- **Mục đích:** Kiểm tra dữ liệu Room rồi chuyển thao tác thêm cho `Repository<Room>`.
 - **Luồng hoạt động chi tiết (ASCII):**
 
   ```text
-  `loaded + valid? --không--> false; duyệt từng item -> cùng địa chỉ? --có--> false; -> repo.add(room) -> bool`.
+  `isValidRoom(room)? --không--> false; --có--> repo.add(room) -> bool`.
   ```
 
-- **Giải thích:** `!`, `||` từ chối khi chưa load hoặc Room không hợp lệ. Vòng `for` so sánh địa chỉ con trỏ, không so nội dung. `repo.add` tiếp tục kiểm tra ID rỗng/trùng, đưa vào danh sách. Thành công thì repo sở hữu `room`; thất bại caller vẫn sở hữu.
+- **Giải thích:** `isValidRoom()` kiểm tra dữ liệu đặc thù; `repo.add()` tự kiểm trạng thái loaded, con trỏ null/trùng và ID rỗng/trùng. Thành công thì repo sở hữu `room`; thất bại caller vẫn sở hữu.
 
-**Giải thích bổ sung theo đoạn code:** `!repo.isLoaded() || !isValidRoom(room)` bảo vệ trạng thái và dữ liệu. Vòng `for` so sánh chính địa chỉ con trỏ với từng phần tử đã quản lý; `repo.add(room)` còn kiểm tra ID rỗng/trùng trước khi nhận ownership.
 
 ### 8.5. `update(const Room& newValues)`
 
@@ -495,12 +514,11 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 - **Luồng hoạt động chi tiết (ASCII):**
 
   ```text
-  `loaded + valid? --không--> false -> findById -> tồn tại? --không--> false -> duyệt ghế -> null/vượt giới hạn? --có--> false -> setName/setRowCount/setColumnCount/setActive -> true`.
+  `loaded + valid? --không--> false -> findById -> null? --có--> false -> giảm hàng/cột? --có--> duyệt ghế, null/vượt giới hạn? --có--> false -> cập nhật bốn thuộc tính -> true`.
   ```
 
-- **Giải thích:** `&newValues` lấy địa chỉ đối tượng tham chiếu để validate; tìm theo ID bất biến. `getSeatCount` và `getSeatAt` duyệt các liên kết ghế; nếu ghế nằm ngoài hàng/cột mới thì từ chối trước khi gọi setter. Các setter chỉ chạy sau khi toàn bộ kiểm tra qua; hàm không save. Việc Service ngăn đổi `active` hoặc đổi kích thước khi đã có suất chiếu vẫn nằm ở Service hiện tại, không thay đổi trong đợt này.
+- **Giải thích:** `&newValues` lấy địa chỉ đối tượng tham chiếu để validate; tìm theo ID bất biến. Chỉ khi số hàng hoặc số cột giảm mới dùng `getSeatCount` và `getSeatAt` để duyệt liên kết ghế. Ghế null hoặc có tọa độ vượt phạm vi mới khiến hàm trả `false` trước mọi setter. Hàm không save; RoomService hiện kiểm thay đổi trạng thái và kích thước khi có Showtime, còn kiểm tra lịch sử Ticket khi đổi sơ đồ phòng cần hoàn thiện lúc refactor Service.
 
-**Giải thích bổ sung theo đoạn code:** `&newValues` lấy địa chỉ tham chiếu để validate mà không tạo bản sao. `repo.findById` tìm phòng đang quản lý. Vòng lặp đọc từng `Seat*`; null hoặc tọa độ vượt số hàng/cột mới đều khiến hàm trả false **trước** các setter. Các setter chỉ thay thuộc tính, không thay ID hay danh sách liên kết.
 
 ### 8.6. `removeById(const string& roomId)`
 
@@ -508,12 +526,11 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 - **Luồng hoạt động chi tiết (ASCII):**
 
   ```text
-  `loaded? --không--> false -> findById -> null? --có--> false -> có ghế/suất? --có--> false -> repo.removeById(roomId)`.
+  `findById -> null? --có--> false -> có ghế/suất? --có--> false -> repo.removeById(roomId)`.
   ```
 
 - **Giải thích:** `getSeatCount`/`getShowtimeCount` chặn xóa đối tượng còn liên kết; `Repository<T>::removeById` gỡ node và `delete Room*` khi thành công. Con trỏ mượn đến Room bị xóa sẽ không còn hợp lệ.
 
-**Giải thích bổ sung theo đoạn code:** Kiểm tra loaded và tồn tại trước. Hai bộ đếm ghế/suất bảo vệ quan hệ đang tham chiếu. Chỉ sau khi cả hai bằng 0, `repo.removeById` gỡ node và giải phóng Room; không lưu TXT tự động.
 
 ### 8.7. `findById(const string& roomId)`
 
@@ -526,7 +543,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** Chỉ chuyển tiếp cho generic repo; không chuyển quyền sở hữu con trỏ.
 
-**Giải thích bổ sung theo đoạn code:** Chuyển tiếp nguyên `roomId` cho `repo.findById`; kết quả là con trỏ mượn hoặc null. Không cấp phát và không chuyển ownership.
 
 ### 8.8. `getAt(int index)`
 
@@ -539,7 +555,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** Vị trí do danh sách liên kết quản lý; caller không sở hữu kết quả.
 
-**Giải thích bổ sung theo đoạn code:** Chuyển tiếp `index` cho danh sách generic; chỉ số không hợp lệ dẫn đến `nullptr` theo `Repository<T>::getAt`.
 
 ### 8.9. `count()`
 
@@ -552,7 +567,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** `Repository<T>::count()` trả `items.nodeCount()`; không tự load.
 
-**Giải thích bổ sung theo đoạn code:** Trả số node do generic Repository quản lý; không tính số ghế, số suất hay tổng số chỗ.
 
 ### 8.10. `isLoaded()`
 
@@ -565,7 +579,6 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 - **Giải thích:** Chuyển tiếp cờ `loaded` của generic repo; không đọc file.
 
-**Giải thích bổ sung theo đoạn code:** Trả cờ loaded của generic Repository; không tự tải file hoặc thay đổi trạng thái.
 
 ## 9. Quản lý bộ nhớ
 
@@ -585,27 +598,26 @@ Các helper `static` không có `this`; có thể truyền trực tiếp dưới
 
 ### 10.1. Trước khi refactor
 
-`RoomRepository` là lớp concrete độc lập, có đủ các hàm CRUD nhưng chưa khai báo triển khai `IRepository<Room>`. `RoomService` nhận `RoomRepository&`.
+Phiên bản ban đầu là lớp concrete độc lập. Mã nguồn hiện tại đã khai báo `RoomRepository : public IRepository<Room>`; `RoomService` vẫn nhận `RoomRepository&`.
 
 ### 10.2. Sau khi refactor Repository
 
-`RoomRepository` kế thừa `IRepository<Room>` và ghi `override` cho đủ chín phương thức. Có thể gọi các phương thức chung qua `IRepository<Room>&` khi kiểm thử. **`RoomService` vẫn nhận `RoomRepository&`** trong đợt này; DIP ở tầng Service chưa hoàn tất và không được ghi nhận là đã triển khai.
+Thiết kế tiếp tục kế thừa `IRepository<Room>` và ghi `override` cho đủ chín phương thức. Có thể gọi các phương thức chung qua `IRepository<Room>&` khi kiểm thử. **`RoomService` vẫn nhận `RoomRepository&`** trong đợt này; DIP ở tầng Service chưa hoàn tất và không được ghi nhận là đã triển khai.
 
 ## 11. Các thay đổi sau refactor
 
 ### 11.1. Thay đổi trong RoomRepository.h
 
-- Thêm `#include "IRepository.h"`.
-- Đổi thành `class RoomRepository : public IRepository<Room>`.
-- Thêm `override` vào chín hàm public tương ứng.
+- Giữ `#include "IRepository.h"`, `class RoomRepository : public IRepository<Room>` và chín hàm `override` đã có.
+- Thêm `using namespace std;` theo mẫu MovieRepository, bỏ `std::` ở các chữ ký; sắp xếp callback, validation và nhóm public theo cùng thứ tự, thêm comment nhóm.
 
 ### 11.2. Thay đổi trong RoomRepository.cpp
 
-Không cần đổi logic. Giữ nguyên các callback, parse/serialize, validation, ràng buộc ghế và suất chiếu. Khối mã ở mục 5 là bản trình bày dự kiến; trước khi triển khai cần chốt chính xác bản code chuẩn để đối chiếu 100%.
+Sắp xếp định nghĩa và comment theo MovieRepository. `isValidRoom()` gộp kiểm tra hàng/cột; `load()` và `add()` bỏ kiểm tra loaded, con trỏ trùng do `Repository<Room>` đã đảm nhiệm. `removeById()` bỏ kiểm tra loaded riêng nhưng giữ kiểm tra Room tồn tại và hai danh sách liên kết. `update()` giữ loaded vì sửa Model trực tiếp, chỉ duyệt ghế khi thu nhỏ và kiểm tra trước các setter. Không thêm rollback, `try/catch` hoặc thay đổi nghiệp vụ.
 
 ### 11.3. Các thành phần giữ nguyên
 
-`RoomService`, `IRepository.h`, `Repository.h`, Model `Room`, `Seat`, `Showtime`, Validator, định dạng TXT, quyền `ROOM_*` và quy tắc cấp ID.
+`RoomService`, `IRepository.h`, `Repository.h`, Model `Room`, `Seat`, `Showtime`, Validator, định dạng TXT, quyền `ROOM_*` và quy tắc cấp ID. RoomRepository giữ tính hợp lệ dữ liệu và liên kết hiện có; RoomService kiểm Permission, hiện chặn đổi trạng thái qua `updateRoom()` và đổi kích thước khi có Showtime. Việc kiểm tra đầy đủ nghiệp vụ sơ đồ phòng liên quan Showtime/Ticket sẽ hoàn thiện khi refactor Service, chưa được coi là đã bảo đảm trong mã đề xuất này.
 
 ## 12. Kế hoạch kiểm thử
 
@@ -622,8 +634,11 @@ Không cần đổi logic. Giữ nguyên các callback, parse/serialize, validat
 ### 12.3. Kiểm thử cập nhật phòng
 
 - [ ] Update thành công, ID không tồn tại, chưa load, dữ liệu invalid.
-- [ ] Thu nhỏ làm ghế vượt giới hạn phải thất bại; thu nhỏ vẫn chứa mọi ghế phải được kiểm tra theo quy tắc hiện hành.
+- [ ] Tăng riêng số hàng, tăng riêng số cột và tăng cả hai: thành công, không cần duyệt ghế; giữ danh sách ghế.
+- [ ] Giảm riêng số hàng, giảm riêng số cột và giảm cả hai: từ chối khi có ghế ngoài phạm vi mới, chấp nhận khi mọi ghế vẫn nằm trong phạm vi. Kiểm ghế null trong nhánh thu nhỏ.
+- [ ] Đổi tên/trạng thái hoặc giữ nguyên kích thước: không duyệt ghế; dữ liệu sai phải bị từ chối trước setter.
 - [ ] Giữ nguyên ID, địa chỉ Room và liên kết Seat/Showtime.
+- [ ] Khi refactor RoomService, kiểm Permission và các ràng buộc Showtime/Ticket trước khi cho thay đổi sơ đồ phòng; chưa đánh dấu PASS ở bước tài liệu.
 
 ### 12.4. Kiểm thử xóa phòng
 
@@ -638,7 +653,7 @@ Không cần đổi logic. Giữ nguyên các callback, parse/serialize, validat
 ### 12.6. Kiểm thử lưu dữ liệu
 
 - [ ] Save trước load; save Room hợp lệ; đối chiếu 5 trường và 0/1; load lại để so sánh.
-- [ ] Save khi dữ liệu bị thay đổi thành invalid; lỗi ghi file.
+- [ ] Save khi dữ liệu bị thay đổi thành invalid (exception từ serializer); lỗi mở/ghi file (`false` từ `FileIO`).
 
 ### 12.7. Kiểm thử IRepository
 
@@ -651,12 +666,12 @@ Không cần đổi logic. Giữ nguyên các callback, parse/serialize, validat
 - [x] Đọc `AGENTS.md`, `IRepository.h`, `MovieRepository.h/.cpp` và `MovieRepository.md`.
 - [x] Đọc `RoomRepository.h/.cpp`, `RoomService.h/.cpp`, `Room.h/.cpp` và generic `Repository.h`.
 - [x] Xác định phạm vi chỉ refactor Repository.
-- [x] Viết bản thiết kế Markdown theo 14 mục của mẫu MovieRepository.
-- [ ] Review và **CHỐT MARKDOWN**.
+- [x] Viết bản thiết kế Markdown theo bố cục 14 mục của mẫu MovieRepository.
+- [x] Review và **CHỐT MARKDOWN**.
 - [ ] Đối chiếu code triển khai khớp Markdown đã chốt.
 - [ ] Biên dịch và kiểm thử thực tế.
 - [ ] Cập nhật tiến độ sau kiểm thử.
 
 ## 14. Kết luận
 
-`RoomRepository` sẽ triển khai `IRepository<Room>` bằng public inheritance, giữ `Repository<Room>` theo composition và bảo toàn toàn bộ nghiệp vụ Room hiện có. Chỉ cần thay đổi phần khai báo header; `.cpp` không cần thay đổi logic. `RoomService` không thuộc phạm vi công việc hiện tại. Bản này **chưa được chốt, chưa triển khai và chưa kiểm thử**.
+`RoomRepository` tiếp tục triển khai `IRepository<Room>` bằng public inheritance, giữ `Repository<Room>` theo composition. Bản thiết kế chuẩn hóa `.h/.cpp`, dùng lại validation lưu trữ của lớp chung và chỉ duyệt ghế khi thu nhỏ phòng; không thay đổi nghiệp vụ RoomService. Markdown **đã chốt**; việc kiểm thử chưa thực hiện.

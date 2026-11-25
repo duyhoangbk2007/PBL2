@@ -6,19 +6,7 @@
 
 using namespace std;
 
-RoomRepository::RoomRepository(const string& filePath)
-    : repo(filePath, getRoomId, stringToRoom, roomToString)
-{}
-
-string RoomRepository::getRoomId(Room* room)
-{
-    if (room == nullptr)
-    {
-        return "";
-    }
-    return room->getRoomId();
-}
-
+// Kiem tra toan bo du lieu Room
 bool RoomRepository::isValidRoom(const Room* room)
 {
     if (room == nullptr)
@@ -33,15 +21,26 @@ bool RoomRepository::isValidRoom(const Room* room)
     {
         return false;
     }
-    if (room->getRowCount() <= 0)
-    {
-        return false;
-    }
-    if (room->getColumnCount() <= 0)
+    if (room->getRowCount() <= 0 ||
+        room->getColumnCount() <= 0)
     {
         return false;
     }
     return true;
+}
+
+RoomRepository::RoomRepository(const string& filePath)
+    : repo(filePath, getRoomId, stringToRoom, roomToString)
+{
+}
+
+string RoomRepository::getRoomId(Room* room)
+{
+    if (room == nullptr)
+    {
+        return "";
+    }
+    return room->getRoomId();
 }
 
 Room* RoomRepository::stringToRoom(const string& line)
@@ -104,6 +103,7 @@ Room* RoomRepository::stringToRoom(const string& line)
     return room;
 }
 
+// Chuyen Room thanh mot dong TXT
 string RoomRepository::roomToString(Room* room)
 {
     if (!isValidRoom(room))
@@ -117,60 +117,63 @@ string RoomRepository::roomToString(Room* room)
            (room->isActive() ? "1" : "0");
 }
 
+// Doc du lieu phong tu file
+bool RoomRepository::load()
+{
+    return repo.load();
+}
+
+// Luu du lieu phong xuong file
 bool RoomRepository::save()
 {
     return repo.save();
 }
 
-bool RoomRepository::load()
-{
-    if (repo.isLoaded())
-    {
-        return false;
-    }
-    return repo.load();
-}
-
+// Them phong moi
 bool RoomRepository::add(Room* room)
 {
-    if (!repo.isLoaded() || !isValidRoom(room))
+    if (!isValidRoom(room))
     {
         return false;
     }
-    for (int i = 0; i < repo.count(); i++)
-    {
-        if (repo.getAt(i) == room)
-        {
-            return false;
-        }
-    }
+
     return repo.add(room);
 }
 
+// Cap nhat thong tin phong
 bool RoomRepository::update(const Room& newValues)
 {
     if (!repo.isLoaded() || !isValidRoom(&newValues))
     {
         return false;
     }
+
     Room* room = repo.findById(newValues.getRoomId());
 
     if (room == nullptr)
     {
         return false;
     }
-    for (int i = 0; i < room->getSeatCount(); i++)
+
+    // Chi kiem tra ghe khi thu nho phong
+    if (newValues.getRowCount() < room->getRowCount() ||
+        newValues.getColumnCount() < room->getColumnCount())
     {
-        Seat* seat = room->getSeatAt(i);
-        if (seat == nullptr)
+        for (int i = 0; i < room->getSeatCount(); i++)
         {
-            return false;
-        }
-        if (seat->getRow() > newValues.getRowCount() || seat->getColumn() > newValues.getColumnCount())
-        {
-            return false;
+            Seat* seat = room->getSeatAt(i);
+            if (seat == nullptr)
+            {
+                return false;
+            }
+            if (seat->getRow() > newValues.getRowCount() ||
+                seat->getColumn() > newValues.getColumnCount())
+            {
+                return false;
+            }
         }
     }
+
     room->setName(newValues.getName());
     room->setRowCount(newValues.getRowCount());
     room->setColumnCount(newValues.getColumnCount());
@@ -180,16 +183,13 @@ bool RoomRepository::update(const Room& newValues)
 
 bool RoomRepository::removeById(const string& roomId)
 {
-    if (!repo.isLoaded())
-    {
-        return false;
-    }
     Room* room = repo.findById(roomId);
 
     if (room == nullptr)
     {
         return false;
     }
+    // Khong xoa neu phong con lien ket Seat hoac Showtime
     if (room->getSeatCount() > 0 ||
         room->getShowtimeCount() > 0)
     {
@@ -202,14 +202,17 @@ Room* RoomRepository::findById(const string& roomId)
 {
     return repo.findById(roomId);
 }
+
 Room* RoomRepository::getAt(int index)
 {
     return repo.getAt(index);
 }
+
 int RoomRepository::count()
 {
     return repo.count();
 }
+
 bool RoomRepository::isLoaded()
 {
     return repo.isLoaded();
