@@ -4,7 +4,6 @@
 #include <vector>
 using namespace std;
 
-
 // Kiem tra du lieu User
 bool UserRepository::isValidUser(const User* user)
 {
@@ -69,7 +68,6 @@ User* UserRepository::stringToUser(const string& line)
     {
         throw runtime_error("Sai so luong truong User");
     }
-
     if (fields[4] != "ADMIN" && fields[4] != "STAFF")
     {
         throw runtime_error("Role User khong hop le");
@@ -77,18 +75,16 @@ User* UserRepository::stringToUser(const string& line)
     UserRole role;
     if (fields[4] == "ADMIN")
     {
-        role = UserRole::ADMIN; // kiểu enum
+        role = UserRole::ADMIN;
     }
     else
     {
         role = UserRole::STAFF;
     }
-
     if (fields[5] != "0" && fields[5] != "1")
     {
         throw runtime_error("Trang thai User khong hop le");
     }
-
     bool active = (fields[5] == "1");
 
     User* user = new User(
@@ -99,7 +95,6 @@ User* UserRepository::stringToUser(const string& line)
         role,
         active
     );
-
     if (!isValidUser(user))
     {
         delete user;
@@ -108,6 +103,7 @@ User* UserRepository::stringToUser(const string& line)
     return user;
 }
 
+// Chuyen User thanh mot dong TXT
 string UserRepository::userToString(User* user)
 {
     if (!isValidUser(user))
@@ -131,80 +127,111 @@ string UserRepository::userToString(User* user)
            (user->isActive() ? "1" : "0");
 }
 
+// Doc du lieu User tu file
 bool UserRepository::load()
 {
-    if (repo.isLoaded()) // không load lại khi đã có dữ liệu
-    {
-        throw runtime_error("Du lieu User da duoc nap: " + repo.getFilePath());
-    }
     if (!repo.load())
     {
-        throw runtime_error("Khong the nap file User: " + repo.getFilePath());
+        return false;
     }
-    // Xoa chi muc cu
-    usersById.clear();
-    usersByUsername.clear();
-    // Dua du lieu User vao hai map
+
     try
     {
         for (int i = 0; i < repo.count(); i++)
         {
             User* user = repo.getAt(i);
-            // Kiem tra trung ID va username
-            if (usersById.find(user->getUserId()) != usersById.end() ||
-                usersByUsername.find(user->getUsername()) != usersByUsername.end())
+            for (int j = i + 1; j < repo.count(); j++)
             {
-                throw runtime_error(
-                    "Trung ID hoac username trong file " + repo.getFilePath() + " tai dong " + to_string(i + 1));            
+                User* other = repo.getAt(j);
+                if (user->getUsername() == other->getUsername())
+                {
+                    throw runtime_error("Trung username trong file User");
+                }
             }
-
-            usersById[user->getUserId()] = user;
-            usersByUsername[user->getUsername()] = user;
         }
     }
     catch (...)
     {
-        usersById.clear();
-        usersByUsername.clear();
         repo.clear();
         throw;
     }
     return true;
 }
 
+// Luu du lieu User xuong file
 bool UserRepository::save()
 {
-    if (!repo.isLoaded())
+    return repo.save();
+}
+
+// Them User moi
+bool UserRepository::add(User* user)
+{
+    if (!isValidUser(user))
     {
-        throw runtime_error("Chua nap du lieu User");
+        return false;
     }
-    if (!repo.save())
+    if (findByUsername(user->getUsername()) != nullptr)
     {
-        throw runtime_error(
-            "Khong the ghi file User: " + repo.getFilePath()
-        );
+        return false;
     }
+    return repo.add(user);
+}
+
+// Cap nhat thong tin User
+bool UserRepository::update(const User& newValues)
+{
+    if (!repo.isLoaded() || !isValidUser(&newValues))
+    {
+        return false;
+    }
+
+    User* user = repo.findById(newValues.getUserId());
+    if (user == nullptr)
+    {
+        return false;
+    }
+    if (user->getRole() != newValues.getRole())
+    {
+        return false;
+    }
+
+    User* existingUser = findByUsername(newValues.getUsername());
+    if (existingUser != nullptr && existingUser != user)
+    {
+        return false;
+    }
+
+    user->setUsername(newValues.getUsername());
+    user->setPassword(newValues.getPassword());
+    user->setFullName(newValues.getFullName());
+    user->setActive(newValues.isActive());
     return true;
+}
+
+bool UserRepository::removeById(const string& userId)
+{
+    // Chua ho tro xoa tai khoan.
+    (void)userId;
+    return false;
 }
 
 User* UserRepository::findById(const string& userId)
 {
-    auto it = usersById.find(userId);
-    if (it == usersById.end())
-    {
-        return nullptr;
-    }
-    return it->second;
+    return repo.findById(userId);
 }
 
 User* UserRepository::findByUsername(const string& username)
 {
-    auto it = usersByUsername.find(username);
-    if (it == usersByUsername.end())
+    for (int i = 0; i < repo.count(); i++)
     {
-        return nullptr;
+        User* user = repo.getAt(i);
+        if (user != nullptr && user->getUsername() == username)
+        {
+            return user;
+        }
     }
-    return it->second;
+    return nullptr;
 }
 
 User* UserRepository::getAt(int index)
@@ -220,126 +247,4 @@ int UserRepository::count()
 bool UserRepository::isLoaded()
 {
     return repo.isLoaded();
-}
-
-bool UserRepository::add(User* user)
-{
-    if (!repo.isLoaded() || !isValidUser(user))
-    {
-        return false;
-    }
-    // Kiem tra trung ID
-    if (findById(user->getUserId()) != nullptr)
-    {
-        return false;
-    }
-    // Kiem tra trung username
-    if (findByUsername(user->getUsername()) != nullptr)
-    {
-        return false;
-    }
-    // Khong them lai con tro da duoc quan ly
-    for (int i = 0; i < repo.count(); i++)
-    {
-        if (repo.getAt(i) == user)
-        {
-            return false;
-        }
-    }
-    // Them User vao hai map truoc
-    string userId = user->getUserId();
-    string username = user->getUsername();
-
-    usersById[userId] = user;
-
-    try
-    {
-        usersByUsername[username] = user;
-    }
-    catch (...)
-    {
-        usersById.erase(userId);
-        throw;
-    }
-
-    // Them User vao Repository
-    try
-    {
-        if (!repo.add(user))
-        {
-            usersById.erase(userId);
-            usersByUsername.erase(username);
-            return false;
-        }
-    }
-    catch (...)
-    {
-        usersById.erase(userId);
-        usersByUsername.erase(username);
-        throw;
-    }
-
-    return true;
-}
-
-bool UserRepository::update(const User& newValues)
-{
-    if (!repo.isLoaded() || !isValidUser(&newValues))
-    {
-        return false;
-    }
-    User* user = findById(newValues.getUserId());
-    if (user == nullptr)
-    {
-        return false;
-    }
-    // Khong cho phep thay doi role
-    if (user->getRole() != newValues.getRole())
-    {
-        return false;
-    }
-    // Kiem tra username moi co bi trung khong
-    User* existingUser = findByUsername(newValues.getUsername());
-    if (existingUser != nullptr && existingUser != user)
-    {
-        return false;
-    }
-    string oldUsername = user->getUsername();
-    string newUsername = newValues.getUsername();
-    // Neu username thay doi, them khoa moi vao map
-    if (oldUsername != newUsername)
-    {
-        usersByUsername[newUsername] = user;
-    }
-    // Cap nhat thong tin User
-    try
-    {
-        user->setPassword(newValues.getPassword());
-        user->setFullName(newValues.getFullName());
-        user->setUsername(newUsername);
-        user->setActive(newValues.isActive());
-    }
-    catch (...)
-    {
-        if (oldUsername != newUsername)
-        {
-            usersByUsername.erase(newUsername);
-        }
-        throw;
-    }
-
-    // Xoa username cu khoi map
-    if (oldUsername != newUsername)
-    {
-        usersByUsername.erase(oldUsername);
-    }
-    return true;
-}
-
-bool UserRepository::removeById(const string& userId)
-{
-    // Chua ho tro xoa tai khoan trong UserRepository hien tai.
-    // Khong thay doi repo hoac hai bang chi muc.
-    (void)userId;
-    return false;
 }
