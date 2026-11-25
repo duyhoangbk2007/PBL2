@@ -2,7 +2,7 @@
 
 ## 1. Tổng quan
 
-`UserRepository` thuộc Data Access, triển khai `IRepository<User>` và chứa `Repository<User>` để quản lý `User*`. Tài liệu này đã **CHỐT MARKDOWN**; mã ở mục 5 đã được triển khai khớp 100% vào `.h/.cpp` và kiểm tra cú pháp C++17 thành công. Chưa ghi nhận kết quả chạy test cho bản refactor.
+`UserRepository` thuộc Data Access, triển khai `IRepository<User>` và chứa `Repository<User>` để quản lý `User*`. Tài liệu này đã **CHỐT MARKDOWN**; mã ở mục 5 đã được triển khai khớp 100% vào `.h/.cpp`. `tests/test_user_repository.cpp` biên dịch và chạy ngày 25/11/2026 đạt **69 PASS, 0 FAIL** trong phạm vi bài test.
 
 Phạm vi thiết kế đã xác định: bỏ hai map và `<unordered_map>`, chỉ dùng `Repository<User>` để lưu trữ; giữ schema `users.txt`, API công khai, quy tắc không xóa tài khoản và việc kiểm tra dữ liệu User. `load()` kiểm tra username trùng sau khi nạp; `update()` chỉ sửa đối tượng sau khi mọi kiểm tra đạt. `AuthService` chịu trách nhiệm xác thực và Permission, không chuyển việc phân quyền vào Repository.
 
@@ -50,7 +50,7 @@ Header giữ các chữ ký public của mã hiện tại. Không khai báo `use
 
 Các khối sau là mã **đã CHỐT MARKDOWN** cho `.h/.cpp`, bao gồm `load()` và `update()`.
 
-### 5.1. `UserRepository.h` dự kiến
+### 5.1. `UserRepository.h` đã triển khai
 
 ```cpp
 #ifndef PBL2_USER_REPOSITORY_H
@@ -95,7 +95,7 @@ public:
 #endif
 ```
 
-### 5.2. `UserRepository.cpp` — các hàm đã có hướng thiết kế
+### 5.2. `UserRepository.cpp` đã triển khai
 
 ```cpp
 #include "UserRepository.h"
@@ -548,7 +548,7 @@ Nếu `add()` thất bại, caller vẫn chịu trách nhiệm giải phóng đ�
 
 ## 10. Áp dụng DIP
 
-Header dự kiến kế thừa `IRepository<User>` và override đủ chín hàm chung: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded`. `findByUsername` là API bổ sung của UserRepository, không thêm vào interface chung. Generic `Repository<User>` vẫn là thành viên private. Việc Service nhận interface thay vì concrete là công việc khác; tài liệu này không tuyên bố Service đã hoàn tất DIP.
+Header kế thừa `IRepository<User>` và override đủ chín hàm chung: `load`, `save`, `add`, `update`, `removeById`, `findById`, `getAt`, `count`, `isLoaded`. `findByUsername` là API bổ sung của UserRepository, không thêm vào interface chung. Generic `Repository<User>` vẫn là thành viên private. DIP tại UserRepository đã triển khai và được kiểm thử qua interface; việc Service nhận interface thay vì concrete là công việc khác, chưa được xác nhận ở đây.
 
 ## 11. Phạm vi thay đổi dự kiến
 
@@ -556,20 +556,21 @@ Header dự kiến kế thừa `IRepository<User>` và override đủ chín hàm
 - Sắp xếp lớp và định nghĩa hàm theo mẫu MovieRepository; header dùng `std::string`, `.cpp` dùng `using namespace std;` sau include.
 - `save`, `findById` chuyển tiếp trực tiếp; `findByUsername` duyệt danh sách; `add` chỉ kiểm User và username trước `repo.add`.
 - Giữ parse/serialize, validation, các hàm truy vấn, constructor và chính sách không xóa tài khoản về mặt logic.
-- `load` kiểm username bằng hai vòng lặp và clear khi phát hiện lỗi; `update` kiểm đủ điều kiện trước bốn setter. Mã nguồn C++ hiện tại chưa được sửa.
+- `load` kiểm username bằng hai vòng lặp và clear khi phát hiện lỗi; `update` kiểm đủ điều kiện trước bốn setter. Mã nguồn C++ hiện tại đã triển khai theo Markdown chốt.
 
 ## 12. Kế hoạch kiểm thử
 
-Chưa chạy test cho **thiết kế mới**, vì mã nguồn chưa triển khai. Khi `load()` và `update()` được chốt và mã nguồn khớp Markdown, biên dịch từng file test với mọi `.cpp` phù hợp trong `src/`, trừ `main.cpp`; dùng file test riêng, không ghi đè dữ liệu thật.
+**Kết quả thực tế (25/11/2026):** Biên dịch C++17 `tests/test_user_repository.cpp` với mọi `.cpp` trong `src/` trừ `main.cpp`, chạy đạt **69 PASS, 0 FAIL** (exit code 0). Test dùng các file dữ liệu riêng và xóa chúng khi kết thúc. Các mục đánh dấu dưới đây chỉ phản ánh trường hợp được bài test thực sự kiểm tra.
 
-- [ ] Kiểm tra interface, constructor, `isLoaded`, `count`, tra ID/username và chỉ số trước/sau load; username có và không có, phân biệt chữ hoa/thường.
-- [ ] Load file hợp lệ/rỗng/thiếu; sai số trường, ID, role, active, username trùng, ID trùng; xác minh exception hoặc `false` theo hợp đồng **sau khi chốt**, trạng thái và bộ nhớ khi lỗi, khả năng retry.
-- [ ] Add hợp lệ, null, chưa load, ID trùng, con trỏ trùng, username trùng, dữ liệu sai; kiểm số lượng và quyền sở hữu khi thành công/thất bại.
-- [ ] Update hợp lệ, ID thiếu, role đổi, username trùng, dữ liệu sai; giữ ID, địa chỉ User và liên kết Invoice; kiểm rollback/exception theo thiết kế **sau khi chốt**.
-- [ ] `removeById` luôn từ chối và không đổi dữ liệu; save trước load, save/load lại, lỗi serializer và lỗi ghi file theo hợp đồng mới.
-- [ ] Gọi chín hàm qua `IRepository<User>&`, xác minh destructor ảo; kiểm Service liên quan sau khi đổi hợp đồng lỗi của `save` hoặc `load` nếu có.
+- [x] Kiểm tra interface, trạng thái, `count`, tra ID/username và chỉ số trước/sau load; username có và không có, phân biệt chữ hoa/thường.
+- [x] Load file hợp lệ/rỗng/thiếu; sai số trường, ID, role, active, username trùng, ID trùng; kiểm trạng thái rỗng sau lỗi và load lại sau khi sửa file.
+- [x] Add hợp lệ, null, chưa load, ID trùng, con trỏ trùng, username trùng, dữ liệu sai; kiểm số lượng và con trỏ sau add thành công, caller xóa con trỏ khi add thất bại.
+- [x] Update thuộc tính, giữ username, từ chối ID thiếu/role đổi/username trùng/dữ liệu sai; giữ ID, địa chỉ và số lượng, không đổi thuộc tính khi trả `false`.
+- [x] `removeById` luôn từ chối và không đổi dữ liệu; save trước load, save/load lại và đối chiếu thuộc tính.
+- [x] Gọi chín hàm chung qua `IRepository<User>&`, truy vấn qua con trỏ interface và kiểm destructor ảo.
+- [ ] Kiểm liên kết Invoice khi update, exception giữa các setter, lỗi serializer/ghi file và tác động tới Service liên quan.
 
-Không ghi số PASS/FAIL cho thiết kế này trước khi có kết quả chạy thực tế.
+Kết quả trên không xác nhận các trường hợp còn để trống hoặc toàn bộ nghiệp vụ Service.
 
 ## 13. Tiến độ
 
@@ -579,8 +580,8 @@ Không ghi số PASS/FAIL cho thiết kế này trước khi có kết quả ch�
 - [x] Bổ sung mã dự kiến, luồng và xử lý lỗi cho `load()` và `update()` theo thiết kế đã thống nhất.
 - [x] Review toàn bộ Markdown và xác nhận **CHỐT MARKDOWN**.
 - [x] Triển khai `.h/.cpp`, kiểm tra cú pháp C++17 và đối chiếu 100% với Markdown.
-- [ ] Chạy test liên quan và ghi nhận kết quả thực tế.
+- [x] Chạy `tests/test_user_repository.cpp` ngày 25/11/2026: 69 PASS, 0 FAIL.
 
 ## 14. Kết luận
 
-Thiết kế giữ DIP và chỉ dùng `Repository<User>` để lưu User; bỏ hai map cùng trách nhiệm đồng bộ chỉ mục. Mã cho tất cả phương thức, gồm `load()` và `update()`, đã **CHỐT MARKDOWN** và được triển khai khớp hai khối mã ở mục 5. Kiểm tra cú pháp C++17 thành công; chưa chạy test cho bản refactor.
+UserRepository đã refactor theo DIP và chỉ dùng `Repository<User>` để lưu User; hai `unordered_map` và logic đồng bộ chỉ mục đã được loại bỏ. Validation riêng của User nằm ở `isValidUser()`; điều kiện lưu trữ chung do `Repository<User>` đảm nhiệm. Mã `.h/.cpp` khớp Markdown đã chốt; test UserRepository đạt **69 PASS, 0 FAIL** trong phạm vi đã liệt kê ở mục 12.

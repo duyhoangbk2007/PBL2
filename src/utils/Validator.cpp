@@ -158,4 +158,22 @@ bool Validator::isValidNumber(const string& value)
     }
     return hasDigit;
 }
+// Kiem tra so dien thoai
+bool Validator::isValidPhone(const string& phone)
+{
+    if (phone.size() != 10 || phone[0] != '0')
+    {
+        return false;
+    }
+
+    for (char c : phone)
+    {
+        if (c < '0' || c > '9')
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 

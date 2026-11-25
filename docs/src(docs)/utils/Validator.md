@@ -2,7 +2,7 @@
 
 ## 1. Tổng quan
 
-`Validator` là lớp tiện ích thuộc tầng **Utils**, cung cấp các hàm `static` để kiểm tra định dạng và tính hợp lệ cơ bản của văn bản, ngày, mã định danh và ngày giờ trong dự án quản lý rạp chiếu phim PBL2.
+`Validator` là lớp tiện ích thuộc tầng **Utils**, cung cấp các hàm `static` để kiểm tra định dạng và tính hợp lệ cơ bản của văn bản, ngày, mã định danh, ngày giờ, số và số điện thoại trong dự án quản lý rạp chiếu phim PBL2.
 
 Lớp không lưu trạng thái, không cần khởi tạo đối tượng và **không trực tiếp đọc/ghi file TXT**. Các Repository và Service có thể gọi các hàm kiểm tra trước khi xử lý dữ liệu.
 
@@ -17,6 +17,7 @@ Lớp không lưu trạng thái, không cần khởi tạo đối tượng và *
 - Kiểm tra ngày theo định dạng `YYYY-MM-DD`, bao gồm số ngày mỗi tháng và năm nhuận.
 - Kiểm tra mã ID theo tiền tố được truyền vào và phần số gồm bốn chữ số khác `0000`.
 - Kiểm tra ngày giờ theo định dạng `YYYY-MM-DDTHH:MM:SS`.
+- Kiểm tra chuỗi số và số điện thoại đúng 10 chữ số ASCII, bắt đầu bằng `0`.
 - Chỉ **kiểm tra** dữ liệu, không tự sửa, chuẩn hóa hoặc lưu dữ liệu.
 - Không thay thế các quy tắc nghiệp vụ riêng như kiểm tra ID trùng, ngày phát hành phim, thời gian bắt đầu suất chiếu hoặc quyền tài khoản.
 
@@ -26,10 +27,12 @@ Lớp không lưu trạng thái, không cần khởi tạo đối tượng và *
 class Validator
 {
 public:
-    static bool isValidText(const string& text);
-    static bool isValidDate(const string& date);
-    static bool isValidId(const string& id, const string& prefix);
-    static bool isValidDateTime(const string& dateTime);
+    static bool isValidText(const std::string& text);
+    static bool isValidDate(const std::string& date);
+    static bool isValidId(const std::string& id, const std::string& prefix);
+    static bool isValidDateTime(const std::string& dateTime);
+    static bool isValidNumber(const std::string& value);
+    static bool isValidPhone(const std::string& phone);
 };
 ```
 
@@ -61,6 +64,8 @@ Các hàm kiểm tra **định dạng** chứ không kiểm tra sự tồn tại
 | `isValidDate(date)` | Chuỗi ngày | Kiểm tra ngày lịch hợp lệ |
 | `isValidId(id, prefix)` | ID và tiền tố | Kiểm tra ID theo mẫu `XXXdddd` |
 | `isValidDateTime(dateTime)` | Chuỗi ngày giờ | Kiểm tra ngày hợp lệ và giờ 24 tiếng |
+| `isValidNumber(value)` | Chuỗi số | Kiểm tra chữ số, dấu trừ đầu và tối đa một dấu chấm; phải có chữ số |
+| `isValidPhone(phone)` | Chuỗi điện thoại | Đúng 10 chữ số ASCII, bắt đầu bằng `0` |
 
 ## 6. Chi tiết các hàm
 
@@ -168,6 +173,31 @@ Validator::isValidDateTime("2025-02-29T12:00:00"); // false
 
 **Lưu ý:** Hàm không kiểm tra thời điểm nằm trong tương lai hay không, không kiểm tra múi giờ, và không hỗ trợ hậu tố `Z`, độ lệch múi giờ hoặc giây nhuận `60`. Những quy tắc như suất chiếu phải bắt đầu trong tương lai được xử lý ở `ShowtimeService` và các tiện ích thời gian liên quan.
 
+### 6.5. `isValidNumber(const string& value)`
+
+**Mục đích:** Kiểm chuỗi biểu diễn số theo logic đang triển khai, không chuyển sang giá trị số.
+
+```text
+rỗng? → false; dấu '-' đầu? → bắt đầu duyệt sau dấu
+→ duyệt từng ký tự: chữ số → ghi nhận; dấu '.' → tăng bộ đếm,
+  quá một dấu → false; ký tự khác → false
+→ có ít nhất một chữ số? → true; không → false.
+```
+
+`start` bỏ qua dấu trừ đầu nếu có; `dotCount` giới hạn một dấu chấm; `hasDigit` bảo đảm `"-"`, `"."` và `"-."` không hợp lệ. Hàm không kiểm tra số hữu hạn sau khi chuyển đổi hoặc giới hạn miền giá trị.
+
+### 6.6. `isValidPhone(const string& phone)`
+
+**Mục đích:** Kiểm số điện thoại cho Member; trả `true` chỉ khi chuỗi đúng 10 ký tự, ký tự đầu là `0` và mọi ký tự đều là chữ số ASCII `0`–`9`.
+
+```text
+phone.size() != 10 hoặc phone[0] != '0'? → true: return false
+→ for từng char c: c < '0' hoặc c > '9'? → true: return false
+→ duyệt hết → return true.
+```
+
+Điều kiện `||` dùng short circuit: khi độ dài khác 10, không truy cập `phone[0]`; chuỗi rỗng được từ chối an toàn. Vòng `for (char c : phone)` kiểm cả mười ký tự, không cho dấu cách, dấu `+`, dấu `-` hoặc chữ số Unicode nhiều byte. Hàm không kiểm tra số điện thoại đã tồn tại; `MemberRepository` chịu trách nhiệm tính duy nhất. Đây là cùng logic với helper cục bộ trong MemberRepository hiện tại, nên có thể dùng chung mà không đổi quy tắc.
+
 ## 7. Sử dụng trong kiến trúc dự án
 
 - **Model:** Chứa dữ liệu và các thao tác trên đối tượng; không thay thế kiểm tra định dạng tại ranh giới dữ liệu.
@@ -212,6 +242,7 @@ Các nhóm cần bao phủ:
 - Ngày hợp lệ/không hợp lệ; tháng 2, năm nhuận chia hết cho 4, 100 và 400.
 - ID đúng/sai độ dài, tiền tố, phần chữ số và hậu tố `0000`.
 - Ngày giờ đúng/sai cấu trúc; giờ `24`, phút/giây `60` và ngày không tồn tại.
+- Số điện thoại: đúng 10 chữ số bắt đầu bằng `0`; thiếu/thừa chữ số, không bắt đầu bằng `0`, chứa chữ/dấu cách/dấu câu.
 
 **Lệnh biên dịch PowerShell từ thư mục gốc:**
 
@@ -237,3 +268,214 @@ Kết quả PASS/FAIL cần lấy từ lần chạy kiểm thử thực tế; t�
 - Chưa có kiểm tra độ dài tối đa hoặc quy tắc Unicode chuyên biệt cho văn bản.
 - Không nên đưa các quy tắc nghiệp vụ như phân quyền, lịch chiếu hoặc kiểm tra vé vào `Validator`.
 - Nếu bổ sung hàm mới, cần cập nhật đồng thời `Validator.h`, `Validator.cpp`, bộ kiểm thử và tài liệu này.
+
+
+## 11. Mã nguồn hiện tại để đối chiếu
+
+Hai khối dưới đây ghi nguyên văn mã nguồn Validator hiện có. Hàm isValidPhone() đã được triển khai trong source; đợt này chỉ đồng bộ tài liệu cho hàm đó.
+
+### 11.1. Validator.h
+
+```cpp
+#ifndef VALIDATOR_H
+#define VALIDATOR_H
+
+#include <string>
+
+
+class Validator
+{
+public:
+    static bool isValidText(const std::string& text);
+    static bool isValidDate(const std::string& date);
+    static bool isValidId(const std::string& id, const std::string& prefix);
+    static bool isValidDateTime(const std::string& dateTime);
+    static bool isValidNumber(const std::string& value);
+    static bool isValidPhone(const std::string& phone);
+};
+
+#endif
+```
+
+### 11.2. Validator.cpp
+
+```cpp
+#include "Validator.h"
+using namespace std;
+
+
+// Kiem tra chuoi hop le de luu vao file TXT
+bool Validator::isValidText(const string& text)
+{
+    bool hasContent = false;
+    for (unsigned char c : text)
+    {
+        // Khong cho phep dau | va ky tu dieu khien
+        if (c == '|' || c < 32 || c == 127)
+        {
+            return false;
+        }
+        // Kiem tra chuoi co noi dung hay khong
+        if (c != ' ')
+        {
+            hasContent = true;
+        }
+    }
+    return hasContent;
+}
+
+// Kiem tra ngay YYYY-MM-DD, bao gom nam nhuan
+bool Validator::isValidDate(const string& date)
+{
+    if (date.length() != 10 || date[4] != '-' || date[7] != '-')
+    {
+        return false;
+    }
+    // Kiem tra cac vi tri con lai la chu so
+    for (int i = 0; i < 10; i++)
+    {
+        if (i == 4 || i == 7)
+        {
+            continue;
+        }
+        if (date[i] < '0' || date[i] > '9')
+        {
+            return false;
+        }
+    }
+
+    int year = stoi(date.substr(0, 4));
+    int month = stoi(date.substr(5, 2));
+    int day = stoi(date.substr(8, 2));
+
+    if (year < 1 || month < 1 || month > 12)
+    {
+        return false;
+    }
+    int daysInMonth[12] = {
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+    bool leapYear = (year % 400 == 0) || (year % 4 == 0 && year % 100 != 0);
+
+    if (leapYear)
+    {
+        daysInMonth[1] = 29;
+    }
+    return day >= 1 && day <= daysInMonth[month - 1];
+}
+bool Validator::isValidId(const string& id, const string& prefix)
+{
+    if (prefix.size() != 3 || id.size() != 7)
+    {
+        return false;
+    }
+    if (id.substr(0, 3) != prefix)
+    {
+        return false;
+    }
+    for (int i = 3; i < 7; i++)
+    {
+        if (id[i] < '0' || id[i] > '9')
+        {
+            return false;
+        }
+    }
+    if (id.substr(3) == "0000")
+    {
+        return false;
+    }
+    return true;
+}
+
+bool Validator::isValidDateTime(const string& dateTime)
+{
+    if (dateTime.length() != 19)
+    {
+        return false;
+    }
+    if (dateTime[10] != 'T' ||
+        dateTime[13] != ':' ||
+        dateTime[16] != ':')
+    {
+        return false;
+    }
+    if (!isValidDate(dateTime.substr(0, 10)))
+    {
+        return false;
+    }
+    for (int i = 11; i < 19; i++)
+    {
+        if (i == 13 || i == 16)
+        {
+            continue;
+        }
+
+        if (dateTime[i] < '0' || dateTime[i] > '9')
+        {
+            return false;
+        }
+    }
+
+    int hour = stoi(dateTime.substr(11, 2));
+    int minute = stoi(dateTime.substr(14, 2));
+    int second = stoi(dateTime.substr(17, 2));
+
+    return hour >= 0 && hour <= 23 &&
+           minute >= 0 && minute <= 59 &&
+           second >= 0 && second <= 59;
+}
+
+bool Validator::isValidNumber(const string& value)
+{
+    if (value.empty())
+    {
+        return false;
+    }
+    int start = 0;
+    int dotCount = 0;
+    bool hasDigit = false;
+    if (value[0] == '-')
+    {
+        start = 1;
+    }
+    for (int i = start; i < static_cast<int>(value.length()); i++)
+    {
+        if (value[i] >= '0' && value[i] <= '9')
+        {
+            hasDigit = true;
+        }
+        else if (value[i] == '.')
+        {
+            dotCount++;
+            if (dotCount > 1)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return hasDigit;
+}
+// Kiem tra so dien thoai
+bool Validator::isValidPhone(const string& phone)
+{
+    if (phone.size() != 10 || phone[0] != '0')
+    {
+        return false;
+    }
+
+    for (char c : phone)
+    {
+        if (c < '0' || c > '9')
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+```

@@ -65,7 +65,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 |---|---|---|
 | Phòng chiếu | RoomRepository, RoomService | Kiệt đã triển khai DIP cho RoomRepository; Hoàng đã rà soát, chuẩn hóa tài liệu và kiểm thử lại `test_room_repository.cpp` ngày 25/11/2026 (72 PASS, 0 FAIL). RoomService còn theo kế hoạch |
 | Ghế | SeatRepository, SeatService | Refactor và hoàn thiện nghiệp vụ |
-| Nhân viên | UserRepository, UserService | Refactor và hoàn thiện nghiệp vụ |
+| Nhân viên | UserRepository, UserService | UserRepository đã CHỐT MARKDOWN, triển khai DIP, bỏ hai `unordered_map`, chuẩn hóa validation và kiểm thử `test_user_repository.cpp` ngày 25/11/2026 (69 PASS, 0 FAIL); UserService còn theo kế hoạch |
 | Xác thực | AuthService và các thành phần liên quan | Chuẩn hóa xác thực, Permission |
 | Phân quyền | RolePermissionRepository và các thành phần liên quan | Refactor và kiểm thử quyền |
 | Thành viên | MemberRepository, MemberService | Refactor và hoàn thiện nghiệp vụ |

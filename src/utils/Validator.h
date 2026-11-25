@@ -12,6 +12,7 @@ public:
     static bool isValidId(const std::string& id, const std::string& prefix);
     static bool isValidDateTime(const std::string& dateTime);
     static bool isValidNumber(const std::string& value);
+    static bool isValidPhone(const std::string& phone);
 };
 
 #endif
