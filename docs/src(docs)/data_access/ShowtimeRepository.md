@@ -6,7 +6,7 @@
 
 **File liên quan:** `src/data_access/ShowtimeRepository.h/.cpp`, `src/data_access/IRepository.h`, `src/data_access/Repository.h`, `src/models/Showtime.h`, `src/models/Movie.h`, `src/models/Room.h`, `src/utils/Validator.h`, `src/utils/DateTime.h`.
 
-**Trạng thái:** Bản chuẩn hóa Markdown **đang chờ review và CHỐT MARKDOWN**. Mã nguồn `.h/.cpp` ở mục 5 là mã **dự kiến**, chưa triển khai các chỉnh sửa định dạng và `override` của bản này. Logic hiện tại của `load()`, `update()`, `removeById()` và rollback được giữ nguyên; chưa xác nhận kết quả kiểm thử cho bản chuẩn hóa.
+**Trạng thái:** Bản chuẩn hóa Markdown đã **CHỐT MARKDOWN**, triển khai trong `.h/.cpp` và đối chiếu khớp 100% với hai khối code ở mục 5. `tests/test_showtime_repository.cpp` biên dịch C++17 và chạy đạt **Passed: 85, Failed: 0, Total: 85** ngày 26/11/2026 trong phạm vi bài test. Các nhánh lỗi nội bộ chưa được kích hoạt vẫn chờ kiểm thử; điều kiện bảo vệ lịch sử Ticket/Invoice sẽ được hoàn thiện tại ShowtimeService.
 
 ## 2. Kiến trúc
 
@@ -87,9 +87,9 @@ Ba callback và `isValidShowtime()` là `static` vì không dùng thuộc tính 
 | `add()`, `update()`, `removeById()` | Thêm, cập nhật cả Movie/Room khi hợp lệ, xóa. | Có |
 | `findById()`, `getAt()`, `count()`, `isLoaded()` | Truy vấn. | Có |
 
-## 5. Mã nguồn dự kiến sau chuẩn hóa
+## 5. Mã nguồn đã chốt và triển khai
 
-Hai khối dưới đây là toàn bộ mã nguồn **dự kiến**. Mã nguồn hiện tại trong `src/` chưa được sửa theo bản này; chỉ sao chép sau khi nhóm CHỐT MARKDOWN. Các thay đổi ở đây chỉ là `override` cho destructor, nhóm hàm private, căn chỉnh và trình bày; logic được giữ nguyên.
+Hai khối dưới đây là toàn bộ mã nguồn **đã chốt và triển khai**, đã đối chiếu khớp 100% với `.h/.cpp` hiện tại. Bản chuẩn hóa bổ sung `override` cho destructor, nhóm hàm private, căn chỉnh và trình bày; logic được giữ nguyên.
 
 ### 5.1. ShowtimeRepository.h
 
@@ -1160,7 +1160,7 @@ Không có cờ loaded riêng trong ShowtimeRepository; file rỗng có thể lo
 
 Thiết kế DIP hiện có được giữ nguyên: `ShowtimeRepository` kế thừa `IRepository<Showtime>` cho Service sử dụng, nhận `IRepository<Movie>&` và `IRepository<Room>&` từ constructor, và giữ `Repository<Showtime>` bằng composition. Hai dependency được gọi qua `isLoaded()` và `findById()` của interface. Không thêm `update()` vào Repository chung hoặc thay đổi sơ đồ phụ thuộc trong bản chuẩn hóa này.
 
-## 11. Nội dung thay đổi dự kiến
+## 11. Nội dung chuẩn hóa đã triển khai
 
 ### 11.1. Header
 
@@ -1178,33 +1178,40 @@ Thiết kế DIP hiện có được giữ nguyên: `ShowtimeRepository` kế th
 
 ## 12. Kế hoạch kiểm thử
 
-Chưa có kết quả kiểm thử thực tế được xác nhận cho bản chuẩn hóa Markdown này; mọi mục dưới đây còn chờ kiểm chứng. Dùng file TXT test riêng và không sửa test để tạo PASS.
+`tests/test_showtime_repository.cpp` đã biên dịch C++17 cùng các `.cpp` trong `src/` trừ `main.cpp` và chạy ngày 26/11/2026: **Passed: 85, Failed: 0, Total: 85**. Bài test dùng file TXT riêng và xóa sau khi chạy. Checklist dưới đây phân biệt trường hợp đã kiểm chứng với nhánh còn chờ kiểm thử; kết quả này không xác nhận toàn bộ các nhánh rollback do ngoại lệ.
 
 ### 12.1. Load và save
 
-- [ ] File hợp lệ/rỗng/không tồn tại; load lặp; save trước load.
-- [ ] Thiếu/thừa trường, ID sai/trùng, DateTime sai, `endAt <= startAt`, status sai.
-- [ ] Thiếu Movie/Room; Movie/Room chưa load; suất cùng phòng trùng lịch hoặc cách nhau dưới 15 phút; khác phòng hoặc suất CANCELLED không trùng.
+- [x] File hợp lệ/rỗng/không tồn tại; load lặp; save trước load.
+- [x] Thiếu/thừa trường, ID sai/trùng, DateTime sai, `endAt <= startAt`, status sai.
+- [x] Thiếu Movie/Room; Movie/Room chưa load; suất cùng phòng trùng lịch hoặc cách nhau dưới 15 phút; khác phòng hoặc suất CANCELLED không trùng.
+- [x] Dữ liệu load lỗi ném `runtime_error`, gỡ liên kết đã tạo, trả `loaded=false` và cho phép sửa file rồi load lại; load suất lịch sử `CANCELLED` với Movie/Room không hoạt động.
 - [ ] Lỗi sau khi đã link các suất trước hoặc chỉ link Movie của suất hiện tại: `unlinkAll()` thành công thì `repo.clear()`, loaded=false, hai phía không giữ con trỏ treo; exception gốc được chuyển tiếp.
 - [ ] Giả lập một cạnh unlink trả `false` trong rollback load: `unlinkReferences()` vẫn thử cạnh còn lại, báo lỗi, không gọi `repo.clear()`; xác minh dữ liệu còn sống để không tạo con trỏ treo.
-- [ ] Serialize đúng sáu trường, save thất bại và dữ liệu không bị ghi sai.
+- [x] Serialize đúng sáu trường, save file rỗng và load lại sau save.
+- [ ] Giả lập save thất bại và xác minh dữ liệu file không bị ghi sai.
 
 ### 12.2. Add và update
 
-- [ ] Add hợp lệ, null, chưa load, ID trùng, cùng con trỏ, dữ liệu Model sai, tham chiếu thiếu/inactive, đã liên kết trước.
-- [ ] Add trùng lịch, sát ranh 15 phút, khác phòng, CANCELLED; `hasScheduleConflict()` cho kết quả nhất quán với load/update.
+- [x] Add hợp lệ, null, chưa load, ID trùng, dữ liệu Model sai, tham chiếu thiếu/inactive, đã liên kết trước; kiểm quyền sở hữu caller khi add thất bại và liên kết hai chiều khi thành công.
+- [ ] Thử trực tiếp add lại cùng con trỏ đã được Repository quản lý.
+- [x] Add trùng lịch, sát ranh 15 phút, khác phòng, CANCELLED; kiểm lịch tương ứng qua load/update.
 - [ ] Link Movie thành công nhưng link Room thất bại; `repo.add()` thất bại sau link; kiểm rollback qua `unlinkReferences()`, count và quyền sở hữu con trỏ. Giả lập một unlink rollback trả false: vẫn thử cạnh còn lại, báo exception thay vì trả false giả; kiểm cả trường hợp chỉ có một cạnh được link.
-- [ ] Update không đổi liên kết, chỉ đổi Movie, chỉ đổi Room, đổi cả hai; dữ liệu sai, tham chiếu thiếu/inactive, trùng lịch, trước load, ID không tồn tại. Kiểm `movieChanged`/`roomChanged` bằng con trỏ cũ–mới, ID và địa chỉ Showtime không đổi, cạnh không đổi không bị unlink/link lại.
+- [x] Update không đổi liên kết, chỉ đổi Movie, chỉ đổi Room, đổi cả hai; dữ liệu sai, tham chiếu thiếu/inactive, trùng lịch, trước load, ID không tồn tại. Kiểm ID, địa chỉ Showtime, thuộc tính và liên kết cũ/mới sau thao tác thành công hoặc trả `false`.
+- [ ] Kiểm riêng việc cạnh không đổi không bị unlink/link lại bằng phép đo thích hợp.
 - [ ] Giả lập `unlinkShowtime`, `setMovieId`, `setRoomId`, `linkShowtime` trả false hoặc ném lỗi ở từng bước; `catch (...)` gọi `restoreShowtime()` một lần, thuộc tính và hai danh sách ngược được khôi phục, lỗi gốc được ném tiếp.
 - [ ] Giả lập lỗi ngay trong `restoreShowtime()`; xác nhận exception nêu rõ khôi phục thất bại, không báo thành công hoặc coi trạng thái đã an toàn.
 - [ ] Khi refactor Service: từ chối đổi phim/phòng/thời gian nếu suất đã bắt đầu, từng có Ticket SOLD/CANCELLED hoặc Invoice; kiểm Permission, ngày phát hành và thời lượng trước khi gọi Repository. Chưa đánh dấu PASS trong bước tài liệu này.
 
 ### 12.3. Remove, truy vấn và vòng đời
 
-- [ ] Remove hợp lệ, ID không tồn tại, trước load, thiếu cạnh Movie/Room, lỗi unlink Room và lỗi `repo.removeById()`; kiểm cả hai cạnh đều được thử khôi phục, không xóa Model khi thất bại.
-- [ ] Destructor dùng `unlinkAll()`/`unlinkReferences()` để gỡ liên kết Movie/Room trước khi xóa Showtime; nếu unlink lỗi thì báo qua `cerr` và dừng trước khi `repo` hủy. Kiểm `findById()`, `getAt()` biên âm/vượt giới hạn, `count()`, `isLoaded()` qua interface.
+- [x] Remove hợp lệ, ID không tồn tại và trước load; kiểm count, dữ liệu còn lại và Movie/Room không còn liên kết sau khi xóa.
+- [ ] Giả lập thiếu cạnh Movie/Room, lỗi unlink Room và lỗi `repo.removeById()`; kiểm khôi phục liên kết khi thao tác thất bại.
+- [x] Destructor gỡ liên kết Movie/Room; kiểm `findById()`, `getAt()` biên âm/vượt giới hạn, `count()`, `isLoaded()` qua interface.
+- [ ] Giả lập lỗi unlink trong destructor và xác minh nhánh báo lỗi/dừng.
 - [ ] Sau khi refactor TicketRepository/InvoiceRepository, kiểm thử ShowtimeService từ chối xóa nếu từng có Ticket SOLD hoặc CANCELLED, hoặc còn Invoice tham chiếu; chỉ gọi `removeById()` khi cả hai điều kiện tiền đề đạt. Chưa có kết quả để đánh dấu PASS.
-- [ ] Biên dịch từng test với toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp`; xây dựng/chạy bài test hiện hành cho ShowtimeRepository và liên kết, rồi kiểm hồi quy module liên quan. Các bài `test_showtime_repository.cpp` và `test_showtime_link.cpp` hiện nằm trong `tests/legacy_test/`, chưa được dùng làm bằng chứng PASS cho bản này.
+- [x] Biên dịch và chạy `tests/test_showtime_repository.cpp` với toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp`: Passed 85, Failed 0, Total 85.
+- [ ] Chạy kiểm hồi quy module liên quan và các test liên kết riêng trong phạm vi refactor hiện tại. Test ở `tests/legacy_test/` không được dùng làm bằng chứng PASS cho bản này.
 
 ## 13. Tiến độ triển khai
 
@@ -1212,10 +1219,11 @@ Chưa có kết quả kiểm thử thực tế được xác nhận cho bản ch
 - [x] Viết mã `.h/.cpp` đề xuất và giải thích theo bố cục MovieRepository.
 - [x] Ghi nhận giới hạn Ticket/Invoice và vòng đời liên kết.
 - [x] Ghi rõ điều kiện xóa liên quan Ticket/Invoice do ShowtimeService kiểm tra sau refactor; giữ `Showtime oldValues`, `restoreShowtime()` và rollback như code hiện tại.
-- [ ] Review và **CHỐT MARKDOWN** cho bản chuẩn hóa này.
-- [ ] Triển khai code đúng 100% theo Markdown sau khi chốt.
-- [ ] Biên dịch, chạy test liên quan, đối chiếu code/tài liệu và ghi kết quả thực tế.
+- [x] Review và **CHỐT MARKDOWN** cho bản chuẩn hóa này.
+- [x] Triển khai code đúng 100% theo Markdown đã chốt; đối chiếu hai khối code ở mục 5 với `.h/.cpp`.
+- [x] Biên dịch, chạy `tests/test_showtime_repository.cpp` và ghi kết quả thực tế: Passed 85, Failed 0, Total 85 (26/11/2026).
+- [ ] Kiểm thử các nhánh lỗi nội bộ/rollback do ngoại lệ và kiểm hồi quy module liên quan.
 
 ## 14. Kết luận
 
-Bản Markdown dự kiến giữ DIP, `Repository<Showtime>` bằng composition, luồng `load()` một vòng và rollback hiện tại. Trước khi gọi `removeById()`, ShowtimeService phải xác nhận chưa từng có Ticket, kể cả vé đã hủy, và không có Invoice tham chiếu; việc kiểm tra sẽ hoàn thiện sau refactor hai Repository liên quan. Bản này chờ CHỐT MARKDOWN trước khi đưa các thay đổi trình bày và `override` vào `.h/.cpp`.
+Bản Markdown đã chốt và triển khai giữ DIP, `Repository<Showtime>` bằng composition, luồng `load()` một vòng và rollback hiện tại; bài test Repository đạt 85/85 trong phạm vi đã ghi. Trước khi gọi `removeById()`, ShowtimeService phải xác nhận chưa từng có Ticket, kể cả vé đã hủy, và không có Invoice tham chiếu; việc kiểm tra sẽ hoàn thiện sau refactor hai Repository liên quan. Các nhánh lỗi nội bộ chưa được kích hoạt vẫn chưa được xác nhận.

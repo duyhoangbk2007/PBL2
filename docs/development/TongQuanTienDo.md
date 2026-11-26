@@ -42,7 +42,7 @@ Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm
 | Giai đoạn | Nội dung | Trạng thái |
 |---|---|---|
 | 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
-| 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository, MovieRepository, RoomRepository, UserRepository và MemberRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa xác nhận |
+| 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository, MovieRepository, RoomRepository, UserRepository, MemberRepository và ShowtimeRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa xác nhận |
 | 03 | Refactor các Business Service theo DIP và Permission-only | Chưa bắt đầu |
 | 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
 | 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
@@ -79,6 +79,7 @@ Trạng thái có thể sử dụng:
 - [x] Kiệt triển khai DIP cho `RoomRepository`; Hoàng rà soát, chuẩn hóa tài liệu và kiểm thử lại. Mã `.h/.cpp` khớp `RoomRepository.md`; `tests/test_room_repository.cpp` ngày 25/11/2026 đạt 72 PASS, 0 FAIL.
 - [x] `UserRepository` đã CHỐT MARKDOWN, triển khai DIP và đồng bộ `.h/.cpp` với tài liệu; bỏ hai `unordered_map`, tập trung validation riêng trong `isValidUser()` và dùng `Repository<User>` cho kiểm tra lưu trữ chung. `tests/test_user_repository.cpp` ngày 25/11/2026 đạt 69 PASS, 0 FAIL.
 - [x] `MemberRepository` đã refactor theo DIP, bỏ `membersById`, giữ chỉ mục phone, chuẩn hóa validation qua `Validator::isValidPhone()` và đồng bộ mã nguồn, tài liệu. `tests/test_member_repository.cpp` ngày 25/11/2026 biên dịch và chạy đạt 204 PASS, 0 FAIL; chưa kiểm thử liên kết Invoice.
+- [x] `ShowtimeRepository` đã CHỐT MARKDOWN, triển khai DIP và đối chiếu `.h/.cpp` khớp 100% với hai khối code trong `ShowtimeRepository.md`. `tests/test_showtime_repository.cpp` ngày 26/11/2026 biên dịch và chạy đạt Passed 85, Failed 0, Total 85; nhánh lỗi nội bộ/rollback do ngoại lệ và kiểm hồi quy liên quan còn chờ kiểm thử.
 - [ ] Chuẩn hóa các Concrete Repository theo interface chung.
 - [ ] Bảo đảm tính toàn vẹn dữ liệu và các liên kết giữa đối tượng.
 - [ ] Kiểm thử các Repository sau khi refactor.
@@ -92,6 +93,8 @@ Trạng thái có thể sử dụng:
 **Kết quả UserRepository đã xác minh (25/11/2026):** `tests/test_user_repository.cpp` biên dịch bằng C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy đạt 69 PASS, 0 FAIL. Kết quả chỉ xác nhận các trường hợp trong bài test, chưa xác nhận toàn bộ Service hoặc các lỗi ghi file.
 
 **Kết quả MemberRepository đã xác minh (25/11/2026):** `tests/test_member_repository.cpp` biên dịch bằng C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy đạt 204 PASS, 0 FAIL. Kết quả xác nhận các ca trong bài test, gồm `Validator::isValidPhone()`; liên kết Invoice và lỗi setter chưa được kiểm thử.
+
+**Kết quả ShowtimeRepository đã xác minh (26/11/2026):** `tests/test_showtime_repository.cpp` biên dịch bằng C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy đạt **Passed: 85, Failed: 0, Total: 85**. Kết quả xác nhận chín hàm qua `IRepository<Showtime>`, load/save, CRUD, lịch và liên kết trong phạm vi bài test. Chưa kích hoạt các nhánh rollback do ngoại lệ ở add/update; bảo vệ lịch sử Ticket và Invoice sẽ hoàn thiện tại ShowtimeService.
 
 ### Giai đoạn 03 – Refactor Business Service
 

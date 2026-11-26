@@ -50,7 +50,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Nhóm | Module | Công việc |
 |---|---|---|
 | Phim | MovieRepository, MovieService | MovieRepository đã refactor theo DIP và validation, CHỐT MARKDOWN, kiểm thử qua `test_irepository.cpp` (81 PASS, 0 FAIL); MovieService còn theo kế hoạch |
-| Suất chiếu | ShowtimeRepository, ShowtimeService | Refactor và hoàn thiện nghiệp vụ |
+| Suất chiếu | ShowtimeRepository, ShowtimeService | ShowtimeRepository đã CHỐT MARKDOWN, triển khai DIP, đối chiếu code khớp tài liệu và kiểm thử `tests/test_showtime_repository.cpp` ngày 26/11/2026: Passed 85, Failed 0, Total 85. Nhánh lỗi nội bộ/rollback do ngoại lệ chưa kiểm thử; bảo vệ lịch sử Ticket/Invoice sẽ hoàn thiện tại ShowtimeService, chưa đánh dấu xong Service |
 | Vé | TicketRepository, TicketService | Refactor và hoàn thiện nghiệp vụ |
 | Hóa đơn | InvoiceRepository, InvoiceService | Refactor và hoàn thiện nghiệp vụ |
 | Bán vé | BookingService và các thành phần liên quan | Hoàn thiện quy trình bán vé |
