@@ -22,6 +22,8 @@ Giai đoạn refactor tập trung vào các mục tiêu:
 
 Ưu tiên giữ nguyên các quy tắc nghiệp vụ đã chốt, tránh thay đổi không cần thiết.
 
+Hoàng và Kiệt refactor Backend song song trên nhánh riêng từ mốc chung `5d663e3`: Hoàng tiếp tục Data Access, Kiệt refactor các Service đã tồn tại, tránh chỉnh sửa chồng chéo.
+
 ## 3. Quy trình thực hiện
 
 Mỗi module được triển khai theo quy trình **Markdown-first**:
@@ -43,7 +45,7 @@ Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm
 |---|---|---|
 | 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
 | 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository, MovieRepository, RoomRepository, UserRepository, MemberRepository và ShowtimeRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa xác nhận |
-| 03 | Refactor các Business Service theo DIP và Permission-only | Chưa bắt đầu |
+| 03 | Refactor các Business Service theo DIP và Permission-only | Đang thực hiện: MovieService hoàn thành trong phạm vi đã kiểm thử (41 PASS, 0 FAIL); các Service còn lại chưa xác nhận |
 | 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
 | 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
 | 06 | Hoàn thiện giao diện và các luồng sử dụng | Chưa xác minh |
@@ -81,6 +83,7 @@ Trạng thái có thể sử dụng:
 - [x] `MemberRepository` đã refactor theo DIP, bỏ `membersById`, giữ chỉ mục phone, chuẩn hóa validation qua `Validator::isValidPhone()` và đồng bộ mã nguồn, tài liệu. `tests/test_member_repository.cpp` ngày 25/11/2026 biên dịch và chạy đạt 204 PASS, 0 FAIL; chưa kiểm thử liên kết Invoice.
 - [x] `ShowtimeRepository` đã CHỐT MARKDOWN, triển khai DIP và đối chiếu `.h/.cpp` khớp 100% với hai khối code trong `ShowtimeRepository.md`. `tests/test_showtime_repository.cpp` ngày 26/11/2026 biên dịch và chạy đạt Passed 85, Failed 0, Total 85; nhánh lỗi nội bộ/rollback do ngoại lệ và kiểm hồi quy liên quan còn chờ kiểm thử.
 - [ ] Chuẩn hóa các Concrete Repository theo interface chung.
+- [ ] Hoàng refactor và kiểm thử `SeatRepository`, `InvoiceRepository`, `TicketRepository`; chưa xác nhận hoàn thành.
 - [ ] Bảo đảm tính toàn vẹn dữ liệu và các liên kết giữa đối tượng.
 - [ ] Kiểm thử các Repository sau khi refactor.
 
@@ -98,13 +101,19 @@ Trạng thái có thể sử dụng:
 
 ### Giai đoạn 03 – Refactor Business Service
 
-- [ ] Rà soát các Service hiện tại.
+- [x] `MovieService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Movie>&` và DI qua constructor, dùng Permission-only, giữ 12 hàm public; `.h/.cpp` khớp Markdown 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41 trong phạm vi bài test.
+- [ ] Kiệt tiếp tục rà soát dependency thực tế của `RoomService`, `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại; không triển khai Service mới trong giai đoạn hiện tại.
+- [ ] Ghi rõ phần chờ: `AuthService` dùng `RolePermissionRepository` chưa refactor và `UserRepository::findByUsername()` là API riêng; `ShowtimeService` cần `TicketRepository`/`InvoiceRepository` để bảo vệ lịch sử khi hủy, xóa suất; liên kết Invoice của `MemberRepository` chưa kiểm thử.
 - [ ] Chuyển phụ thuộc Repository sang `IRepository<T>` tại các vị trí phù hợp.
 - [ ] Chuẩn hóa kiểm tra Permission thông qua `AuthService`.
 - [ ] Chuyển các điều kiện nghiệp vụ về đúng tầng Service.
 - [ ] Kiểm thử từng Service.
 
 **Kết quả cần đạt:** Các Service tuân thủ DIP, Permission-only và phân chia trách nhiệm rõ ràng.
+
+**Kết quả MovieService đã xác minh (26/11/2026):** Biên dịch C++17 cùng toàn bộ `.cpp` trong `src/` trừ `main.cpp` thành công; chạy `tests/test_movie_service.cpp` đạt **Passed: 41, Failed: 0, Total: 41**. Hoàn thành refactor trong phạm vi đã kiểm thử. Chưa kiểm thử Repository giả lập, nhánh ngoại lệ nội bộ của add, lỗi ghi file, hồi quy GUI/caller và tích hợp load Showtime thực tế. Dùng `MovieService.md` làm mẫu cấu trúc, DIP/DI, Permission-only và bố cục tài liệu cho các Service tiếp theo, không sao chép logic nghiệp vụ máy móc.
+
+Mỗi Service đi theo thứ tự rà soát → thiết kế → CHỐT MARKDOWN → code → test → cập nhật tiến độ; đối chiếu quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`. Các phần phụ thuộc Repository chưa refactor, chưa kiểm thử được thực hiện sau khi dependency sẵn sàng, không đánh dấu hoàn thành trước.
 
 ### Giai đoạn 04 – Hoàn thiện Backend
 
@@ -165,6 +174,7 @@ Trạng thái có thể sử dụng:
 - Các thay đổi về thiết kế phải được cập nhật trong Markdown trước khi triển khai code.
 - Không tự ý sửa các module ngoài phạm vi đang thực hiện.
 - Hoàng và Kiệt cập nhật công việc tương ứng trong các file Task riêng.
+- Hai người làm trên nhánh riêng từ mốc `5d663e3`, thống nhất trước khi chỉnh sửa cùng một module hoặc API chung.
 - Các thay đổi lớn cần được review trước khi merge vào `main`.
 
 ## 7. Tài liệu liên quan
@@ -175,6 +185,6 @@ Trạng thái có thể sử dụng:
 - `docs/architecture/Business_UI_Contract.md`: Giao tiếp Backend và GUI.
 - `docs/development/KeHoachRefactor.md`: Kế hoạch thực hiện chi tiết.
 - `docs/development/PhanCongCongViec.md`: Phân công công việc.
-- `docs/development/tasks/Task_Hoang.md`: Công việc của Hoàng.
-- `docs/development/tasks/Task_Kiet.md`: Công việc của Kiệt.
+- `docs/development/task/Task_Hoang.md`: Công việc của Hoàng.
+- `docs/development/task/Task_Kiet.md`: Công việc của Kiệt.
 - `docs/development/pre_refactor/`: Tài liệu phát triển giai đoạn cũ.

@@ -2,23 +2,26 @@
 #define MOVIE_SERVICE_H
 
 #include <string>
-#include "../data_access/MovieRepository.h"
+#include <vector>
+#include "../data_access/IRepository.h"
+#include "../models/Movie.h"
 #include "AuthService.h"
-
 
 class MovieService
 {
 private:
-    MovieRepository& movieRepo;
+    IRepository<Movie>& movieRepo;
     AuthService& authService;
+
 public:
-    MovieService(MovieRepository& movieRepo, AuthService& authService);
+    MovieService(IRepository<Movie>& movieRepo,
+                 AuthService& authService);
 
     // Quan ly du lieu
     bool load();
     bool save();
 
-    // Them phim
+    // Quan ly phim
     bool addMovie(Movie* movie);
     bool updateMovie(const Movie& newValues);
     bool removeMovie(const std::string& movieId);
@@ -28,7 +31,6 @@ public:
     const Movie* findMovieById(const std::string& movieId);
     const Movie* getMovieAt(int index);
     int getMovieCount();
-
     std::vector<const Movie*> getNowShowingMovies();
     std::vector<const Movie*> getComingSoonMovies();
     std::vector<const Movie*> searchMoviesByTitle(const std::string& keyword);

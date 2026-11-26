@@ -12,6 +12,8 @@ Trong giai đoạn trước, Hoàng chủ yếu phụ trách Backend và Kiệt 
 
 Trong giai đoạn refactor, **cả hai thành viên cùng tham gia phát triển Backend, hoàn thiện chức năng, tích hợp GUI và kiểm thử hệ thống**.
 
+Hai nhánh refactor lấy commit `5d663e3` làm mốc chung. Từ mốc này, Hoàng tiếp tục tầng Data Access, Kiệt refactor các Service đã tồn tại; mỗi người làm việc trên nhánh riêng và tránh sửa chồng chéo.
+
 Mục tiêu là phân chia công việc tương đối đồng đều, hạn chế phụ thuộc giữa hai thành viên và bảo đảm mã nguồn được triển khai theo cùng một quy chuẩn.
 
 ## 2. Nguyên tắc phân công
@@ -22,7 +24,7 @@ Mục tiêu là phân chia công việc tương đối đồng đều, hạn ch�
 - Tuân thủ kiến trúc DIP với duy nhất một interface chung `IRepository<T>`.
 - Phân quyền theo Permission-only.
 - Phân chia rõ trách nhiệm giữa Model, Repository, Service và GUI.
-- Thực hiện quy trình Markdown-first trước khi sửa code.
+- Thực hiện quy trình rà soát → thiết kế → CHỐT MARKDOWN → code → test → cập nhật tiến độ.
 - Không tự ý thay đổi API hoặc module do người còn lại phụ trách.
 - Những thay đổi ảnh hưởng đến cả hai phải được thống nhất trước khi triển khai.
 
@@ -49,29 +51,27 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 
 | Nhóm | Module | Công việc |
 |---|---|---|
-| Phim | MovieRepository, MovieService | MovieRepository đã refactor theo DIP và validation, CHỐT MARKDOWN, kiểm thử qua `test_irepository.cpp` (81 PASS, 0 FAIL); MovieService còn theo kế hoạch |
-| Suất chiếu | ShowtimeRepository, ShowtimeService | ShowtimeRepository đã CHỐT MARKDOWN, triển khai DIP, đối chiếu code khớp tài liệu và kiểm thử `tests/test_showtime_repository.cpp` ngày 26/11/2026: Passed 85, Failed 0, Total 85. Nhánh lỗi nội bộ/rollback do ngoại lệ chưa kiểm thử; bảo vệ lịch sử Ticket/Invoice sẽ hoàn thiện tại ShowtimeService, chưa đánh dấu xong Service |
-| Vé | TicketRepository, TicketService | Refactor và hoàn thiện nghiệp vụ |
-| Hóa đơn | InvoiceRepository, InvoiceService | Refactor và hoàn thiện nghiệp vụ |
-| Bán vé | BookingService và các thành phần liên quan | Hoàn thiện quy trình bán vé |
-| Hủy vé | CancellationService và các thành phần liên quan | Hoàn thiện quy trình hủy vé, hoàn tiền |
-| Báo cáo | ReportService và các thành phần liên quan | Hoàn thiện thống kê, báo cáo |
+| Phim | MovieRepository | Đã refactor theo DIP và validation, CHỐT MARKDOWN, kiểm thử qua `test_irepository.cpp` (81 PASS, 0 FAIL) |
+| Suất chiếu | ShowtimeRepository | Đã CHỐT MARKDOWN, triển khai DIP, đối chiếu code khớp tài liệu và kiểm thử `tests/test_showtime_repository.cpp` ngày 26/11/2026: Passed 85, Failed 0, Total 85; nhánh lỗi nội bộ/rollback do ngoại lệ chưa kiểm thử |
+| Ghế | SeatRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Seat>` |
+| Hóa đơn | InvoiceRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Invoice>` |
+| Vé | TicketRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Ticket>` |
 
-**Trọng tâm:** Các nghiệp vụ liên quan đến lịch chiếu, giao dịch bán vé, hóa đơn, hủy vé và báo cáo.
+**Trọng tâm hiện tại:** Hoàn thiện tầng Data Access và các liên kết dữ liệu; các Service liên quan đến bán vé, hóa đơn, hủy vé và báo cáo thuộc giai đoạn sau, chưa ghi nhận đã refactor.
 
 ### 4.2. Kiệt phụ trách
 
 | Nhóm | Module | Công việc |
 |---|---|---|
-| Phòng chiếu | RoomRepository, RoomService | Kiệt đã triển khai DIP cho RoomRepository; Hoàng đã rà soát, chuẩn hóa tài liệu và kiểm thử lại `test_room_repository.cpp` ngày 25/11/2026 (72 PASS, 0 FAIL). RoomService còn theo kế hoạch |
-| Ghế | SeatRepository, SeatService | Refactor và hoàn thiện nghiệp vụ |
-| Nhân viên | UserRepository, UserService | UserRepository đã CHỐT MARKDOWN, triển khai DIP, bỏ hai `unordered_map`, chuẩn hóa validation và kiểm thử `test_user_repository.cpp` ngày 25/11/2026 (69 PASS, 0 FAIL); UserService còn theo kế hoạch |
-| Xác thực | AuthService và các thành phần liên quan | Chuẩn hóa xác thực, Permission |
-| Phân quyền | RolePermissionRepository và các thành phần liên quan | Refactor và kiểm thử quyền |
-| Thành viên | MemberRepository, MemberService | MemberRepository đã refactor DIP, bỏ map ID, giữ map phone, chuẩn hóa validation, mã nguồn và tài liệu; `test_member_repository.cpp` ngày 25/11/2026 đạt 204 PASS, 0 FAIL. Liên kết Invoice chưa kiểm thử; MemberService còn theo kế hoạch |
-| Giá vé | PricingRepository, PricingService | Refactor và hoàn thiện nghiệp vụ |
+| Phim | MovieService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<Movie>&`, Permission-only, giữ 12 hàm public; `.h/.cpp` khớp Markdown 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41; hoàn thành trong phạm vi bài test |
+| Phòng chiếu | RoomService | Ưu tiên refactor theo `IRepository<Room>` và Permission; `RoomRepository` đã kiểm thử 72 PASS, 0 FAIL |
+| Xác thực | AuthService | Ưu tiên rà soát DIP và Permission-only; `UserRepository` đã kiểm thử 69 PASS, 0 FAIL, còn `RolePermissionRepository` chưa refactor theo interface chung và `findByUsername()` là API riêng cần đánh giá trước khi thiết kế |
+| Thành viên | MemberService | Ưu tiên refactor theo `IRepository<Member>` và Permission; `MemberRepository` đã kiểm thử 204 PASS, 0 FAIL, liên kết Invoice chưa kiểm thử |
+| Suất chiếu | ShowtimeService | Ưu tiên refactor theo `IRepository<Showtime>`, `IRepository<Movie>`, `IRepository<Room>`; kiểm tra Ticket/Invoice khi hủy hoặc xóa suất phải chờ các Repository đó được Hoàng refactor và kiểm thử |
 
-**Trọng tâm:** Các nghiệp vụ quản lý dữ liệu nền tảng, người dùng, phân quyền, thành viên và giá vé.
+**Trọng tâm hiện tại:** Chỉ refactor Service đã tồn tại, không triển khai Service mới trong giai đoạn này. Rà soát dependency thực tế trước khi thiết kế từng Service; phần phụ thuộc Repository chưa sẵn sàng được ghi rõ và thực hiện sau.
+
+`MovieService.md` là mẫu chuẩn cho Service tiếp theo về cấu trúc, DIP/DI, Permission-only và cách trình bày. Điều chỉnh quy tắc nghiệp vụ theo từng Service; kết quả MovieService chưa bao phủ hồi quy GUI/caller, lỗi ghi file và tích hợp load Showtime thực tế.
 
 ### 4.3. Các thành phần dùng chung
 
@@ -138,16 +138,16 @@ Cả hai thành viên:
 
 ### Giai đoạn 02 – Refactor Repository
 
-- Hoàng thực hiện các Repository thuộc nhóm được giao.
-- Kiệt thực hiện các Repository thuộc nhóm được giao.
+- Hoàng tiếp tục `SeatRepository`, `InvoiceRepository`, `TicketRepository` để hoàn thiện Data Access.
+- Kiệt đối chiếu dependency của các Service được giao với Repository đã refactor; không sửa Repository do Hoàng phụ trách.
 - Cùng kiểm thử các liên kết dữ liệu giữa các Repository.
 - Cả Hoàng và Kiệt dùng `MovieRepository.h/.cpp` và `MovieRepository.md` làm mẫu cho các Concrete Repository được giao, điều chỉnh logic theo từng Model và theo quy trình trong `AGENTS.md`.
 
 ### Giai đoạn 03 – Refactor Service
 
-- Mỗi thành viên refactor các Service tương ứng.
-- Chuẩn hóa Permission và xử lý nghiệp vụ.
-- Kiểm thử từng Service.
+- Kiệt đã hoàn thành `MovieService` trong phạm vi kiểm thử; tiếp tục ưu tiên `RoomService`, `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
+- Rà soát dependency thực tế; phần cần Repository chưa refactor xong được ghi rõ để thực hiện sau.
+- Service tuân thủ DIP qua `IRepository<T>`, Permission-only, quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`; kiểm thử từng Service trước khi đánh dấu hoàn thành.
 
 ### Giai đoạn 04 – Hoàn thiện Backend
 
@@ -169,7 +169,7 @@ Cả hai thành viên:
 - Commit theo từng phần công việc rõ ràng.
 - Khi hoàn thành một phần, tạo Pull Request.
 - Người còn lại review trước khi merge.
-- Đồng bộ với `main` thường xuyên để hạn chế xung đột.
+- Hai nhánh refactor dùng commit `5d663e3` làm mốc chung; đồng bộ có kiểm tra để hạn chế xung đột.
 - Không tự ý sửa module của người khác nếu chưa thống nhất.
 
 Các thay đổi ảnh hưởng đến interface chung, API của Service hoặc định dạng dữ liệu phải được trao đổi trước khi merge.
@@ -182,8 +182,8 @@ Tiến độ tổng thể được ghi tại:
 
 Tiến độ cá nhân được ghi tại:
 
-- `docs/development/tasks/Task_Hoang.md`
-- `docs/development/tasks/Task_Kiet.md`
+- `docs/development/task/Task_Hoang.md`
+- `docs/development/task/Task_Kiet.md`
 
 Mỗi công việc cần thể hiện:
 

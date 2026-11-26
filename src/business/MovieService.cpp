@@ -2,23 +2,24 @@
 #include "../models/Showtime.h"
 #include "../utils/DateTime.h"
 #include "../utils/IdGenerator.h"
-#include <algorithm>
 #include <cctype>
-#include <vector>
 using namespace std;
 
-MovieService::MovieService(MovieRepository& movieRepo, AuthService& authService)
+MovieService::MovieService(IRepository<Movie>& movieRepo,
+                           AuthService& authService)
     : movieRepo(movieRepo), authService(authService)
-{}
+{
+}
+
 bool MovieService::load()
 {
     return movieRepo.load();
 }
+
 bool MovieService::save()
 {
     return movieRepo.save();
 }
-
 
 bool MovieService::addMovie(Movie* movie)
 {
@@ -28,20 +29,19 @@ bool MovieService::addMovie(Movie* movie)
     {
         return false;
     }
-    // Lay danh sach ID hien co
+
     vector<string> existingIds;
     for (int i = 0; i < movieRepo.count(); i++)
     {
-        Movie* current = movieRepo.getAt(i);
+        const Movie* current = movieRepo.getAt(i);
         if (current == nullptr)
         {
             return false;
         }
         existingIds.push_back(current->getMovieId());
     }
-    // Sinh ID moi
+
     string movieId = IdGenerator::generateNextId("MOV", existingIds);
-    // Tao Movie moi voi ID vua sinh
     Movie* newMovie = new Movie(movieId,
                                movie->getTitle(),
                                movie->getGenre(),
@@ -50,7 +50,6 @@ bool MovieService::addMovie(Movie* movie)
                                movie->getReleaseDate(),
                                movie->getEndDate(),
                                movie->isActive());
-    // Them vao Repository
     try
     {
         if (!movieRepo.add(newMovie))
@@ -67,7 +66,6 @@ bool MovieService::addMovie(Movie* movie)
     return true;
 }
 
-
 bool MovieService::updateMovie(const Movie& newValues)
 {
     authService.requirePermission("MOVIE_UPDATE");
@@ -76,31 +74,27 @@ bool MovieService::updateMovie(const Movie& newValues)
     {
         return false;
     }
-    Movie* movie = movieRepo.findById(newValues.getMovieId());
+    const Movie* movie = movieRepo.findById(newValues.getMovieId());
     if (movie == nullptr)
     {
         return false;
     }
-    // Khong cho thay doi trang thai qua updateMovie
     if (movie->isActive() != newValues.isActive())
     {
         return false;
     }
-    // Kiem tra thay doi ngay phat hanh
+
     bool dateChanged =
         movie->getReleaseDate() != newValues.getReleaseDate() ||
         movie->getEndDate() != newValues.getEndDate();
+    bool durationChanged =
+        movie->getDurationMinutes() != newValues.getDurationMinutes();
 
-    // Kiem tra thay doi thoi luong phim
-    bool durationChanged = movie->getDurationMinutes() != newValues.getDurationMinutes();
-
-    // Khong cho doi ngay hoac thoi luong khi da co suat chieu
     if (movie->getShowtimeCount() > 0 &&
         (dateChanged || durationChanged))
     {
         return false;
     }
-
     return movieRepo.update(newValues);
 }
 
@@ -108,22 +102,6 @@ bool MovieService::removeMovie(const string& movieId)
 {
     authService.requirePermission("MOVIE_DELETE");
     return movieRepo.removeById(movieId);
-}
-
-const Movie* MovieService::findMovieById(const string& movieId)
-{
-    authService.requirePermission("MOVIE_VIEW");
-    return movieRepo.findById(movieId);
-}
-const Movie* MovieService::getMovieAt(int index)
-{
-    authService.requirePermission("MOVIE_VIEW");
-    return movieRepo.getAt(index);
-}
-int MovieService::getMovieCount()
-{
-    authService.requirePermission("MOVIE_VIEW");
-    return movieRepo.count();
 }
 
 bool MovieService::setMovieActive(const string& movieId, bool active)
@@ -139,12 +117,10 @@ bool MovieService::setMovieActive(const string& movieId, bool active)
     {
         return false;
     }
-    // Trang thai da dung voi yeu cau
     if (movie->isActive() == active)
     {
         return true;
     }
-    // Kiem tra cac suat chieu khi ngung hoat dong phim
     if (!active)
     {
         string now = DateTime::getCurrentDateTime();
@@ -155,7 +131,6 @@ bool MovieService::setMovieActive(const string& movieId, bool active)
             {
                 return false;
             }
-            // suất chiếu đã lên lịch và chưa bắt đầu thì không cho hủy phim
             if (showtime->getStatus() == ShowtimeStatus::SCHEDULED &&
                 DateTime::isBefore(now, showtime->getStartAt()))
             {
@@ -163,19 +138,34 @@ bool MovieService::setMovieActive(const string& movieId, bool active)
             }
         }
     }
-    // Tao doi tuong tam voi trang thai moi
-    Movie updated(
-        movie->getMovieId(),
-        movie->getTitle(),
-        movie->getGenre(),
-        movie->getDurationMinutes(),
-        movie->getMinAge(),
-        movie->getReleaseDate(),
-        movie->getEndDate(),
-        active
-    );
 
+    Movie updated(movie->getMovieId(),
+                  movie->getTitle(),
+                  movie->getGenre(),
+                  movie->getDurationMinutes(),
+                  movie->getMinAge(),
+                  movie->getReleaseDate(),
+                  movie->getEndDate(),
+                  active);
     return movieRepo.update(updated);
+}
+
+const Movie* MovieService::findMovieById(const string& movieId)
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.findById(movieId);
+}
+
+const Movie* MovieService::getMovieAt(int index)
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.getAt(index);
+}
+
+int MovieService::getMovieCount()
+{
+    authService.requirePermission("MOVIE_VIEW");
+    return movieRepo.count();
 }
 
 vector<const Movie*> MovieService::getNowShowingMovies()
@@ -240,15 +230,11 @@ vector<const Movie*> MovieService::searchMoviesByTitle(const string& keyword)
     {
         return result;
     }
-    // Chuyen tu khoa thanh chu thuong
     string searchKey = keyword;
     for (char& c : searchKey)
     {
-        c = static_cast<char>(
-            tolower(static_cast<unsigned char>(c))
-        );
+        c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
     }
-    // Duyet danh sach phim
     for (int i = 0; i < movieRepo.count(); i++)
     {
         const Movie* movie = movieRepo.getAt(i);
@@ -257,14 +243,10 @@ vector<const Movie*> MovieService::searchMoviesByTitle(const string& keyword)
             continue;
         }
         string title = movie->getTitle();
-        // Chuyen ten phim thanh chu thuong
         for (char& c : title)
         {
-            c = static_cast<char>(
-                tolower(static_cast<unsigned char>(c))
-            );
+            c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
         }
-        // Tim tu khoa trong ten phim
         if (title.find(searchKey) != string::npos)
         {
             result.push_back(movie);
