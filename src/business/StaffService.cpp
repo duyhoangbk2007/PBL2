@@ -3,36 +3,37 @@
 #include <vector>
 using namespace std;
 
-StaffService::StaffService(UserRepository& staffRepo, AuthService& authService)
-    : staffRepo(staffRepo), authService(authService)
-{}
+StaffService::StaffService(IRepository<User>& userRepo,
+                           AuthService& authService)
+    : userRepo(userRepo), authService(authService)
+{
+}
 
 bool StaffService::load()
 {
-    return staffRepo.load();
+    return userRepo.load();
 }
 
 bool StaffService::save()
 {
-    return staffRepo.save();
+    return userRepo.save();
 }
-
 
 bool StaffService::addStaff(User* staff)
 {
     authService.requirePermission("STAFF_ADD");
 
-    if (!staffRepo.isLoaded() ||
+    if (!userRepo.isLoaded() ||
         staff == nullptr ||
         staff->getRole() != UserRole::STAFF)
     {
         return false;
     }
-    vector<string> existingIds;
 
-    for (int i = 0; i < staffRepo.count(); i++)
+    vector<string> existingIds;
+    for (int i = 0; i < userRepo.count(); i++)
     {
-        User* current = staffRepo.getAt(i);
+        const User* current = userRepo.getAt(i);
         if (current == nullptr)
         {
             return false;
@@ -41,7 +42,6 @@ bool StaffService::addStaff(User* staff)
     }
 
     string userId = IdGenerator::generateNextId("USR", existingIds);
-
     User* newStaff = new User(userId,
                               staff->getUsername(),
                               staff->getPassword(),
@@ -51,7 +51,7 @@ bool StaffService::addStaff(User* staff)
 
     try
     {
-        if (!staffRepo.add(newStaff))
+        if (!userRepo.add(newStaff))
         {
             delete newStaff;
             return false;
@@ -65,57 +65,65 @@ bool StaffService::addStaff(User* staff)
     return true;
 }
 
-
 bool StaffService::updateStaff(const User& newValues)
 {
     authService.requirePermission("STAFF_UPDATE");
-    if (!staffRepo.isLoaded())
+
+    if (!userRepo.isLoaded())
     {
         return false;
     }
-    User* current = staffRepo.findById(newValues.getUserId());
+
+    const User* current = userRepo.findById(newValues.getUserId());
     if (current == nullptr ||
         current->getRole() != UserRole::STAFF ||
         newValues.getRole() != UserRole::STAFF)
     {
         return false;
     }
+
     if (current->isActive() != newValues.isActive())
     {
         return false;
     }
-    return staffRepo.update(newValues);
+    return userRepo.update(newValues);
 }
 
-bool StaffService::deactivateStaff(const string& staffId)
+bool StaffService::setStaffActive(const string& staffId, bool active)
 {
     authService.requirePermission("STAFF_DEACTIVATE");
-    if (!staffRepo.isLoaded())
+
+    if (!userRepo.isLoaded())
     {
         return false;
     }
-    User* staff = staffRepo.findById(staffId);
+
+    const User* staff = userRepo.findById(staffId);
     if (staff == nullptr ||
-        staff->getRole() != UserRole::STAFF ||
-        !staff->isActive())
+        staff->getRole() != UserRole::STAFF)
     {
         return false;
     }
-    User updated(
-        staff->getUserId(),
-        staff->getUsername(),
-        staff->getPassword(),
-        staff->getFullName(),
-        staff->getRole(),
-        false
-    );
-    return staffRepo.update(updated);
+
+    if (staff->isActive() == active)
+    {
+        return true;
+    }
+
+    User updated(staff->getUserId(),
+                 staff->getUsername(),
+                 staff->getPassword(),
+                 staff->getFullName(),
+                 staff->getRole(),
+                 active);
+    return userRepo.update(updated);
 }
 
 const User* StaffService::findStaffById(const string& staffId)
 {
     authService.requirePermission("STAFF_VIEW");
-    const User* staff = staffRepo.findById(staffId);
+
+    const User* staff = userRepo.findById(staffId);
     if (staff == nullptr || staff->getRole() != UserRole::STAFF)
     {
         return nullptr;
@@ -126,25 +134,33 @@ const User* StaffService::findStaffById(const string& staffId)
 const User* StaffService::findStaffByUsername(const string& username)
 {
     authService.requirePermission("STAFF_VIEW");
-    const User* staff = staffRepo.findByUsername(username);
-    if (staff == nullptr || staff->getRole() != UserRole::STAFF)
+
+    for (int i = 0; i < userRepo.count(); i++)
     {
-        return nullptr;
+        const User* user = userRepo.getAt(i);
+        if (user != nullptr &&
+            user->getRole() == UserRole::STAFF &&
+            user->getUsername() == username)
+        {
+            return user;
+        }
     }
-    return staff;
+    return nullptr;
 }
 
 const User* StaffService::getStaffAt(int index)
 {
     authService.requirePermission("STAFF_VIEW");
+
     if (index < 0)
     {
         return nullptr;
     }
+
     int staffIndex = 0;
-    for (int i = 0; i < staffRepo.count(); i++)
+    for (int i = 0; i < userRepo.count(); i++)
     {
-        const User* user = staffRepo.getAt(i);
+        const User* user = userRepo.getAt(i);
         if (user != nullptr && user->getRole() == UserRole::STAFF)
         {
             if (staffIndex == index)
@@ -160,10 +176,11 @@ const User* StaffService::getStaffAt(int index)
 int StaffService::getStaffCount()
 {
     authService.requirePermission("STAFF_VIEW");
+
     int count = 0;
-    for (int i = 0; i < staffRepo.count(); i++)
+    for (int i = 0; i < userRepo.count(); i++)
     {
-        const User* user = staffRepo.getAt(i);
+        const User* user = userRepo.getAt(i);
         if (user != nullptr && user->getRole() == UserRole::STAFF)
         {
             count++;

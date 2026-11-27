@@ -45,7 +45,7 @@ Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm
 |---|---|---|
 | 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
 | 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository, MovieRepository, RoomRepository, SeatRepository, UserRepository, MemberRepository và ShowtimeRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa xác nhận |
-| 03 | Refactor các Business Service theo DIP và Permission-only | Đang thực hiện: MovieService, RoomService và AuthService hoàn thành trong phạm vi đã kiểm thử; các Service còn lại chưa xác nhận |
+| 03 | Refactor các Business Service theo DIP và Permission-only | Đang thực hiện: MovieService, RoomService, AuthService và StaffService hoàn thành trong phạm vi đã kiểm thử; các Service còn lại chưa xác nhận |
 | 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
 | 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
 | 06 | Hoàn thiện giao diện và các luồng sử dụng | Chưa xác minh |
@@ -107,6 +107,7 @@ Trạng thái có thể sử dụng:
 - [x] `MovieService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Movie>&` và DI qua constructor, dùng Permission-only, giữ 12 hàm public; `.h/.cpp` khớp Markdown 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41 trong phạm vi bài test.
 - [x] `RoomService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Room>&`, DI qua constructor và Permission-only; có 9 hàm public gồm `setRoomActive()`. `Room::getShowtimeAt()` đã bổ sung; `.h/.cpp` của Service khớp Markdown 100%. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43 trong phạm vi bài test.
 - [x] `AuthService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<User>&` và DI qua constructor, Permission-only; giữ `RolePermissionRepository&` đặc thù, có 7 hàm public và 2 helper private, bỏ `isAdmin()`, `isStaff()`, `requireAdmin()`. `.h/.cpp` khớp Markdown 100%; `tests/test_auth_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 31, Failed: 0, Total: 31.
+- [x] `StaffService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<User>&`, DI và Permission-only; có 9 hàm public, không có helper private. Thay `deactivateStaff()` bằng `setStaffActive()` dùng `STAFF_DEACTIVATE` cho cả bật/tắt; `.h/.cpp` khớp Markdown 100%. `tests/test_staff_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 32, Failed: 0, Total: 32.
 - [ ] Kiệt tiếp tục rà soát dependency thực tế của `MemberService`, `ShowtimeService` đã tồn tại; không triển khai Service mới trong giai đoạn hiện tại.
 - [ ] Ghi rõ phần chờ: các Service còn gọi API AuthService cũ sẽ xử lý khi đến lượt; `ShowtimeService` cần Ticket/Invoice để bảo vệ lịch sử khi hủy, xóa suất; liên kết Invoice của `MemberRepository` chưa kiểm thử.
 - [ ] Chuyển phụ thuộc Repository sang `IRepository<T>` tại các vị trí phù hợp.
@@ -121,6 +122,8 @@ Trạng thái có thể sử dụng:
 **Kết quả RoomService đã xác minh (27/11/2026):** Biên dịch C++17 cùng toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp` thành công; chạy `tests/test_room_service.cpp` đạt **Passed: 43, Failed: 0, Total: 43**. Hoàn thành refactor trong phạm vi đã kiểm thử. Chưa kiểm thử `startAt` bằng đúng thời điểm hiện tại, lỗi ghi file, tích hợp nạp Showtime thực tế và hồi quy GUI/caller.
 
 **Kết quả AuthService đã xác minh (27/11/2026):** Biên dịch C++17 với các dependency cần thiết và chạy lần lượt `tests/test_auth_service.cpp` **31/31 PASS**, `tests/test_movie_service.cpp` **41/41 PASS**, `tests/test_room_service.cpp` **43/43 PASS**. Hoàn thành AuthService trong phạm vi đã kiểm thử. Chưa kiểm thử tái sử dụng User ID, mọi dạng TXT quyền sai định dạng và hồi quy GUI/toàn ứng dụng; các Service còn dùng API cũ sẽ được refactor sau.
+
+**Kết quả StaffService đã xác minh (27/11/2026):** Biên dịch C++17 với dependency cần thiết và chạy lần lượt `tests/test_staff_service.cpp` **32/32 PASS**, `tests/test_auth_service.cpp` **31/31 PASS**, `tests/test_movie_service.cpp` **41/41 PASS**, `tests/test_room_service.cpp` **43/43 PASS**. Hoàn thành StaffService trong phạm vi đã kiểm thử. Chưa kiểm thử lỗi ghi TXT và tích hợp nạp Invoice từ Repository thực; sáu lời gọi API `deactivateStaff()` trong test legacy còn chờ cập nhật.
 
 Mỗi Service đi theo thứ tự rà soát → thiết kế → CHỐT MARKDOWN → code → test → cập nhật tiến độ; đối chiếu quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`. Các phần phụ thuộc Repository chưa refactor, chưa kiểm thử được thực hiện sau khi dependency sẵn sàng, không đánh dấu hoàn thành trước.
 
