@@ -177,6 +177,14 @@ Showtime* Room::findShowtime(const string& showtimeId) {
 int Room::getShowtimeCount() const {
     return this->showtimes.nodeCount();
 }
+const Showtime* Room::getShowtimeAt(int index)
+{
+    if (index < 0 || index >= showtimes.nodeCount())
+    {
+        return nullptr;
+    }
+    return showtimes.getAt(index)->data;
+}
 Seat* Room::getSeatAt(int index)
 {
     ListNode<Seat*>* node = seats.getAt(index);

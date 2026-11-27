@@ -39,6 +39,7 @@ public:
     int getSeatCount() const;
     Showtime* findShowtime(const std::string& showtimeId);
     int getShowtimeCount() const;
+    const Showtime* getShowtimeAt(int index);
     Seat* getSeatAt(int index);
 };
 

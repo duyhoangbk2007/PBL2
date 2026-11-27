@@ -45,7 +45,7 @@ Không đánh dấu hoàn thành một module nếu chưa có kết quả kiểm
 |---|---|---|
 | 01 | Chuẩn hóa tài liệu và thiết kế kiến trúc refactor | Đang thực hiện |
 | 02 | Xây dựng `IRepository<T>` và chuẩn hóa tầng Data Access | Đang thực hiện: IRepository, Repository, MovieRepository, RoomRepository, UserRepository, MemberRepository và ShowtimeRepository hoàn thành trong phạm vi đã ghi nhận; các Repository khác chưa xác nhận |
-| 03 | Refactor các Business Service theo DIP và Permission-only | Đang thực hiện: MovieService hoàn thành trong phạm vi đã kiểm thử (41 PASS, 0 FAIL); các Service còn lại chưa xác nhận |
+| 03 | Refactor các Business Service theo DIP và Permission-only | Đang thực hiện: MovieService và RoomService hoàn thành trong phạm vi đã kiểm thử; các Service còn lại chưa xác nhận |
 | 04 | Hoàn thiện các nghiệp vụ Backend còn thiếu | Chưa bắt đầu |
 | 05 | Đồng bộ Business – UI Contract và tích hợp giao diện Qt | Chưa xác minh |
 | 06 | Hoàn thiện giao diện và các luồng sử dụng | Chưa xác minh |
@@ -102,7 +102,8 @@ Trạng thái có thể sử dụng:
 ### Giai đoạn 03 – Refactor Business Service
 
 - [x] `MovieService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Movie>&` và DI qua constructor, dùng Permission-only, giữ 12 hàm public; `.h/.cpp` khớp Markdown 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41 trong phạm vi bài test.
-- [ ] Kiệt tiếp tục rà soát dependency thực tế của `RoomService`, `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại; không triển khai Service mới trong giai đoạn hiện tại.
+- [x] `RoomService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Room>&`, DI qua constructor và Permission-only; có 9 hàm public gồm `setRoomActive()`. `Room::getShowtimeAt()` đã bổ sung; `.h/.cpp` của Service khớp Markdown 100%. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43 trong phạm vi bài test.
+- [ ] Kiệt tiếp tục rà soát dependency thực tế của `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại; không triển khai Service mới trong giai đoạn hiện tại.
 - [ ] Ghi rõ phần chờ: `AuthService` dùng `RolePermissionRepository` chưa refactor và `UserRepository::findByUsername()` là API riêng; `ShowtimeService` cần `TicketRepository`/`InvoiceRepository` để bảo vệ lịch sử khi hủy, xóa suất; liên kết Invoice của `MemberRepository` chưa kiểm thử.
 - [ ] Chuyển phụ thuộc Repository sang `IRepository<T>` tại các vị trí phù hợp.
 - [ ] Chuẩn hóa kiểm tra Permission thông qua `AuthService`.
@@ -112,6 +113,8 @@ Trạng thái có thể sử dụng:
 **Kết quả cần đạt:** Các Service tuân thủ DIP, Permission-only và phân chia trách nhiệm rõ ràng.
 
 **Kết quả MovieService đã xác minh (26/11/2026):** Biên dịch C++17 cùng toàn bộ `.cpp` trong `src/` trừ `main.cpp` thành công; chạy `tests/test_movie_service.cpp` đạt **Passed: 41, Failed: 0, Total: 41**. Hoàn thành refactor trong phạm vi đã kiểm thử. Chưa kiểm thử Repository giả lập, nhánh ngoại lệ nội bộ của add, lỗi ghi file, hồi quy GUI/caller và tích hợp load Showtime thực tế. Dùng `MovieService.md` làm mẫu cấu trúc, DIP/DI, Permission-only và bố cục tài liệu cho các Service tiếp theo, không sao chép logic nghiệp vụ máy móc.
+
+**Kết quả RoomService đã xác minh (27/11/2026):** Biên dịch C++17 cùng toàn bộ `.cpp` phù hợp trong `src/` trừ `main.cpp` thành công; chạy `tests/test_room_service.cpp` đạt **Passed: 43, Failed: 0, Total: 43**. Hoàn thành refactor trong phạm vi đã kiểm thử. Chưa kiểm thử `startAt` bằng đúng thời điểm hiện tại, lỗi ghi file, tích hợp nạp Showtime thực tế và hồi quy GUI/caller.
 
 Mỗi Service đi theo thứ tự rà soát → thiết kế → CHỐT MARKDOWN → code → test → cập nhật tiến độ; đối chiếu quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`. Các phần phụ thuộc Repository chưa refactor, chưa kiểm thử được thực hiện sau khi dependency sẵn sàng, không đánh dấu hoàn thành trước.
 

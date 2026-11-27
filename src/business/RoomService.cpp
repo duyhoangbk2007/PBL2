@@ -1,11 +1,15 @@
 #include "RoomService.h"
+#include "../models/Showtime.h"
+#include "../utils/DateTime.h"
 #include "../utils/IdGenerator.h"
 #include <vector>
 using namespace std;
 
-RoomService::RoomService(RoomRepository& roomRepo, AuthService& authService)
+RoomService::RoomService(IRepository<Room>& roomRepo,
+                         AuthService& authService)
     : roomRepo(roomRepo), authService(authService)
-{}
+{
+}
 
 bool RoomService::load()
 {
@@ -17,7 +21,6 @@ bool RoomService::save()
     return roomRepo.save();
 }
 
-
 bool RoomService::addRoom(Room* room)
 {
     authService.requirePermission("ROOM_ADD");
@@ -28,10 +31,9 @@ bool RoomService::addRoom(Room* room)
     }
 
     vector<string> existingIds;
-
     for (int i = 0; i < roomRepo.count(); i++)
     {
-        Room* current = roomRepo.getAt(i);
+        const Room* current = roomRepo.getAt(i);
         if (current == nullptr)
         {
             return false;
@@ -40,13 +42,11 @@ bool RoomService::addRoom(Room* room)
     }
 
     string roomId = IdGenerator::generateNextId("ROM", existingIds);
-
     Room* newRoom = new Room(roomId,
                              room->getName(),
                              room->getRowCount(),
                              room->getColumnCount(),
                              room->isActive());
-
     try
     {
         if (!roomRepo.add(newRoom))
@@ -60,30 +60,30 @@ bool RoomService::addRoom(Room* room)
         delete newRoom;
         throw;
     }
-
     return true;
 }
-
 
 bool RoomService::updateRoom(const Room& newValues)
 {
     authService.requirePermission("ROOM_UPDATE");
+
     if (!roomRepo.isLoaded())
     {
         return false;
     }
-    Room* room = roomRepo.findById(newValues.getRoomId());
+    const Room* room = roomRepo.findById(newValues.getRoomId());
     if (room == nullptr)
     {
         return false;
     }
-    // Khong cho doi trang thai qua ham update
     if (room->isActive() != newValues.isActive())
     {
         return false;
     }
-    bool sizeChanged = room->getRowCount() != newValues.getRowCount() || room->getColumnCount() != newValues.getColumnCount();
-    // Khong cho doi kich thuoc neu da co suat chieu
+    bool sizeChanged =
+        room->getRowCount() != newValues.getRowCount() ||
+        room->getColumnCount() != newValues.getColumnCount();
+
     if (sizeChanged && room->getShowtimeCount() > 0)
     {
         return false;
@@ -95,6 +95,50 @@ bool RoomService::removeRoom(const string& roomId)
 {
     authService.requirePermission("ROOM_DELETE");
     return roomRepo.removeById(roomId);
+}
+
+bool RoomService::setRoomActive(const string& roomId, bool active)
+{
+    authService.requirePermission("ROOM_UPDATE");
+
+    if (!roomRepo.isLoaded())
+    {
+        return false;
+    }
+    Room* room = roomRepo.findById(roomId);
+    if (room == nullptr)
+    {
+        return false;
+    }
+    if (room->isActive() == active)
+    {
+        return true;
+    }
+    if (!active)
+    {
+        string now = DateTime::getCurrentDateTime();
+        for (int i = 0; i < room->getShowtimeCount(); i++)
+        {
+            const Showtime* showtime = room->getShowtimeAt(i);
+            if (showtime == nullptr)
+            {
+                return false;
+            }
+            // Khong ngung hoat dong neu con suat chieu tuong lai
+            if (showtime->getStatus() == ShowtimeStatus::SCHEDULED &&
+                DateTime::isBefore(now, showtime->getStartAt()))
+            {
+                return false;
+            }
+        }
+    }
+
+    Room updated(room->getRoomId(),
+                 room->getName(),
+                 room->getRowCount(),
+                 room->getColumnCount(),
+                 active);
+    return roomRepo.update(updated);
 }
 
 const Room* RoomService::findRoomById(const string& roomId)
@@ -114,6 +158,3 @@ int RoomService::getRoomCount()
     authService.requirePermission("ROOM_VIEW");
     return roomRepo.count();
 }
-
-
-

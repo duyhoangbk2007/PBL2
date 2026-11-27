@@ -64,7 +64,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Nhóm | Module | Công việc |
 |---|---|---|
 | Phim | MovieService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<Movie>&`, Permission-only, giữ 12 hàm public; `.h/.cpp` khớp Markdown 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41; hoàn thành trong phạm vi bài test |
-| Phòng chiếu | RoomService | Ưu tiên refactor theo `IRepository<Room>` và Permission; `RoomRepository` đã kiểm thử 72 PASS, 0 FAIL |
+| Phòng chiếu | RoomService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<Room>&`, Permission-only; có 9 hàm public gồm `setRoomActive()`, `.h/.cpp` khớp Markdown 100%. `Room::getShowtimeAt()` đã bổ sung. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43; hoàn thành trong phạm vi bài test |
 | Xác thực | AuthService | Ưu tiên rà soát DIP và Permission-only; `UserRepository` đã kiểm thử 69 PASS, 0 FAIL, còn `RolePermissionRepository` chưa refactor theo interface chung và `findByUsername()` là API riêng cần đánh giá trước khi thiết kế |
 | Thành viên | MemberService | Ưu tiên refactor theo `IRepository<Member>` và Permission; `MemberRepository` đã kiểm thử 204 PASS, 0 FAIL, liên kết Invoice chưa kiểm thử |
 | Suất chiếu | ShowtimeService | Ưu tiên refactor theo `IRepository<Showtime>`, `IRepository<Movie>`, `IRepository<Room>`; kiểm tra Ticket/Invoice khi hủy hoặc xóa suất phải chờ các Repository đó được Hoàng refactor và kiểm thử |
@@ -72,6 +72,8 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 **Trọng tâm hiện tại:** Chỉ refactor Service đã tồn tại, không triển khai Service mới trong giai đoạn này. Rà soát dependency thực tế trước khi thiết kế từng Service; phần phụ thuộc Repository chưa sẵn sàng được ghi rõ và thực hiện sau.
 
 `MovieService.md` là mẫu chuẩn cho Service tiếp theo về cấu trúc, DIP/DI, Permission-only và cách trình bày. Điều chỉnh quy tắc nghiệp vụ theo từng Service; kết quả MovieService chưa bao phủ hồi quy GUI/caller, lỗi ghi file và tích hợp load Showtime thực tế.
+
+Kết quả RoomService chưa bao phủ `startAt` bằng đúng thời điểm hiện tại, lỗi ghi file, tích hợp nạp Showtime thực tế và hồi quy GUI/caller.
 
 ### 4.3. Các thành phần dùng chung
 
@@ -145,7 +147,7 @@ Cả hai thành viên:
 
 ### Giai đoạn 03 – Refactor Service
 
-- Kiệt đã hoàn thành `MovieService` trong phạm vi kiểm thử; tiếp tục ưu tiên `RoomService`, `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
+- Kiệt đã hoàn thành `MovieService` và `RoomService` trong phạm vi kiểm thử; tiếp tục ưu tiên `AuthService`, `MemberService`, `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
 - Rà soát dependency thực tế; phần cần Repository chưa refactor xong được ghi rõ để thực hiện sau.
 - Service tuân thủ DIP qua `IRepository<T>`, Permission-only, quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`; kiểm thử từng Service trước khi đánh dấu hoàn thành.
 

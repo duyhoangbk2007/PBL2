@@ -18,7 +18,7 @@ Mẫu chuẩn đã hoàn thành: `MovieRepository.h/.cpp` và `MovieRepository.m
 
 - [ ] Tiếp tục rà soát dependency thực tế của từng Service còn lại trước khi thiết kế.
 - [x] `MovieService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Movie>&`, DI qua constructor và Permission-only; giữ nguyên 12 hàm public. `.h/.cpp` khớp `MovieService.md` 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41; hoàn thành trong phạm vi đã kiểm thử.
-- [ ] Ưu tiên `RoomService`: chuyển phụ thuộc `RoomRepository` đã refactor sang `IRepository<Room>`, rà soát Permission và ràng buộc lịch chiếu/ghế.
+- [x] `RoomService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Room>&`, DI qua constructor và Permission-only; có 9 hàm public gồm `setRoomActive()`. `Room::getShowtimeAt()` đã bổ sung và ghi trong `models.md`; `.h/.cpp` của Service khớp `RoomService.md` 100%. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43; hoàn thành trong phạm vi đã kiểm thử.
 - [ ] Ưu tiên `AuthService`: rà soát `UserRepository::findByUsername()` là API riêng và `RolePermissionRepository` chưa refactor theo `IRepository<T>`; ghi rõ phần phải chờ hoặc thống nhất thiết kế, không tự ý đổi interface/API.
 - [ ] Ưu tiên `MemberService`: chuyển phụ thuộc `MemberRepository` đã refactor sang `IRepository<Member>`; liên kết Invoice của Repository chưa kiểm thử.
 - [ ] Ưu tiên `ShowtimeService`: chuyển phụ thuộc `ShowtimeRepository`, `MovieRepository`, `RoomRepository` sang `IRepository<T>` phù hợp; kiểm tra Ticket/Invoice khi hủy, xóa suất chờ Hoàng refactor và kiểm thử hai Repository tương ứng.
@@ -27,3 +27,5 @@ Mẫu chuẩn đã hoàn thành: `MovieRepository.h/.cpp` và `MovieRepository.m
 Kiệt chỉ refactor Service đã tồn tại trong giai đoạn này, không triển khai Service mới. Các phần còn phụ thuộc Repository chưa sẵn sàng được thực hiện sau và chỉ đánh dấu hoàn thành khi có kết quả kiểm thử thực tế.
 
 `MovieService.md` là mẫu chuẩn về cấu trúc, DIP/DI, Permission-only và cách trình bày cho các Service tiếp theo; không sao chép logic nghiệp vụ. Giới hạn kết quả hiện tại: chưa kiểm thử Repository giả lập, nhánh ngoại lệ nội bộ của add, lỗi ghi file, hồi quy GUI/caller và tích hợp load Showtime thực tế.
+
+Giới hạn kết quả RoomService: chưa kiểm thử `startAt` bằng đúng thời điểm hiện tại, lỗi ghi file, tích hợp nạp Showtime thực tế và hồi quy GUI/caller.

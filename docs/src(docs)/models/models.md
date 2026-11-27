@@ -7,7 +7,7 @@
 | File | Ý nghĩa |
 | --- | --- |
 | `Movie.h/.cpp` | Phim: mã, tên, thể loại, thời lượng, độ tuổi, ngày chiếu, trạng thái; có danh sách `Showtime*`. |
-| `Room.h/.cpp` | Phòng: mã, tên, kích thước, trạng thái; có danh sách `Seat*` và `Showtime*`. |
+| `Room.h/.cpp` | Phòng: mã, tên, kích thước, trạng thái; có danh sách `Seat*` và `Showtime*`. `getShowtimeAt(int)` trả suất liên kết theo index để đọc. |
 | `Seat.h/.cpp` | Vị trí và loại ghế (`STANDARD`, `VIP`, `COUPLE`), mã phòng và con trỏ `Room*`. Trạng thái bán ghế phụ thuộc suất chiếu, không phải thuộc tính cố định của ghế. |
 | `Showtime.h/.cpp` | Suất chiếu: mã phim/phòng, thời gian, trạng thái, con trỏ `Movie*` và `Room*`. |
 | `User.h/.cpp` | Tài khoản Admin/Staff, thông tin đăng nhập, trạng thái và danh sách `Invoice*` liên quan. |
@@ -15,6 +15,23 @@
 | `Ticket.h/.cpp` | Vé: hóa đơn/suất/ghế, loại vé, giá, điểm, trạng thái hủy và các con trỏ tham chiếu. |
 | `Invoice.h/.cpp` | Hóa đơn: một suất, người bán, thành viên tùy chọn, tổng tiền và danh sách nhiều `Ticket*`. |
 | `Pricing.h/.cpp` | Một cấu hình gồm ba giá ghế và hai tỷ lệ giảm; không có ID hoặc quan hệ con trỏ. |
+
+## Room — truy vấn suất chiếu liên kết
+
+`Room.h` khai báo `const Showtime* getShowtimeAt(int index);` ngay sau `getShowtimeCount() const`. `Room.cpp` định nghĩa hàm ngay sau `getShowtimeCount()`:
+
+```cpp
+const Showtime* Room::getShowtimeAt(int index)
+{
+    if (index < 0 || index >= showtimes.nodeCount())
+    {
+        return nullptr;
+    }
+    return showtimes.getAt(index)->data;
+}
+```
+
+Hàm trả `nullptr` khi index âm hoặc từ `nodeCount()` trở lên; index hợp lệ trả con trỏ `const Showtime*` mượn từ danh sách liên kết, không chuyển quyền sở hữu và không sửa trạng thái. Hàm hiện không có hậu tố `const` trong khai báo/định nghĩa. `tests/test_room_service.cpp` ngày 27/11/2026 đã kiểm tra danh sách rỗng, index biên và kết quả sau link/unlink trong phạm vi bài test.
 
 ## Pricing — cấu hình giá và ưu đãi
 
