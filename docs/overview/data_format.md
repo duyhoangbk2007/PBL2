@@ -118,7 +118,7 @@ STUDENT_DISCOUNT|10
 MEMBER_DISCOUNT|5
 ```
 
-Ba giá ghế là `double` VND và phải dương; hai tỷ lệ là phần trăm trong `[0,100]`. Giá trị TXT phải là số thập phân parse hết, hữu hạn; không nhận khóa lạ, khóa trùng, thiếu khóa, dòng thiếu/thừa dấu `|` hoặc số dòng khác năm. `PricingRepository::load()` trả `false` khi file thiếu/sai và chỉ công bố cấu hình sau khi toàn file hợp lệ; code hiện **không báo file/dòng lỗi** và không tự tạo file mặc định. `save()`/`update()` ghi bằng `std::to_string()` nên có thể tạo sáu chữ số thập phân. Không lưu quy tắc 1 điểm/10.000 VND trong file này.
+Ba giá ghế là `double` VND và phải dương; hai tỷ lệ là phần trăm trong `[0,100]`. Giá trị TXT phải là số thập phân parse hết, hữu hạn; không nhận khóa lạ, khóa trùng, thiếu khóa, dòng thiếu/thừa dấu `|` hoặc số dòng khác năm. `PricingRepository::load()` trả `false` khi không đọc được file, ném `std::runtime_error` khi dữ liệu không hợp lệ và trả `true` khi nạp thành công. Mọi lần nạp thất bại đều đặt `loaded = false`; chỉ công bố cấu hình sau khi toàn file hợp lệ. Lỗi dữ liệu kèm tên file và số dòng khi xác định được dòng lỗi. Repository không tự tạo file mặc định. `save()`/`update()` ghi bằng `std::to_string()` nên có thể tạo sáu chữ số thập phân. Không lưu quy tắc 1 điểm/10.000 VND trong file này.
 
 ### Cấp ID hiện hành
 
@@ -126,7 +126,7 @@ Ba giá ghế là `double` VND và phải dương; hai tỷ lệ là phần tră
 
 ## 3. Tải và kiểm tra
 
-1. `FileIO::readLines()` đọc các dòng vào `std::vector<std::string>` và trả `false` nếu không mở/đọc được file; không tự tạo file thiếu. Repository parse từng dòng, kiểm số trường, kiểu, enum, khóa trùng. Một số repository ném exception có tên file/dòng; `PricingRepository` và `RolePermissionRepository` chủ yếu trả `false`, chưa báo dòng lỗi.
+1. `FileIO::readLines()` đọc các dòng vào `std::vector<std::string>` và trả `false` nếu không mở/đọc được file; không tự tạo file thiếu. Repository parse từng dòng, kiểm số trường, kiểu, enum, khóa trùng. `PricingRepository` ném `std::runtime_error` khi dữ liệu sai, kèm tên file và số dòng khi xác định được; `RolePermissionRepository` chủ yếu trả `false`.
 2. `Repository<T>` hiện giữ `DoublyLinkedList<T*>`, nạp vào danh sách tạm rồi mới chuyển khi hợp lệ; sở hữu và giải phóng đối tượng được thêm thành công. Model `Room`, `Movie`, `Invoice`, `User`, `Member` giữ các danh sách liên kết bằng `DoublyLinkedList` nhưng không sở hữu đối tượng liên kết.
 3. `UserRepository` và `MemberRepository` dùng `std::unordered_map` làm chỉ mục bổ sung cho ID/username và ID/phone. `std::vector` dùng cho dòng file, kết quả truy vấn, danh sách ID và bản ghi pending. Không có trie, BST hay hash table hóa đơn trong code hiện tại.
 4. Nạp đối tượng nền trước đối tượng tham chiếu: Movie/Room/User/Member, rồi Seat/Showtime, tiếp theo Invoice, cuối cùng Ticket; bảng Permission phải nạp thành công trước khi cho nghiệp vụ được bảo vệ. Repository liên kết các Model sau khi tham chiếu tồn tại; ID thiếu/lỗi phải báo và không ghi đè dữ liệu lỗi.

@@ -1,12 +1,31 @@
-
 #include "PricingRepository.h"
 #include "../utils/FileIO.h"
 #include "../utils/Validator.h"
 
+#include <exception>
+#include <stdexcept>
 #include <vector>
-#include <cmath>
+
 using namespace std;
 
+bool PricingRepository::writePricing(const Pricing& pricing)
+{
+    if (!pricing.isValid())
+    {
+        return false;
+    }
+
+    vector<string> lines =
+    {
+        "STANDARD|" + to_string(pricing.getStandardPrice()),
+        "VIP|" + to_string(pricing.getVipPrice()),
+        "COUPLE|" + to_string(pricing.getCouplePrice()),
+        "STUDENT_DISCOUNT|" + to_string(pricing.getStudentDiscount()),
+        "MEMBER_DISCOUNT|" + to_string(pricing.getMemberDiscount())
+    };
+
+    return FileIO::writeLines(filePath, lines);
+}
 
 PricingRepository::PricingRepository(const string& filePath)
     : filePath(filePath), loaded(false)
@@ -15,135 +34,119 @@ PricingRepository::PricingRepository(const string& filePath)
 
 bool PricingRepository::load()
 {
+    // Khong su dung bang gia cu neu nap lai that bai
+    loaded = false;
+
     vector<string> lines;
+
     if (!FileIO::readLines(filePath, lines))
     {
         return false;
     }
+
     if (lines.size() != 5)
     {
-        return false;
+        throw runtime_error(filePath + ": Phai co dung 5 dong");
     }
-    double values[5] = {};
-    bool found[5] = {};
-    const string keys[5] = {
+
+    const string keys[5] =
+    {
         "STANDARD",
         "VIP",
         "COUPLE",
         "STUDENT_DISCOUNT",
         "MEMBER_DISCOUNT"
     };
-    for (const string& line : lines)
+
+    double values[5] = {};
+    bool found[5] = {};
+
+    for (size_t i = 0; i < lines.size(); i++)
     {
+        const string& line = lines[i];
+        string error = filePath + ", dong " + to_string(i + 1) + ": ";
+
         size_t pos = line.find('|');
-        // Kiem tra dinh dang KEY|VALUE
-        if (pos == string::npos ||
-            pos == 0 ||
-            pos == line.size() - 1 ||
-            line.find('|', pos + 1) != string::npos)
+
+        if (pos == string::npos)
         {
-            return false;
+            throw runtime_error(error + "Sai dinh dang");
         }
+
         string key = line.substr(0, pos);
         string value = line.substr(pos + 1);
+
         int index = -1;
-        for (int i = 0; i < 5; i++)
+
+        for (int j = 0; j < 5; j++)
         {
-            if (key == keys[i])
+            if (key == keys[j])
             {
-                index = i;
+                index = j;
                 break;
             }
         }
-        // Kiem tra khoa khong ton tai hoac bi trung
+
         if (index == -1 || found[index])
         {
-            return false;
-        }
-        if (!Validator::isValidNumber(value))
-        {
-            return false;
-        }
-        try
-        {
-            values[index] = stod(value); //string to double
-        }
-        catch (...)
-        {
-            return false;
+            throw runtime_error(error + "Khoa sai hoac bi trung");
         }
 
-        if (!isfinite(values[index])) //kiểm tra có hữu hạn hay k
+        if (!Validator::isValidNumber(value))
         {
-            return false;
+            throw runtime_error(error + "Gia tri khong hop le");
+        }
+
+        try
+        {
+            values[index] = stod(value);
+        }
+        catch (const exception&)
+        {
+            throw runtime_error(error + "Loi chuyen doi gia tri");
         }
 
         found[index] = true;
     }
 
-    // Kiem tra du 5 khoa
-    for (int i = 0; i < 5; i++)
-    {
-        if (!found[i])
-        {
-            return false;
-        }
-    }
-
-    Pricing temp(
-        values[0],
-        values[1],
-        values[2],
-        values[3],
-        values[4]
-    );
+    Pricing temp(values[0],
+                 values[1],
+                 values[2],
+                 values[3],
+                 values[4]);
 
     if (!temp.isValid())
     {
-        return false;
+        throw runtime_error(filePath + ": Bang gia khong hop le");
     }
-    // Chi cap nhat khi toan bo du lieu hop le
+
+    // Chi cap nhat khi toan bo bang gia hop le
     pricing = temp;
     loaded = true;
+
     return true;
 }
 
 bool PricingRepository::save()
 {
-    if (!loaded || !pricing.isValid())
+    if (!loaded)
     {
         return false;
     }
-    vector<string> lines = {
-        "STANDARD|" + to_string(pricing.getStandardPrice()),
-        "VIP|" + to_string(pricing.getVipPrice()),
-        "COUPLE|" + to_string(pricing.getCouplePrice()),
-        "STUDENT_DISCOUNT|" + to_string(pricing.getStudentDiscount()),
-        "MEMBER_DISCOUNT|" + to_string(pricing.getMemberDiscount())
-    };
-    return FileIO::writeLines(filePath, lines);
+
+    return writePricing(pricing);
 }
 
 bool PricingRepository::update(const Pricing& newPricing)
 {
-    if (!loaded || !newPricing.isValid())
+    if (!loaded || !writePricing(newPricing))
     {
         return false;
     }
-    // Luu cau hinh moi xuong file truoc
-    vector<string> lines = {
-        "STANDARD|" + to_string(newPricing.getStandardPrice()),
-        "VIP|" + to_string(newPricing.getVipPrice()),
-        "COUPLE|" + to_string(newPricing.getCouplePrice()),
-        "STUDENT_DISCOUNT|" + to_string(newPricing.getStudentDiscount()),
-        "MEMBER_DISCOUNT|" + to_string(newPricing.getMemberDiscount())
-    };
-    if (!FileIO::writeLines(filePath, lines))
-    {
-        return false;
-    }
-    // Chi cap nhat bo nho khi ghi thanh cong
+
+    // Chi cap nhat bo nho khi ghi file thanh cong
     pricing = newPricing;
+
     return true;
 }
 
@@ -153,6 +156,7 @@ const Pricing* PricingRepository::getPricing() const
     {
         return nullptr;
     }
+
     return &pricing;
 }
 
