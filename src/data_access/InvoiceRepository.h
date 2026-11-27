@@ -3,54 +3,56 @@
 
 #include <string>
 #include <vector>
-
+#include "IRepository.h"
 #include "Repository.h"
 #include "../models/Invoice.h"
 
-class ShowtimeRepository;
-class UserRepository;
-class MemberRepository;
+class Showtime;
+class User;
+class Member;
 
-class InvoiceRepository
+class InvoiceRepository : public IRepository<Invoice>
 {
 private:
     Repository<Invoice> repo;
-    std::vector<std::string> pendingIds;
-    ShowtimeRepository& showtimeRepo;
-    UserRepository& userRepo;
-    MemberRepository& memberRepo;
+    IRepository<Showtime>& showtimeRepo;
+    IRepository<User>& userRepo;
+    IRepository<Member>& memberRepo;
 
+    // Chuyen doi du lieu
     static std::string getInvoiceId(Invoice* invoice);
     static Invoice* stringToInvoice(const std::string& line);
     static std::string invoiceToString(Invoice* invoice);
 
+    // Kiem tra du lieu va tham chieu
     static bool isValidInvoice(const Invoice* invoice);
     bool isValidReference(const Invoice* invoice);
 
+    // Quan ly lien ket
     void unlinkAll();
 
 public:
     InvoiceRepository(const std::string& filePath,
-                      ShowtimeRepository& showtimeRepo,
-                      UserRepository& userRepo,
-                      MemberRepository& memberRepo);
+                      IRepository<Showtime>& showtimeRepo,
+                      IRepository<User>& userRepo,
+                      IRepository<Member>& memberRepo);
+    ~InvoiceRepository() override;
 
-    ~InvoiceRepository();
+    // Doc va ghi du lieu
+    bool load() override;
+    bool save() override;
 
-    bool load();
-    bool save();
+    // Quan ly du lieu
+    bool add(Invoice* invoice) override;
+    bool update(const Invoice& newValues) override;
+    bool removeById(const std::string& invoiceId) override;
 
-    bool add(Invoice* invoice);
-    bool rollbackPending(const std::string& invoiceId);
+    // Truy van du lieu
+    Invoice* findById(const std::string& invoiceId) override;
+    Invoice* getAt(int index) override;
+    int count() override;
+    bool isLoaded() override;
 
-    Invoice* findById(const std::string& invoiceId);
-    Invoice* getAt(int index);
-    int count();
-    bool isLoaded();
-
-    std::vector<Invoice*> getByShowtime(const std::string& showtimeId);
-    std::vector<Invoice*> getByStaff(const std::string& staffId);
-    std::vector<Invoice*> getByMember(const std::string& memberId);
 };
 
 #endif
