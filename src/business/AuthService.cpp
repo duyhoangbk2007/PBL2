@@ -1,43 +1,63 @@
 #include "AuthService.h"
 #include <stdexcept>
+
 using namespace std;
 
-
-AuthService::AuthService(UserRepository& userRepo, RolePermissionRepository& permissionRepo)
+AuthService::AuthService(IRepository<User>& userRepo,
+                         RolePermissionRepository& permissionRepo)
     : userRepo(userRepo),
       permissionRepo(permissionRepo)
-{}
-bool AuthService::login(const string& username, const string& password)
 {
-    // Xoa phien dang nhap cu
+}
+
+const User* AuthService::findByUsername(const string& username) const
+{
+    for (int i = 0; i < userRepo.count(); i++)
+    {
+        const User* user = userRepo.getAt(i);
+        if (user != nullptr && user->getUsername() == username)
+        {
+            return user;
+        }
+    }
+    return nullptr;
+}
+
+bool AuthService::hasUserPermission(const User& user,
+                                    const string& permission) const
+{
+    if (!permissionRepo.isLoaded())
+    {
+        return false;
+    }
+    if (user.getRole() == UserRole::ADMIN)
+    {
+        return permissionRepo.hasPermission("ADMIN", permission);
+    }
+    if (user.getRole() == UserRole::STAFF)
+    {
+        return permissionRepo.hasPermission("STAFF", permission);
+    }
+    return false;
+}
+
+bool AuthService::login(const string& username,
+                        const string& password)
+{
     logout();
-    // Kiem tra du lieu da load
     if (!userRepo.isLoaded())
     {
         throw runtime_error("Chua nap du lieu tai khoan");
     }
-    // Kiem tra thong tin dang nhap
     if (username.empty() || password.empty())
     {
         return false;
     }
-    // Tim tai khoan theo username
-    const User* user = userRepo.findByUsername(username);
-    if (user == nullptr)
+    const User* user = findByUsername(username);
+    if (user == nullptr || user->getPassword() != password || !user->isActive())
     {
         return false;
     }
-    // Kiem tra mat khau
-    if (user->getPassword() != password)
-    {
-        return false;
-    }
-    // Kiem tra trang thai tai khoan
-    if (!user->isActive())
-    {
-        return false;
-    }
-    // Kiem tra vai tro
     if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
     {
         return false;
@@ -51,24 +71,17 @@ void AuthService::logout()
     currentUserId.clear();
 }
 
-const User* AuthService::getCurrentUser() const //lấy thông tin tài khoản đang đăng nhập vào hệ thống
+const User* AuthService::getCurrentUser() const
 {
     if (currentUserId.empty() || !userRepo.isLoaded())
     {
         return nullptr;
     }
-    // Tim tai khoan hien tai
     const User* user = userRepo.findById(currentUserId);
-    if (user == nullptr)
+    if (user == nullptr || !user->isActive())
     {
         return nullptr;
     }
-    // Kiem tra tai khoan con hoat dong
-    if (!user->isActive())
-    {
-        return nullptr;
-    }
-    // Kiem tra vai tro
     if (user->getRole() != UserRole::ADMIN && user->getRole() != UserRole::STAFF)
     {
         return nullptr;
@@ -76,72 +89,33 @@ const User* AuthService::getCurrentUser() const //lấy thông tin tài khoản 
     return user;
 }
 
-bool AuthService::isLoggedIn() const // kiểm tra hiện tại tài khoản có đăng nhập hợp lệ hay k
+bool AuthService::isLoggedIn() const
 {
     return getCurrentUser() != nullptr;
-}
-
-bool AuthService::isAdmin() const
-{
-    const User* user = getCurrentUser();
-    return user != nullptr && user->getRole() == UserRole::ADMIN;
-}
-
-bool AuthService::isStaff() const
-{
-    const User* user = getCurrentUser();
-    return user != nullptr && user->getRole() == UserRole::STAFF;
-}
-
-const User& AuthService::requireLogin() const //yêu cầu đăng nhập để thực hiện nghiệp vụ
-{
-    const User* user = getCurrentUser();
-    if (user == nullptr) {
-        throw runtime_error("Can dang nhap bang tai khoan dang hoat dong");
-    }
-    return *user;
-}
-
-const User& AuthService::requireAdmin() const
-{
-    const User& user = requireLogin();
-    if (user.getRole() != UserRole::ADMIN) { 
-       throw runtime_error("Thao tac yeu cau quyen Admin");
-    }
-    return user;
 }
 
 bool AuthService::hasPermission(const string& permission) const
 {
     const User* user = getCurrentUser();
-    if (user == nullptr || !permissionRepo.isLoaded())
+    return user != nullptr && hasUserPermission(*user, permission);
+}
+
+const User& AuthService::requireLogin() const
+{
+    const User* user = getCurrentUser();
+    if (user == nullptr)
     {
-        return false;
+        throw runtime_error("Can dang nhap bang tai khoan dang hoat dong");
     }
-    string role;
-    if (user->getRole() == UserRole::ADMIN)
-    {
-        role = "ADMIN";
-    }
-    else if (user->getRole() == UserRole::STAFF)
-    {
-        role = "STAFF";
-    }
-    else
-    {
-        return false;
-    }
-    return permissionRepo.hasPermission(role, permission);
+    return *user;
 }
 
 const User& AuthService::requirePermission(const string& permission) const
 {
     const User& user = requireLogin();
-    if (!hasPermission(permission))
+    if (!hasUserPermission(user, permission))
     {
         throw runtime_error("Khong co quyen: " + permission);
     }
     return user;
 }
-
-

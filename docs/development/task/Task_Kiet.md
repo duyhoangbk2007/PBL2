@@ -22,7 +22,7 @@ Mẫu chuẩn đã hoàn thành: `MovieRepository.h/.cpp` và `MovieRepository.m
 - [ ] Tiếp tục rà soát dependency thực tế của từng Service còn lại trước khi thiết kế.
 - [x] `MovieService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Movie>&`, DI qua constructor và Permission-only; giữ nguyên 12 hàm public. `.h/.cpp` khớp `MovieService.md` 100%. `tests/test_movie_service.cpp` ngày 26/11/2026 biên dịch C++17 và chạy đạt Passed: 41, Failed: 0, Total: 41; hoàn thành trong phạm vi đã kiểm thử.
 - [x] `RoomService` đã CHỐT MARKDOWN, refactor DIP qua `IRepository<Room>&`, DI qua constructor và Permission-only; có 9 hàm public gồm `setRoomActive()`. `Room::getShowtimeAt()` đã bổ sung và ghi trong `models.md`; `.h/.cpp` của Service khớp `RoomService.md` 100%. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43; hoàn thành trong phạm vi đã kiểm thử.
-- [ ] Ưu tiên `AuthService`: rà soát `UserRepository::findByUsername()` là API riêng và `RolePermissionRepository` chưa refactor theo `IRepository<T>`; ghi rõ phần phải chờ hoặc thống nhất thiết kế, không tự ý đổi interface/API.
+- [x] `AuthService` đã CHỐT MARKDOWN và hoàn thành trong phạm vi kiểm thử: DIP qua `IRepository<User>&`, DI qua constructor, Permission-only; giữ `RolePermissionRepository&` đặc thù. Có 7 hàm public, 2 helper private, bỏ `isAdmin()`, `isStaff()`, `requireAdmin()`; `.h/.cpp` khớp `AuthService.md` 100%. Biên dịch C++17 ngày 27/11/2026 và chạy `tests/test_auth_service.cpp` đạt Passed: 31, Failed: 0, Total: 31; hồi quy MovieService 41/41 PASS, RoomService 43/43 PASS.
 - [ ] Ưu tiên `MemberService`: chuyển phụ thuộc `MemberRepository` đã refactor sang `IRepository<Member>`; liên kết Invoice của Repository chưa kiểm thử.
 - [ ] Ưu tiên `ShowtimeService`: chuyển phụ thuộc `ShowtimeRepository`, `MovieRepository`, `RoomRepository` sang `IRepository<T>` phù hợp; kiểm tra Ticket/Invoice khi hủy, xóa suất chờ Hoàng refactor và kiểm thử hai Repository tương ứng.
 - [ ] Với từng Service, thực hiện rà soát → thiết kế → CHỐT MARKDOWN → code → test → cập nhật tiến độ; kiểm tra DIP, Permission-only, quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`.
@@ -32,3 +32,5 @@ Kiệt chỉ refactor Service đã tồn tại trong giai đoạn này, không t
 `MovieService.md` là mẫu chuẩn về cấu trúc, DIP/DI, Permission-only và cách trình bày cho các Service tiếp theo; không sao chép logic nghiệp vụ. Giới hạn kết quả hiện tại: chưa kiểm thử Repository giả lập, nhánh ngoại lệ nội bộ của add, lỗi ghi file, hồi quy GUI/caller và tích hợp load Showtime thực tế.
 
 Giới hạn kết quả RoomService: chưa kiểm thử `startAt` bằng đúng thời điểm hiện tại, lỗi ghi file, tích hợp nạp Showtime thực tế và hồi quy GUI/caller.
+
+Giới hạn kết quả AuthService: chưa kiểm thử tái sử dụng User ID, mọi dạng TXT quyền sai định dạng và hồi quy GUI/toàn ứng dụng. BookingService, ReportService và các Service còn dùng API AuthService cũ sẽ được xử lý khi đến lượt refactor.
