@@ -1,33 +1,11 @@
 #include "SeatRepository.h"
+#include "../models/Room.h"
 #include "../utils/Validator.h"
+#include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 using namespace std;
-
-
-SeatRepository::SeatRepository(const string& filePath, RoomRepository& roomRepo)
-    : repo(filePath, getSeatKey, stringToSeat, seatToString), roomRepo(roomRepo)
-{}
-
-SeatRepository::~SeatRepository()
-{
-    for (int i = 0; i < repo.count(); i++)
-    {
-        Seat* seat = repo.getAt(i);
-        if (seat != nullptr && seat->getRoom() != nullptr)
-        {
-            seat->getRoom()->unlinkSeat(seat);
-        }
-    }
-}
-string SeatRepository::getSeatKey(Seat* seat) //(roomId + seatId)
-{
-    if (seat == nullptr)
-    {
-        return "";
-    }
-    return seat->getRoomId() + "|" + seat->getSeatId();
-}
 
 bool SeatRepository::isValidSeat(const Seat* seat)
 {
@@ -39,7 +17,7 @@ bool SeatRepository::isValidSeat(const Seat* seat)
     {
         return false;
     }
-    if (seat->getSeatId().empty() || seat->getSeatId().find('|') != string::npos)
+    if (!Validator::isValidText(seat->getSeatId()))
     {
         return false;
     }
@@ -47,6 +25,7 @@ bool SeatRepository::isValidSeat(const Seat* seat)
     {
         return false;
     }
+
     SeatType type = seat->getSeatType();
     if (type != SeatType::STANDARD &&
         type != SeatType::VIP &&
@@ -55,6 +34,16 @@ bool SeatRepository::isValidSeat(const Seat* seat)
         return false;
     }
     return true;
+}
+
+string SeatRepository::getSeatKey(Seat* seat)
+{
+    if (seat == nullptr)
+    {
+        return "";
+    }
+    // Khoa ghe gom ma phong va ma ghe.
+    return seat->getRoomId() + "|" + seat->getSeatId();
 }
 
 Seat* SeatRepository::stringToSeat(const string& line)
@@ -72,11 +61,11 @@ Seat* SeatRepository::stringToSeat(const string& line)
         fields.push_back(line.substr(start, pos - start));
         start = pos + 1;
     }
-
     if (fields.size() != 5)
     {
         throw runtime_error("Sai so luong truong Seat");
     }
+
     int row;
     int column;
     try
@@ -99,7 +88,6 @@ Seat* SeatRepository::stringToSeat(const string& line)
     }
 
     SeatType seatType;
-
     if (fields[4] == "STANDARD")
     {
         seatType = SeatType::STANDARD;
@@ -124,13 +112,11 @@ Seat* SeatRepository::stringToSeat(const string& line)
         column,
         seatType
     );
-
     if (!isValidSeat(seat))
     {
         delete seat;
         throw runtime_error("Du lieu Seat khong hop le");
     }
-
     return seat;
 }
 
@@ -140,6 +126,7 @@ string SeatRepository::seatToString(Seat* seat)
     {
         throw runtime_error("Seat khong hop le khi ghi file");
     }
+
     string type;
     switch (seat->getSeatType())
     {
@@ -154,9 +141,11 @@ string SeatRepository::seatToString(Seat* seat)
         case SeatType::COUPLE:
             type = "COUPLE";
             break;
+
         default:
             throw runtime_error("Loai ghe khong hop le");
     }
+
     return seat->getRoomId() + "|" +
            seat->getSeatId() + "|" +
            to_string(seat->getRow()) + "|" +
@@ -164,16 +153,57 @@ string SeatRepository::seatToString(Seat* seat)
            type;
 }
 
-bool SeatRepository::save()
+SeatRepository::SeatRepository(const string& filePath,
+                               IRepository<Room>& roomRepo)
+    : repo(filePath, getSeatKey, stringToSeat, seatToString),
+      roomRepo(roomRepo)
 {
-    return repo.save();
 }
 
-// load dữ liệu từ txt tạo thành đối tượng ghế rồi liên kết phòng với ghế
+SeatRepository::~SeatRepository()
+{
+    // Go lien ket truoc khi repo huy cac Seat dang so huu.
+    try
+    {
+        unlinkAll();
+    }
+    catch (const exception& e)
+    {
+        cerr << "Loi huy SeatRepository: " << e.what() << endl;
+        terminate();
+    }
+    catch (...)
+    {
+        cerr << "Loi huy SeatRepository khong xac dinh" << endl;
+        terminate();
+    }
+}
+
+void SeatRepository::unlinkReferences(Seat* seat)
+{
+    if (seat == nullptr)
+    {
+        return;
+    }
+
+    Room* room = seat->getRoom();
+    if (room != nullptr && !room->unlinkSeat(seat))
+    {
+        throw runtime_error("Khong the thao lien ket Seat va Room");
+    }
+}
+
+void SeatRepository::unlinkAll()
+{
+    for (int i = 0; i < repo.count(); i++)
+    {
+        unlinkReferences(repo.getAt(i));
+    }
+}
 
 bool SeatRepository::load()
 {
-    if (repo.isLoaded() || !roomRepo.isLoaded())
+    if (!roomRepo.isLoaded())
     {
         return false;
     }
@@ -181,139 +211,80 @@ bool SeatRepository::load()
     {
         return false;
     }
-    // Buoc 1: Kiem tra toan bo du lieu truoc khi lien ket
-    for (int i = 0; i < repo.count(); i++)
-    {
-        Seat* seat = repo.getAt(i);
-        Room* room = roomRepo.findById(seat->getRoomId());
-        if (room == nullptr ||
-            seat->getRoom() != nullptr ||
-            seat->getRow() > room->getRowCount() ||
-            seat->getColumn() > room->getColumnCount())
-        {
-            repo.clear();
-            return false;
-        }
-        // kiểm tra trùng ghế với những ghế có trong phòng
-        for (int j = 0; j < room->getSeatCount(); j++)
-        {
-            Seat* current = room->getSeatAt(j);
-            if (current == nullptr ||
-                current->getSeatId() == seat->getSeatId() ||
-                (current->getRow() == seat->getRow() &&
-                 current->getColumn() == seat->getColumn()))
-            {
-                repo.clear();
-                return false;
-            }
-        }
-
-        // Kiem tra trung giua cac Seat vua load
-        for (int j = 0; j < i; j++)
-        {
-            Seat* other = repo.getAt(j);
-            if (other->getRoomId() != seat->getRoomId())
-            {
-                continue;
-            }
-            if (other->getSeatId() == seat->getSeatId() ||
-                (other->getRow() == seat->getRow() &&
-                 other->getColumn() == seat->getColumn()))
-            {
-                repo.clear();
-                return false;
-            }
-        }
-    }
-    // Buoc 2: Lien ket Seat voi Room
     try
     {
         for (int i = 0; i < repo.count(); i++)
         {
             Seat* seat = repo.getAt(i);
             Room* room = roomRepo.findById(seat->getRoomId());
+
+            if (room == nullptr)
+            {
+                throw runtime_error("Seat tham chieu Room khong ton tai");
+            }
             if (!seat->linkRoom(room))
             {
-                // Thao tat ca lien ket da tao
-                for (int j = 0; j < repo.count(); j++)
-                {
-                    Seat* current = repo.getAt(j);
-                    if (current->getRoom() != nullptr)
-                    {
-                        current->getRoom()->unlinkSeat(current);
-                    }
-                }
-                repo.clear();
-                return false;
+                throw runtime_error("Khong the lien ket Seat voi Room");
             }
         }
     }
     catch (...)
     {
-        // rollback
-        for (int i = 0; i < repo.count(); i++)
-        {
-            Seat* seat = repo.getAt(i);
-            if (seat->getRoom() != nullptr)
-            {
-                seat->getRoom()->unlinkSeat(seat);
-            }
-        }
+        // Go lien ket truoc khi xoa Seat da nap.
+        unlinkAll();
         repo.clear();
         throw;
     }
-
     return true;
 }
 
-
+bool SeatRepository::save()
+{
+    return repo.save();
+}
 
 bool SeatRepository::add(Seat* seat)
 {
-    if (!repo.isLoaded() ||
-        !roomRepo.isLoaded() ||
+    if (!repo.isLoaded() || !roomRepo.isLoaded() ||
         !isValidSeat(seat))
     {
         return false;
     }
+    // Tu choi ghe da lien ket hoac trung khoa truoc khi thay doi Room.
+    if (seat->getRoom() != nullptr)
+    {
+        return false;
+    }
+    if (findById(getSeatKey(seat)) != nullptr)
+    {
+        return false;
+    }
+
     Room* room = roomRepo.findById(seat->getRoomId());
     if (room == nullptr)
     {
         return false;
     }
-    // Khong them lai con tro da duoc quan ly
-    for (int i = 0; i < repo.count(); i++)
-    {
-        if (repo.getAt(i) == seat)
-        {
-            return false;
-        }
-    }
-    if (seat->getRoom() != nullptr)
-    {
-        return false;
-    }
-    // Lien ket Seat voi Room
-    if (!seat->linkRoom(room))
-    {
-        return false;
-    }
+
+    // Lien ket Room truoc; repo chi nhan quyen so huu khi them thanh cong.
     try
     {
-        if (!repo.add(seat))
+        if (seat->linkRoom(room) && repo.add(seat))
         {
-            room->unlinkSeat(seat);
-            return false;
+            return true;
         }
     }
     catch (...)
     {
-        room->unlinkSeat(seat);
+        // Thu hoi lien ket neu thao tac them nem loi.
+        unlinkReferences(seat);
         throw;
     }
-    return true;
-}
 
+    // Caller van so huu Seat neu them that bai.
+    unlinkReferences(seat);
+    return false;
+}
 
 bool SeatRepository::update(const Seat& newValues)
 {
@@ -321,48 +292,77 @@ bool SeatRepository::update(const Seat& newValues)
     {
         return false;
     }
-    Seat* seat = findById(newValues.getRoomId(), newValues.getSeatId());
+
+    Seat* seat = findById(newValues.getRoomId(),
+                          newValues.getSeatId());
+
     if (seat == nullptr)
     {
         return false;
     }
-    // không được thay đổi vị trí ghế
-    if (seat->getRow() != newValues.getRow() || seat->getColumn() != newValues.getColumn())
+    // Vi tri ghe bat bien; chi cho phep doi loai ghe.
+    if (seat->getRow() != newValues.getRow() ||
+        seat->getColumn() != newValues.getColumn())
     {
         return false;
     }
+
     seat->setSeatType(newValues.getSeatType());
     return true;
 }
 
-bool SeatRepository::removeById(const string& roomId, const string& seatId)
+bool SeatRepository::removeById(const string& key)
 {
     if (!repo.isLoaded())
     {
         return false;
     }
-    Seat* seat = findById(roomId, seatId);
+
+    Seat* seat = repo.findById(key);
     if (seat == nullptr)
     {
         return false;
     }
+
     Room* room = seat->getRoom();
     if (room == nullptr)
     {
         return false;
     }
-    // Thao lien ket truoc khi xoa Seat
+
+    // Go khoi Room truoc khi repo giai phong Seat.
     if (!room->unlinkSeat(seat))
     {
         return false;
     }
-    // Xoa Seat khoi Repository va giai phong bo nho
-    return repo.removeById(roomId + "|" + seatId);
+
+    if (!repo.removeById(key))
+    {
+        // Khoi phuc lien ket neu Seat van con trong repo.
+        if (!room->linkSeat(seat))
+        {
+            throw runtime_error("Khong the khoi phuc lien ket Seat");
+        }
+        return false;
+    }
+    return true;
 }
 
-Seat* SeatRepository::findById(const string& roomId, const string& seatId)
+bool SeatRepository::removeById(const string& roomId,
+                                const string& seatId)
 {
-    return repo.findById(roomId + "|" + seatId);
+    return removeById(roomId + "|" + seatId);
+}
+
+Seat* SeatRepository::findById(const string& key)
+{
+    return repo.findById(key);
+}
+
+Seat* SeatRepository::findById(const string& roomId,
+                               const string& seatId)
+{
+    return findById(roomId + "|" + seatId);
 }
 
 Seat* SeatRepository::getAt(int index)
@@ -379,5 +379,3 @@ bool SeatRepository::isLoaded()
 {
     return repo.isLoaded();
 }
-
-

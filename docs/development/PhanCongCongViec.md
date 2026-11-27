@@ -53,7 +53,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 |---|---|---|
 | Phim | MovieRepository | Đã refactor theo DIP và validation, CHỐT MARKDOWN, kiểm thử qua `test_irepository.cpp` (81 PASS, 0 FAIL) |
 | Suất chiếu | ShowtimeRepository | Đã CHỐT MARKDOWN, triển khai DIP, đối chiếu code khớp tài liệu và kiểm thử `tests/test_showtime_repository.cpp` ngày 26/11/2026: Passed 85, Failed 0, Total 85; nhánh lỗi nội bộ/rollback do ngoại lệ chưa kiểm thử |
-| Ghế | SeatRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Seat>` |
+| Ghế | SeatRepository | Đã CHỐT MARKDOWN, triển khai `IRepository<Seat>` và kiểm thử `tests/test_seat_repository.cpp` ngày 26/11/2026: Passed 81, Failed 0, Total 81 trong phạm vi bài test; nhánh lỗi nội bộ/rollback và hồi quy liên quan chưa kiểm thử |
 | Hóa đơn | InvoiceRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Invoice>` |
 | Vé | TicketRepository | Tiếp tục refactor và kiểm thử; hiện chưa triển khai `IRepository<Ticket>` |
 
@@ -68,6 +68,9 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Xác thực | AuthService | Ưu tiên rà soát DIP và Permission-only; `UserRepository` đã kiểm thử 69 PASS, 0 FAIL, còn `RolePermissionRepository` chưa refactor theo interface chung và `findByUsername()` là API riêng cần đánh giá trước khi thiết kế |
 | Thành viên | MemberService | Ưu tiên refactor theo `IRepository<Member>` và Permission; `MemberRepository` đã kiểm thử 204 PASS, 0 FAIL, liên kết Invoice chưa kiểm thử |
 | Suất chiếu | ShowtimeService | Ưu tiên refactor theo `IRepository<Showtime>`, `IRepository<Movie>`, `IRepository<Room>`; kiểm tra Ticket/Invoice khi hủy hoặc xóa suất phải chờ các Repository đó được Hoàng refactor và kiểm thử |
+| Ghế | SeatService | Cần kiểm tra lịch sử Ticket, kể cả vé đã hủy, trước khi xóa ghế |
+| Nhân viên | UserService | UserRepository đã kiểm thử 69 PASS, 0 FAIL; UserService còn theo kế hoạch |
+| Giá vé | PricingService | PricingRepository vừa được cập nhật trên nhánh Hoàng; Service còn theo kế hoạch |
 
 **Trọng tâm hiện tại:** Chỉ refactor Service đã tồn tại, không triển khai Service mới trong giai đoạn này. Rà soát dependency thực tế trước khi thiết kế từng Service; phần phụ thuộc Repository chưa sẵn sàng được ghi rõ và thực hiện sau.
 

@@ -12,7 +12,10 @@ Hoàng và Kiệt làm Backend song song trên nhánh riêng từ mốc chung `5
 - [x] Ghi nhận dependency dùng chung `ShowtimeRepository` (Hoàng phụ trách) đã CHỐT MARKDOWN, triển khai DIP và kiểm thử `tests/test_showtime_repository.cpp` ngày 26/11/2026: Passed 85, Failed 0, Total 85. Kết quả chỉ xác nhận phạm vi Repository; bảo vệ lịch sử Ticket/Invoice sẽ hoàn thiện tại ShowtimeService, không thuộc kết quả kiểm thử này.
 - [ ] Đối chiếu các Repository còn lại với kế hoạch sau khi hoàn tất nhóm Service ưu tiên; không mở thêm Repository trong giai đoạn song song hiện tại.
 
-Mẫu chuẩn đã hoàn thành: `MovieRepository.h/.cpp` và `MovieRepository.md` đã CHỐT MARKDOWN, refactor DIP và validation, kiểm thử qua `tests/test_irepository.cpp` ngày 24/11/2026 (81 PASS, 0 FAIL). Kiệt áp dụng mẫu theo `AGENTS.md` và điều chỉnh logic cho từng Model; RoomRepository, UserRepository và MemberRepository đã được xác nhận trong phạm vi bài test riêng, các Repository khác của Kiệt chưa được xác nhận.
+- [x] `SeatRepository` đã CHỐT MARKDOWN, triển khai DIP; `tests/test_seat_repository.cpp` ngày 26/11/2026 đạt Passed 81, Failed 0, Total 81 trong phạm vi bài test.
+- [ ] Kiểm thử nhánh lỗi nội bộ/rollback và hồi quy liên quan của SeatRepository; SeatService còn phải kiểm tra lịch sử Ticket trước khi xóa ghế.
+
+Mẫu chuẩn đã hoàn thành: `MovieRepository.h/.cpp` và `MovieRepository.md` đã CHỐT MARKDOWN, refactor DIP và validation, kiểm thử qua `tests/test_irepository.cpp` ngày 24/11/2026 (81 PASS, 0 FAIL). Kiệt áp dụng mẫu theo `AGENTS.md` và điều chỉnh logic cho từng Model; RoomRepository, SeatRepository, UserRepository và MemberRepository đã được xác nhận trong phạm vi bài test riêng, các Repository khác của Kiệt chưa được xác nhận.
 
 ## Tiến độ Business Service
 
