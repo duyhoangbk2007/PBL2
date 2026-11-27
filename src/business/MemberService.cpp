@@ -3,7 +3,8 @@
 #include <vector>
 using namespace std;
 
-MemberService::MemberService(MemberRepository& memberRepo, AuthService& authService)
+MemberService::MemberService(IRepository<Member>& memberRepo,
+                             AuthService& authService)
     : memberRepo(memberRepo),
       authService(authService)
 {
@@ -19,7 +20,6 @@ bool MemberService::save()
     return memberRepo.save();
 }
 
-
 bool MemberService::addMember(Member* member)
 {
     authService.requirePermission("MEMBER_ADD");
@@ -33,13 +33,14 @@ bool MemberService::addMember(Member* member)
 
     for (int i = 0; i < memberRepo.count(); i++)
     {
-        Member* current = memberRepo.getAt(i);
+        const Member* current = memberRepo.getAt(i);
         if (current == nullptr)
         {
             return false;
         }
         existingIds.push_back(current->getMemberId());
     }
+
     string memberId = IdGenerator::generateNextId("MEM", existingIds);
     Member* newMember = new Member(memberId,
                                    member->getFullName(),
@@ -62,7 +63,6 @@ bool MemberService::addMember(Member* member)
     return true;
 }
 
-
 bool MemberService::updateMember(const Member& newValues)
 {
     authService.requirePermission("MEMBER_UPDATE");
@@ -78,7 +78,16 @@ const Member* MemberService::findMemberById(const string& memberId)
 const Member* MemberService::findMemberByPhone(const string& phone)
 {
     authService.requirePermission("MEMBER_VIEW");
-    return memberRepo.findByPhone(phone);
+
+    for (int i = 0; i < memberRepo.count(); i++)
+    {
+        const Member* member = memberRepo.getAt(i);
+        if (member != nullptr && member->getPhone() == phone)
+        {
+            return member;
+        }
+    }
+    return nullptr;
 }
 
 const Member* MemberService::getMemberAt(int index)

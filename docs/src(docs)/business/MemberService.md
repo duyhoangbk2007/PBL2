@@ -1,302 +1,110 @@
 # MemberService
 
+> Trạng thái: CHỐT MARKDOWN — đã triển khai và hoàn thành trong phạm vi kiểm thử ngày 27/11/2026.
+
 ## 1. Tổng quan
 
-`MemberService` là lớp thuộc tầng **Business Logic**, chịu trách nhiệm xử lý các nghiệp vụ quản lý thành viên trong hệ thống quản lý rạp chiếu phim PBL2.
+MemberService thuộc tầng Business Logic, quản lý thông tin thành viên, phân quyền, sinh ID và truy xuất dữ liệu. Không trực tiếp đọc ghi TXT, không chỉnh điểm trực tiếp và không xóa thành viên.
 
-Lớp sử dụng:
+File liên quan: `src/business/MemberService.h`, `src/business/MemberService.cpp`, `src/data_access/IRepository.h`, `src/models/Member.h`, `src/business/AuthService.h`.
 
-- `MemberRepository` để thêm, cập nhật và truy xuất dữ liệu thành viên.
-- `AuthService` để kiểm tra quyền của tài khoản đang đăng nhập.
-
-`MemberService` không trực tiếp đọc hoặc ghi file TXT, không tự quản lý danh sách thành viên và không thay thế các kiểm tra dữ liệu đã được triển khai trong Repository.
-
-**File liên quan:**
-
-- `src/business/MemberService.h`
-- `src/business/MemberService.cpp`
-- `src/business/AuthService.h`
-- `src/data_access/MemberRepository.h`
-- `src/data_access/MemberRepository.cpp`
-- `src/models/Member.h`
-- `tests/test_member_service.cpp`
-
-**Trạng thái:** Đã triển khai `MemberService.h/.cpp` với đủ 8 phương thức public ngoài constructor; `tests/test_member_service.cpp` biên dịch và chạy đạt **69 PASS, 0 FAIL** ngày 2026-11-19. Phạm vi hóa đơn/điểm giao dịch vẫn chưa triển khai.
-
----
-
-## 2. Trách nhiệm của MemberService
-
-`MemberService` có các trách nhiệm chính:
-
-1. Kiểm tra quyền trước khi thực hiện nghiệp vụ quản lý thành viên.
-2. Tiếp nhận yêu cầu thêm và cập nhật thành viên.
-3. Cung cấp các chức năng tra cứu thành viên theo mã, số điện thoại và vị trí.
-4. Cung cấp số lượng thành viên hiện có.
-5. Chuyển các thao tác quản lý dữ liệu đến `MemberRepository`.
-6. Đảm bảo các quy tắc nghiệp vụ đã thống nhất được áp dụng thông qua Service và Repository.
-
-`MemberService` không chịu trách nhiệm:
-
-- Sinh mã thành viên tự động.
-- Trực tiếp đọc hoặc ghi file dữ liệu.
-- Tự quản lý bộ nhớ của các thành viên đã được Repository sở hữu.
-- Cộng hoặc trừ điểm tích lũy khi bán/hủy vé.
-- Xóa thành viên.
-- Quản lý hóa đơn của thành viên.
-
-Những nghiệp vụ chưa có sẽ được bổ sung ở các bước phát triển sau khi có thiết kế phù hợp.
-
----
-
-## 3. Các thành phần phụ thuộc
-
-### 3.1. MemberRepository
-
-`MemberService` sử dụng các phương thức đã tồn tại trong `MemberRepository`:
-
-| Phương thức | Chức năng |
-|---|---|
-| `load()` | Nạp dữ liệu thành viên |
-| `save()` | Lưu dữ liệu thành viên |
-| `add(Member*)` | Thêm thành viên |
-| `update(const Member&)` | Cập nhật thông tin |
-| `findById(memberId)` | Tìm thành viên theo mã |
-| `findByPhone(phone)` | Tìm theo số điện thoại |
-| `getAt(index)` | Lấy thành viên theo vị trí |
-| `count()` | Đếm số thành viên |
-| `isLoaded()` | Kiểm tra trạng thái nạp dữ liệu |
-
-Repository chịu trách nhiệm kiểm tra tính hợp lệ của dữ liệu, tính duy nhất của mã thành viên và số điện thoại.
-
-### 3.2. AuthService
-
-`MemberService` sử dụng:
-
-```cpp
-authService.requirePermission(permission);
-```
-
-Phương thức này kiểm tra tài khoản đang đăng nhập và quyền được cấp trong `RolePermissionRepository`.
-
-Nếu chưa đăng nhập hoặc không có quyền, phương thức ném `runtime_error`.
-
-### 3.3. Member Model
-
-Thông tin thành viên gồm:
-
-| Thuộc tính | Kiểu dữ liệu | Ý nghĩa |
-|---|---|---|
-| `memberId` | `string` | Mã thành viên |
-| `fullName` | `string` | Họ và tên |
-| `phone` | `string` | Số điện thoại |
-| `points` | `int` | Điểm tích lũy |
-
-Model còn quản lý quan hệ với hóa đơn, nhưng `MemberService` ở giai đoạn này chưa triển khai các nghiệp vụ liên quan đến hóa đơn.
-
----
-
-## 4. Cấu trúc lớp hiện tại
-
-### 4.1. Thuộc tính
-
-```cpp
-private:
-    MemberRepository& memberRepo;
-    AuthService& authService;
-```
-
-**`memberRepo`:**
-
-- Tham chiếu đến Repository quản lý thành viên.
-- Không tạo bản sao Repository.
-- Không trực tiếp sở hữu hoặc giải phóng Repository.
-
-**`authService`:**
-
-- Tham chiếu đến Service quản lý đăng nhập và phân quyền.
-- Đảm bảo các nghiệp vụ chỉ được thực hiện khi tài khoản có quyền phù hợp.
-
-Hai đối tượng được tham chiếu phải tồn tại trong suốt thời gian sử dụng `MemberService`.
-
-### 4.2. Constructor
-
-```cpp
-MemberService(
-    MemberRepository& memberRepo,
-    AuthService& authService
-);
-```
-
-**Mục đích:** Khởi tạo `MemberService` với các đối tượng phụ thuộc.
-
-**Nguyên tắc:**
-
-- Nhận tham chiếu từ bên ngoài.
-- Không tự tạo Repository hoặc AuthService.
-- Không tự động gọi `load()`.
-- Không tự động đăng nhập tài khoản.
-
----
-
-## 5. Danh sách phương thức
-
-| STT | Phương thức | Kiểu trả về | Permission |
-|---|---|---|---|
-| 1 | `load()` | `bool` | Nội bộ |
-| 2 | `save()` | `bool` | Nội bộ |
-| 3 | `addMember(Member*)` | `bool` | `MEMBER_ADD` |
-| 4 | `updateMember(const Member&)` | `bool` | `MEMBER_UPDATE` |
-| 5 | `findMemberById(const string&)` | `const Member*` | `MEMBER_VIEW` |
-| 6 | `findMemberByPhone(const string&)` | `const Member*` | `MEMBER_VIEW` |
-| 7 | `getMemberAt(int)` | `const Member*` | `MEMBER_VIEW` |
-| 8 | `getMemberCount()` | `int` | `MEMBER_VIEW` |
-
----
-
-## Chi tiết triển khai từng hàm (MemberService.cpp)
-
-### MemberService()
-
-#### A. Tổng quan
-
-- **Mục đích:** Khởi tạo Service với các Repository và AuthService.
-- **Tham số:** `MemberRepository& memberRepo, AuthService& authService) : memberRepo(memberRepo), authService(authService`.
-- **Giá trị trả về:** `constructor` (không trả giá trị).
-- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
+## 2. Kiến trúc
 
 ```text
-Bắt đầu
-    |
-    v
-Chuẩn bị và xử lý dữ liệu
-    |
-    v
-Kết thúc
+GUI -> MemberService -> IRepository<Member> <- MemberRepository
+            |                                       |
+            v                                       v
+        AuthService                          Repository<Member>
 ```
 
-#### C. Giải thích chi tiết từng bước kèm code C++
+DIP: phụ thuộc interface thay vì concrete repository. DI: truyền dependency qua constructor bằng tham chiếu, không sở hữu dependency. Permission-only: kiểm tra quyền, không kiểm tra role để cấp quyền.
 
-**Bước 1 — Chuẩn bị và xử lý dữ liệu.**
+## 3. Thuộc tính và API
+
+| Thuộc tính | Kiểu | Vai trò |
+|---|---|---|
+| memberRepo | IRepository<Member>& | Truy xuất và lưu trữ thành viên |
+| authService | AuthService& | Kiểm tra quyền |
+
+| Hàm | Permission | Kết quả |
+|---|---|---|
+| load | Không | bool |
+| save | Không | bool |
+| addMember | MEMBER_ADD | bool |
+| updateMember | MEMBER_UPDATE | bool |
+| findMemberById | MEMBER_VIEW | const Member* |
+| findMemberByPhone | MEMBER_VIEW | const Member* |
+| getMemberAt | MEMBER_VIEW | const Member* |
+| getMemberCount | MEMBER_VIEW | int |
+
+2 thuộc tính, 1 constructor, 8 hàm public, 0 hàm private. Thiếu quyền: requirePermission ném exception trước khi thao tác dữ liệu. Con trỏ trả về chỉ mượn, không được delete. Không tự động save hoặc reload.
+
+## 4. Mã nguồn đã chốt
+
+### 4.1. MemberService.h
 
 ```cpp
-MemberService::MemberService(MemberRepository& memberRepo, AuthService& authService)
+#ifndef MEMBER_SERVICE_H
+#define MEMBER_SERVICE_H
+
+#include <string>
+#include "../data_access/IRepository.h"
+#include "../models/Member.h"
+#include "AuthService.h"
+
+class MemberService
+{
+private:
+    IRepository<Member>& memberRepo;
+    AuthService& authService;
+
+public:
+    MemberService(IRepository<Member>& memberRepo,
+                  AuthService& authService);
+
+    // Quan ly du lieu
+    bool load();
+    bool save();
+
+    // Quan ly thanh vien
+    bool addMember(Member* member);
+    bool updateMember(const Member& newValues);
+
+    // Tra cuu thanh vien
+    const Member* findMemberById(const std::string& memberId);
+    const Member* findMemberByPhone(const std::string& phone);
+    const Member* getMemberAt(int index);
+    int getMemberCount();
+};
+
+#endif
+```
+
+### 4.2. MemberService.cpp
+
+```cpp
+#include "MemberService.h"
+#include "../utils/IdGenerator.h"
+#include <vector>
+using namespace std;
+
+MemberService::MemberService(IRepository<Member>& memberRepo,
+                             AuthService& authService)
     : memberRepo(memberRepo),
       authService(authService)
 {
 }
-```
 
-Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
-
-### load()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra dữ liệu đã nạp. Xem các nhánh cụ thể trong code.
-- **Tham số:** `không có`.
-- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra dữ liệu đã nạp
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra dữ liệu đã nạp.**
-
-```cpp
 bool MemberService::load()
 {
     return memberRepo.load();
 }
-```
 
-Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
-
-### save()
-
-#### A. Tổng quan
-
-- **Mục đích:** Cập nhật qua Repository. Xem các nhánh cụ thể trong code.
-- **Tham số:** `không có`.
-- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Cập nhật qua Repository
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Cập nhật qua Repository.**
-
-```cpp
 bool MemberService::save()
 {
     return memberRepo.save();
 }
-```
 
-Repository thực hiện thao tác dữ liệu. `save()` ghi trạng thái Repository ra TXT tại thời điểm lời gọi; thay đổi RAM trước đó không tự đồng nghĩa với đã lưu thành công.
-
-### addMember()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `Member* member`.
-- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; kiểm tra trạng thái nạp và con trỏ trước khi dùng.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Tra cứu dữ liệu
-    |
-    v
-Cập nhật qua Repository
-    |
-    v
-Từ chối dữ liệu không hợp lệ
-    |
-    v
-Chuẩn bị và xử lý dữ liệu
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 bool MemberService::addMember(Member* member)
 {
     authService.requirePermission("MEMBER_ADD");
@@ -307,30 +115,17 @@ bool MemberService::addMember(Member* member)
     }
 
     vector<string> existingIds;
-```
-
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. `nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Quyền `MEMBER_ADD` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Kiểm tra `isLoaded()` tránh dùng dữ liệu Repository chưa được nạp; nhánh không đạt kết thúc ngay theo giá trị `return` trong code. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau.
-
-**Bước 2 — Tra cứu dữ liệu.**
-
-```cpp
 
     for (int i = 0; i < memberRepo.count(); i++)
     {
-        Member* current = memberRepo.getAt(i);
+        const Member* current = memberRepo.getAt(i);
         if (current == nullptr)
         {
             return false;
         }
         existingIds.push_back(current->getMemberId());
     }
-```
 
-`nullptr` cho biết không có đối tượng để truy cập. `false` báo thao tác không thành công. Vòng `for` duyệt lần lượt các phần tử. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Vòng lặp xử lý từng phần tử theo thứ tự; điều kiện bên trong quyết định phần tử được giữ, bỏ qua hay đưa vào kết quả.
-
-**Bước 3 — Cập nhật qua Repository.**
-
-```cpp
     string memberId = IdGenerator::generateNextId("MEM", existingIds);
     Member* newMember = new Member(memberId,
                                    member->getFullName(),
@@ -341,13 +136,6 @@ bool MemberService::addMember(Member* member)
     {
         if (!memberRepo.add(newMember))
         {
-```
-
-Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Repository nhận đối tượng và quản lý vòng đời của nó; nếu thất bại, bên gọi vẫn phải xét trách nhiệm giải phóng con trỏ. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `new` cấp phát đối tượng trên heap; cần theo dõi thời điểm quyền sở hữu được chuyển sang Repository để tránh rò rỉ bộ nhớ.
-
-**Bước 4 — Từ chối dữ liệu không hợp lệ.**
-
-```cpp
             delete newMember;
             return false;
         }
@@ -358,184 +146,41 @@ Repository thực hiện thao tác dữ liệu. Khi `add()` thành công, Reposi
         throw;
     }
     return true;
-```
-
-`false` báo thao tác không thành công. Nhánh `false` dừng hàm tại đây; những câu lệnh phía sau không chạy, nên không có cập nhật nào từ các bước sau. Khối `try/catch` giữ lỗi phát sinh trong phạm vi xử lý này và chuyển sang nhánh khôi phục hoặc báo lỗi đã viết trong code. `delete` giải phóng vùng nhớ của đối tượng, sau đó không được dùng lại con trỏ trỏ đến vùng nhớ đó.
-
-**Bước 5 — Chuẩn bị và xử lý dữ liệu.**
-
-```cpp
 }
-```
 
-Các câu lệnh được thực thi theo đúng thứ tự trong `.cpp`; điều kiện và nhánh trả về nằm ngay trong code. Giá trị được khai báo ở đây được dùng trong các nhánh tiếp theo; hãy theo dõi nơi nó được trả về hoặc chuyển vào Repository để hiểu tác động lên trạng thái.
-
-### updateMember()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `const Member& newValues`.
-- **Giá trị trả về:** `bool`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 bool MemberService::updateMember(const Member& newValues)
 {
     authService.requirePermission("MEMBER_UPDATE");
     return memberRepo.update(newValues);
 }
-```
 
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Repository thực hiện thao tác dữ liệu. Quyền `MEMBER_UPDATE` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. `update()` chuyển việc thay đổi dữ liệu cho Repository; kết quả trả về phản ánh kiểm tra và thao tác cập nhật ở tầng dữ liệu.
-
-### findMemberById()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `const string& memberId`.
-- **Giá trị trả về:** `const Member*`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 const Member* MemberService::findMemberById(const string& memberId)
 {
     authService.requirePermission("MEMBER_VIEW");
     return memberRepo.findById(memberId);
 }
-```
 
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MEMBER_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
-
-### findMemberByPhone()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `const string& phone`.
-- **Giá trị trả về:** `const Member*`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 const Member* MemberService::findMemberByPhone(const string& phone)
 {
     authService.requirePermission("MEMBER_VIEW");
-    return memberRepo.findByPhone(phone);
+
+    for (int i = 0; i < memberRepo.count(); i++)
+    {
+        const Member* member = memberRepo.getAt(i);
+        if (member != nullptr && member->getPhone() == phone)
+        {
+            return member;
+        }
+    }
+    return nullptr;
 }
-```
 
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MEMBER_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`. Lệnh tra cứu trả con trỏ đến đối tượng đang được Repository quản lý. Con trỏ rỗng có nghĩa là không tìm thấy, nên bước sau chỉ được dùng đối tượng khi kiểm tra thành công.
-
-### getMemberAt()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `int index`.
-- **Giá trị trả về:** `const Member*`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 const Member* MemberService::getMemberAt(int index)
 {
     authService.requirePermission("MEMBER_VIEW");
     return memberRepo.getAt(index);
 }
-```
 
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MEMBER_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
-
-### getMemberCount()
-
-#### A. Tổng quan
-
-- **Mục đích:** Kiểm tra quyền. Xem các nhánh cụ thể trong code.
-- **Tham số:** `không có`.
-- **Giá trị trả về:** `int`; các nhánh `return` được ghi đầy đủ bên dưới.
-- **Điều kiện quan trọng:** Kiểm tra quyền qua `AuthService`; điều kiện và lỗi thể hiện trực tiếp trong mã nguồn.
-
-#### B. Quy trình thực hiện
-
-```text
-Bắt đầu
-    |
-    v
-Kiểm tra quyền
-    |
-    v
-Kết thúc
-```
-
-#### C. Giải thích chi tiết từng bước kèm code C++
-
-**Bước 1 — Kiểm tra quyền.**
-
-```cpp
 int MemberService::getMemberCount()
 {
     authService.requirePermission("MEMBER_VIEW");
@@ -543,194 +188,172 @@ int MemberService::getMemberCount()
 }
 ```
 
-`AuthService` kiểm tra quyền và có thể ném ngoại lệ. Quyền `MEMBER_VIEW` được kiểm tra trước bước xử lý kế tiếp; thiếu quyền sẽ ném ngoại lệ, vì vậy caller không nên xem đó là kết quả `false`.
+## 5. Giải thích từng hàm
 
-## 7. Phân quyền RBAC
+Header dùng include guard để tránh khai báo lặp, include trực tiếp các kiểu sử dụng. `std::` trong header tránh đưa namespace vào file khác. CPP dùng `using namespace std;` sau include. `vector` lưu danh sách ID tạm để sinh ID.
 
-`MemberService` sử dụng ba permission:
+### 5.1. Constructor
 
-| Permission | Nghiệp vụ | ADMIN mặc định | STAFF mặc định |
-|---|---|---|---|
-| `MEMBER_VIEW` | Tra cứu thành viên | Có | Có |
-| `MEMBER_ADD` | Thêm thành viên | Có | Có |
-| `MEMBER_UPDATE` | Cập nhật thành viên | Có | Có |
+**Tổng quan:** nhận hai tham chiếu đến repository và AuthService; không có giá trị trả về. Dependency phải tồn tại lâu hơn Service.
 
-Quyền thực tế được xác định bởi `data/role_permissions.txt` đã nạp, không mặc định dựa vào vai trò.
-
-Ví dụ:
-
-```cpp
-authService.requirePermission("MEMBER_ADD");
+**Luồng hoạt động:**
+```text
+Nhan dependency -> Khoi tao memberRepo -> Khoi tao authService -> Ket thuc
 ```
 
-Nếu tài khoản chưa đăng nhập hoặc không có quyền, thao tác bị từ chối trước khi gọi Repository.
+**Giải thích chi tiết:** `MemberService::MemberService` định nghĩa constructor ngoài lớp. Danh sách khởi tạo sau dấu `:` gắn hai thuộc tính tham chiếu với đối tượng được truyền vào. Thân rỗng vì không cần load dữ liệu hay tạo đối tượng mới.
 
-**Nguyên tắc:**
+### 5.2. load()
 
-- Service phải kiểm tra quyền ở mỗi lần gọi nghiệp vụ.
-- Không sử dụng `requireAdmin()` thay cho permission.
-- Không tự động cho phép Admin bỏ qua bảng quyền.
-- UI có thể gọi `hasPermission()` để điều chỉnh chức năng hiển thị, nhưng Backend vẫn phải kiểm tra quyền.
+**Tổng quan:** không tham số, trả kết quả nạp của Repository; exception được truyền tiếp.
 
----
-
-## 8. Quy tắc điểm tích lũy
-
-Điểm tích lũy là dữ liệu nghiệp vụ được quản lý theo hoạt động bán và hủy vé.
-
-### 8.1. Khi tạo thành viên
-
-Thành viên mới bắt buộc có:
-
-```cpp
-points == 0
+```text
+load -> memberRepo.load()
+         |-- true  -> true
+         |-- false -> false
+         `-- exception -> truyen tiep
 ```
 
-### 8.2. Khi cập nhật thông tin
+**Giải thích chi tiết:** `return memberRepo.load();` gọi qua interface, không tự đọc file. Repository hiện từ chối lần load thứ hai nếu đã loaded. Không kiểm tra permission vì đây là thao tác khởi tạo dữ liệu.
 
-`updateMember()` không được thay đổi điểm.
+### 5.3. save()
 
-Điểm của `newValues` phải bằng điểm đang lưu.
+**Tổng quan:** không tham số; trả kết quả lưu dữ liệu, không tự sửa dữ liệu.
 
-### 8.3. Khi bán hoặc hủy vé
-
-Việc cộng hoặc thu hồi điểm sẽ được thiết kế trong nghiệp vụ bán/hủy vé và hóa đơn ở các bước tiếp theo.
-
-`MemberService` phiên bản này không cung cấp:
-
-```cpp
-addPoints(...)
-subtractPoints(...)
-setPoints(...)
+```text
+save -> memberRepo.save()
+         |-- true -> true
+         |-- false -> false
+         `-- exception -> truyen tiep
 ```
 
-Không được sử dụng trực tiếp `Member::setPoints()` từ giao diện để thay đổi điểm tích lũy.
+**Giải thích chi tiết:** `return memberRepo.save();` chuyển trách nhiệm serialize và ghi TXT cho Repository. Không kiểm tra loaded lặp lại, không kiểm tra permission ở hàm hạ tầng này.
 
----
+### 5.4. addMember()
 
-## 9. Quy ước kết quả và ngoại lệ
+**Tổng quan:** nhận con trỏ Member đầu vào, sinh ID MEM mới và thêm bản sao. Không đổi ID hoặc quyền sở hữu đối tượng đầu vào. Thành viên mới phải có 0 điểm theo hợp đồng MemberRepository.
 
-| Tình huống | Hành vi |
-|---|---|
-| Thao tác thành công | Trả về `true` |
-| Dữ liệu không đáp ứng điều kiện | Trả về `false` |
-| Không tìm thấy thành viên | Trả về `nullptr` |
-| Chưa đăng nhập | `runtime_error` từ AuthService |
-| Không có permission | `runtime_error` từ AuthService |
-| Lỗi nạp hoặc lưu dữ liệu | Ngoại lệ từ Repository |
+```text
+Kiem tra MEMBER_ADD
+ |-- Thieu quyen -> exception
+ `-- Co quyen
+      |-- Chua load / nullptr -> false
+      `-- Duyet danh sach ID
+           |-- Phan tu nullptr -> false
+           `-- Sinh ID -> Tao Member moi -> repo.add
+                |-- false -> delete -> false
+                |-- exception -> delete -> throw
+                `-- true -> Repository so huu -> true
+```
 
-`MemberService` không tự ý chuyển ngoại lệ phân quyền thành `false`.
+**Giải thích chi tiết:** `requirePermission` chạy trước mọi thao tác. `!isLoaded()` và `member == nullptr` ngăn xử lý dữ liệu chưa sẵn sàng và truy cập con trỏ rỗng. Toán tử `||` dừng khi điều kiện trái đúng. `vector<string> existingIds` chứa ID đang có. Vòng `for` duyệt từ 0 đến count - 1; `const Member* current` chỉ đọc đối tượng; kiểm tra nullptr trước `->getMemberId()`. `push_back` thêm ID vào vector. `generateNextId("MEM", existingIds)` sinh ID theo quy tắc hiện hành. `new Member` cấp phát bản sao với ID mới, họ tên, số điện thoại và điểm đầu vào; không ép điểm về 0 để Repository từ chối dữ liệu sai. `try` bao quanh thao tác chuyển quyền sở hữu. Nếu add trả false, Service delete bản sao; nếu ném exception, `catch (...)` giải phóng rồi `throw;` ném lại lỗi gốc. Nếu add thành công, Repository sở hữu bản sao và Service trả true. Không tự save. Hợp đồng add phải đảm bảo không nhận quyền sở hữu khi thất bại.
 
-Các phương thức thêm và cập nhật chỉ thay đổi dữ liệu trong bộ nhớ; việc ghi ra file được thực hiện thông qua `save()` trong luồng lưu trữ của ứng dụng.
+### 5.5. updateMember()
 
----
+**Tổng quan:** nhận `const Member& newValues`, trả bool; chỉ cập nhật thông tin hợp lệ, không đổi điểm trực tiếp.
 
-## 10. Tích hợp với giao diện
+```text
+MEMBER_UPDATE?
+ |-- Khong -> exception
+ `-- Co -> repo.update(newValues) -> ket qua / exception
+```
 
-Giao diện phải gọi `MemberService`, không gọi trực tiếp `MemberRepository` để thực hiện nghiệp vụ.
+**Giải thích chi tiết:** tham chiếu const tránh sao chép và không sửa đầu vào. `requirePermission` kiểm tra quyền. `memberRepo.update(newValues)` dùng ID để tìm đối tượng và giao kiểm tra loaded, dữ liệu, số điện thoại duy nhất và điểm không đổi cho concrete Repository. Repository cập nhật tại chỗ để giữ liên kết Invoice. Không tự save.
 
-Các API hiện có cho giao diện:
+### 5.6. findMemberById()
 
-| Chức năng giao diện | API sử dụng |
-|---|---|
-| Hiển thị danh sách | `getMemberCount()`, `getMemberAt()` |
-| Tìm theo mã | `findMemberById()` |
-| Tìm theo số điện thoại | `findMemberByPhone()` |
-| Thêm thành viên | `addMember()` |
-| Sửa thông tin | `updateMember()` |
-| Xem điểm tích lũy | `Member::getPoints()` trên đối tượng tra cứu |
+**Tổng quan:** nhận ID bằng tham chiếu const; trả con trỏ chỉ đọc hoặc nullptr.
 
-Các con trỏ trả về là `const Member*`, không được dùng để sửa trực tiếp dữ liệu.
+```text
+MEMBER_VIEW? -> Khong: exception
+             -> Co: repo.findById -> Member* / nullptr
+```
 
-UI phải xử lý các trường hợp không tìm thấy, thao tác thất bại và ngoại lệ phân quyền.
+**Giải thích chi tiết:** kiểm tra quyền trước truy vấn. `findById` là API chung của interface. Chuyển `Member*` sang `const Member*` để bên gọi không sửa trực tiếp thuộc tính. Con trỏ không chuyển quyền sở hữu.
 
----
+### 5.7. findMemberByPhone()
 
-## 11. Kiểm thử đã chạy
+**Tổng quan:** nhận số điện thoại, tìm khớp chính xác, trả con trỏ chỉ đọc hoặc nullptr.
 
-File kiểm thử:
+```text
+MEMBER_VIEW?
+ |-- Khong -> exception
+ `-- Co -> i = 0
+      |-- i >= count -> nullptr
+      `-- getAt(i)
+           |-- Khac nullptr va phone trung -> return member
+           `-- Khong trung / nullptr -> i++ -> lap lai
+```
 
-`tests/test_member_service.cpp`
+**Giải thích chi tiết:** interface không có `findByPhone`, nên duyệt bằng count và getAt. `const Member* member` là con trỏ mượn. Toán tử `&&` đánh giá ngắn mạch: chỉ gọi getPhone khi con trỏ khác nullptr. `==` so sánh chuỗi chính xác, không chuẩn hóa số điện thoại. `return member` kết thúc ngay khi tìm thấy; `return nullptr` khi duyệt hết. Không tạo chỉ mục riêng trong Service. Với danh sách liên kết, getAt có thể phải duyệt nhiều node, nên chi phí cả vòng lặp có thể là O(n²), chậm hơn chỉ mục map của concrete Repository; chấp nhận để giữ interface chung trong phạm vi hiện tại.
 
-Biên dịch riêng bài test với C++17 cùng các `.cpp` trong `src/` (trừ `main.cpp`) và chạy trên nhánh hiện tại ngày 2026-11-19: **69 PASS, 0 FAIL**, thoát mã 0. Bài test dùng các file TXT tạm, dọn sau khi chạy. Các nhóm dưới đây mô tả phạm vi đã kiểm tra; chưa có kiểm thử tích hợp với hóa đơn/vé.
+### 5.8. getMemberAt()
 
-### 11.1. Nhóm quản lý dữ liệu
+**Tổng quan:** nhận index kiểu int; trả Member chỉ đọc hoặc nullptr nếu vị trí không hợp lệ.
 
-- Nạp dữ liệu thành công.
-- Lưu dữ liệu thành công.
-- Gọi load khi đã nạp.
-- Gọi save khi chưa nạp.
-- Xử lý file dữ liệu không hợp lệ.
+```text
+MEMBER_VIEW? -> Khong: exception
+             -> Co: repo.getAt(index) -> Member* / nullptr
+```
 
-### 11.2. Nhóm thêm thành viên
+**Giải thích chi tiết:** kiểm tra quyền rồi chuyển index cho Repository. Không kiểm tra lại biên vì Repository chịu trách nhiệm. Không delete con trỏ trả về.
 
-- Có quyền và dữ liệu hợp lệ.
-- Chưa đăng nhập.
-- Không có quyền.
-- Con trỏ `nullptr`.
-- Mã thành viên không hợp lệ hoặc trùng.
-- Số điện thoại không hợp lệ hoặc trùng.
-- Họ tên không hợp lệ.
-- Điểm ban đầu khác `0`.
+### 5.9. getMemberCount()
 
-### 11.3. Nhóm cập nhật thành viên
+**Tổng quan:** không tham số, trả số thành viên kiểu int.
 
-- Cập nhật họ tên thành công.
-- Cập nhật số điện thoại thành công.
-- Không tìm thấy thành viên.
-- Số điện thoại mới trùng.
-- Dữ liệu không hợp lệ.
-- Cố gắng thay đổi điểm tích lũy.
-- Chưa đăng nhập hoặc thiếu quyền.
+```text
+MEMBER_VIEW? -> Khong: exception
+             -> Co: repo.count() -> int
+```
 
-### 11.4. Nhóm tra cứu
+**Giải thích chi tiết:** kiểm tra quyền trước khi trả số lượng từ interface. Không tự duyệt lại danh sách hoặc thay đổi dữ liệu.
 
-- Tìm theo mã tồn tại và không tồn tại.
-- Tìm theo số điện thoại tồn tại và không tồn tại.
-- Lấy thành viên theo vị trí hợp lệ.
-- Truy cập vị trí không hợp lệ.
-- Đếm số lượng thành viên.
-- Kiểm tra quyền `MEMBER_VIEW`.
+## 6. Nội dung thay đổi và điểm cần chốt
 
-### 11.5. Nhóm phân quyền
+- Thay dependency MemberRepository bằng IRepository<Member> và include trực tiếp Member.h.
+- findMemberByPhone duyệt danh sách thay vì gọi API riêng của concrete Repository.
+- Dùng const Member* cho đối tượng chỉ đọc trong addMember; đồng bộ format và thứ tự hàm.
+- Giữ nguyên 8 API public, permission, nghiệp vụ điểm, quy tắc ID và quyền sở hữu.
+- Không thêm API xóa hoặc chỉnh điểm. BookingService chịu trách nhiệm cộng/thu hồi điểm.
+- Không sửa MemberRepository: Repository<T>::load() từ chối khi loaded; khi kiểm tra trùng phone thất bại, concrete Repository xóa map và danh sách. Không thêm clear trước load.
+- Việc duyệt theo phone có đánh đổi hiệu năng; không mở rộng interface ở bước này.
+- Các điều kiện điểm và dữ liệu dựa trên hợp đồng concrete Repository; fake Repository dùng trong test cần mô phỏng hợp đồng tương ứng.
 
-- Admin có permission.
-- Staff có permission.
-- Tài khoản thiếu permission.
-- Tài khoản đã bị vô hiệu hóa.
-- Đã đăng xuất.
-- Admin thiếu `MEMBER_ADD` hoặc `MEMBER_UPDATE` dù đã đăng nhập.
+## 7. Kiểm thử
 
-Test sử dụng file dữ liệu tạm, không chỉnh sửa dữ liệu thật của ứng dụng.
+Ngày 27/11/2026, `tests/test_member_service.cpp` biên dịch C++17 và chạy với TXT tạm riêng, Repository thực và `IRepository<Member>` giả lập: **Passed: 45, Failed: 0, Total: 45**. Hồi quy lần lượt: **StaffService 32/32 PASS, AuthService 31/31 PASS, MovieService 41/41 PASS, RoomService 43/43 PASS**. `.h/.cpp` khớp hai khối code Markdown 100%. Refactor giữ 8 hàm public, không có hàm private; DIP/DI qua `IRepository<Member>&`, Permission-only, không đổi nghiệp vụ quản lý thành viên và điểm. `findMemberByPhone()` duyệt qua `getAt()` của interface.
 
----
+- [x] DIP/DI với Repository giả lập; gọi đủ 8 hàm public.
+- [x] Load thành công, load lần hai trả false và chỉ mục phone vẫn đúng; file trùng phone ném exception, rollback danh sách/chỉ mục, sửa file rồi load lại thành công.
+- [x] Save thành công và save khi chưa load trả false.
+- [x] Add thành viên 0 điểm, sinh MEM theo ID lớn nhất, không đổi đầu vào; nullptr, chưa load, trùng phone, dữ liệu sai, điểm khác 0.
+- [x] Mock `add()` trả false hoặc ném exception; không chuyển quyền sở hữu đầu vào khi thao tác thất bại.
+- [x] Update hợp lệ, ID không tồn tại, trùng phone, dữ liệu sai, thay đổi điểm bị từ chối; giữ ID, địa chỉ và liên kết Invoice được nối trực tiếp.
+- [x] Tìm theo ID/phone, phone không tồn tại, cập nhật phone rồi tìm lại, index âm/vượt biên và count có dữ liệu.
+- [x] Chưa đăng nhập, ADMIN thiếu quyền, STAFF được cấp quyền riêng và tài khoản inactive không đăng nhập được; thiếu quyền không sửa dữ liệu.
+- [x] Hồi quy StaffService, AuthService, MovieService, RoomService.
+- [ ] Chưa kiểm thử trực tiếp lỗi ghi TXT; chưa dùng công cụ dò rò rỉ bộ nhớ để xác nhận giải phóng allocation nội bộ trên nhánh add thất bại/exception.
 
-## 12. Giới hạn hiện tại
+Dùng TXT tạm riêng. Biên dịch C++17 với một test main và các dependency cần thiết; không lấy các Service chưa refactor. Ví dụ PowerShell (điều chỉnh danh sách dependency theo source thực tế):
 
-`MemberService` phiên bản đầu chưa hỗ trợ:
+```powershell
+$src = @(Get-ChildItem src/models,src/utils,src/data_access -Filter *.cpp -Recurse | ForEach-Object FullName)
+g++ -std=c++17 tests/test_member_service.cpp src/business/MemberService.cpp src/business/AuthService.cpp $src -o test_member_service.exe
+if ($LASTEXITCODE -eq 0) { .\test_member_service.exe }
+```
 
-- Xóa thành viên.
-- Cộng hoặc trừ điểm trực tiếp.
-- Tra cứu lịch sử hóa đơn của thành viên.
-- Tìm kiếm gần đúng theo tên.
-- Phân trang hoặc sắp xếp danh sách.
-- Tự động lưu sau mỗi thao tác.
+Đã biên dịch C++17 và chạy bài test với các dependency cần thiết; các Service hồi quy cũng được biên dịch và chạy riêng. Chưa xác nhận biên dịch toàn ứng dụng hoặc hồi quy GUI.
 
-Các chức năng trên chỉ được bổ sung sau khi thống nhất nghiệp vụ và cập nhật tài liệu.
+## 8. Bàn giao
 
----
+- [x] Rà soát mã nguồn tại effc5e8 và đối chiếu MemberRepository/Repository tại 7ab0bee.
+- [x] Soạn thiết kế Markdown.
+- [x] Review và CHỐT MARKDOWN.
+- [x] Triển khai .h/.cpp khớp 100% Markdown.
+- [x] Biên dịch C++17 và chạy `tests/test_member_service.cpp`: 45/45 PASS; hoàn thành MemberService trong phạm vi đã kiểm thử.
+- [x] Hồi quy StaffService 32/32, AuthService 31/31, MovieService 41/41, RoomService 43/43 PASS.
+- [x] Ghi nhận giới hạn kiểm thử và cập nhật tài liệu tiến độ.
+- [ ] Commit/push do người thực hiện quyết định.
 
-## 13. Checklist triển khai hiện tại
-
-- [x] Thống nhất thiết kế lớp `MemberService`.
-- [x] Xác định đầy đủ 8 phương thức.
-- [x] Xác định các permission.
-- [x] Thống nhất quy tắc không sửa điểm trực tiếp.
-- [x] Hoàn thành nội dung tài liệu thiết kế.
-- [x] Có tài liệu `MemberService.md` đồng bộ với code hiện tại.
-- [x] Triển khai `MemberService.h/.cpp` với đủ 8 phương thức public ngoài constructor.
-- [x] Kiểm tra `MEMBER_VIEW`, `MEMBER_ADD`, `MEMBER_UPDATE` qua `AuthService::requirePermission()`.
-- [x] Viết, biên dịch và chạy `tests/test_member_service.cpp`: **69 PASS, 0 FAIL**.
-- [ ] Tích hợp nghiệp vụ điểm và quan hệ hóa đơn/vé khi các thành phần giao dịch sẵn sàng; chưa đánh dấu hoàn thành toàn Bước 08.
-
-**Kết luận:** `MemberService` sử dụng `MemberRepository` để quản lý dữ liệu và `AuthService` để kiểm tra quyền, giữ cấu trúc đồng bộ với các Service đã triển khai trong PBL2.
+Không thay đổi mã nguồn, schema, nghiệp vụ hoặc các Service khác ngoài phạm vi refactor đã chốt.

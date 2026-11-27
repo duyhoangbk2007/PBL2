@@ -67,7 +67,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Phòng chiếu | RoomService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<Room>&`, Permission-only; có 9 hàm public gồm `setRoomActive()`, `.h/.cpp` khớp Markdown 100%. `Room::getShowtimeAt()` đã bổ sung. `tests/test_room_service.cpp` ngày 27/11/2026 biên dịch C++17 và chạy đạt Passed: 43, Failed: 0, Total: 43; hoàn thành trong phạm vi bài test |
 | Xác thực | AuthService | Đã CHỐT MARKDOWN và hoàn thành trong phạm vi kiểm thử: DIP qua `IRepository<User>&`, DI, Permission-only; giữ `RolePermissionRepository&` đặc thù, 7 hàm public/2 helper private, bỏ `isAdmin()`, `isStaff()`, `requireAdmin()`. `.h/.cpp` khớp Markdown 100%; ngày 27/11/2026 biên dịch C++17, AuthService 31/31 PASS, MovieService 41/41 PASS, RoomService 43/43 PASS |
 | Nhân viên | StaffService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<User>&`, Permission-only; có 9 hàm public, không có helper private. `setStaffActive()` thay `deactivateStaff()` và dùng `STAFF_DEACTIVATE` cho cả bật/tắt; `.h/.cpp` khớp Markdown 100%. Ngày 27/11/2026 biên dịch C++17, StaffService 32/32 PASS, AuthService 31/31 PASS, MovieService 41/41 PASS, RoomService 43/43 PASS |
-| Thành viên | MemberService | Ưu tiên refactor theo `IRepository<Member>` và Permission; `MemberRepository` đã kiểm thử 204 PASS, 0 FAIL, liên kết Invoice chưa kiểm thử |
+| Thành viên | MemberService | Đã CHỐT MARKDOWN, refactor DIP/DI qua `IRepository<Member>&`, Permission-only; giữ 8 hàm public, không có hàm private. Tìm phone qua `getAt()`, giữ nghiệp vụ thành viên/điểm; `.h/.cpp` khớp Markdown 100%. Ngày 27/11/2026 biên dịch C++17, MemberService 45/45 PASS, StaffService 32/32 PASS, AuthService 31/31 PASS, MovieService 41/41 PASS, RoomService 43/43 PASS; hoàn thành trong phạm vi đã kiểm thử |
 | Suất chiếu | ShowtimeService | Ưu tiên refactor theo `IRepository<Showtime>`, `IRepository<Movie>`, `IRepository<Room>`; kiểm tra Ticket/Invoice khi hủy hoặc xóa suất phải chờ các Repository đó được Hoàng refactor và kiểm thử |
 | Ghế | SeatService | Cần kiểm tra lịch sử Ticket, kể cả vé đã hủy, trước khi xóa ghế |
 | Nhân viên | UserService | UserRepository đã kiểm thử 69 PASS, 0 FAIL; phần UserService ngoài StaffService còn theo kế hoạch |
@@ -82,6 +82,8 @@ Kết quả RoomService chưa bao phủ `startAt` bằng đúng thời điểm h
 Kết quả AuthService chưa bao phủ tái sử dụng User ID, mọi dạng TXT quyền sai định dạng và hồi quy GUI/toàn ứng dụng. BookingService, ReportService và các Service còn gọi API AuthService cũ sẽ được xử lý khi đến lượt refactor.
 
 Kết quả StaffService chưa bao phủ lỗi ghi TXT và tích hợp nạp Invoice từ Repository thực. Sáu lời gọi `deactivateStaff()` trong `tests/legacy_test/test_staff_service.cpp` vẫn chờ cập nhật; không sửa test legacy chỉ để tạo kết quả PASS.
+
+Kết quả MemberService đã kiểm thử rollback khi load trùng số điện thoại và load lại sau khi sửa TXT. Chưa kiểm thử trực tiếp lỗi ghi TXT và chưa dùng công cụ dò rò rỉ bộ nhớ.
 
 ### 4.3. Các thành phần dùng chung
 
@@ -155,7 +157,7 @@ Cả hai thành viên:
 
 ### Giai đoạn 03 – Refactor Service
 
-- Kiệt đã hoàn thành `MovieService`, `RoomService`, `AuthService` và `StaffService` trong phạm vi kiểm thử; tiếp tục ưu tiên `MemberService`, `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
+- Kiệt đã hoàn thành `MovieService`, `RoomService`, `AuthService`, `StaffService` và `MemberService` trong phạm vi kiểm thử; tiếp tục ưu tiên `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
 - Rà soát dependency thực tế; phần cần Repository chưa refactor xong được ghi rõ để thực hiện sau.
 - Service tuân thủ DIP qua `IRepository<T>`, Permission-only, quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`; kiểm thử từng Service trước khi đánh dấu hoàn thành.
 
