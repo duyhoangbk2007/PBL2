@@ -25,6 +25,7 @@
 **Nguyên tắc bắt buộc:**
 
 - **DIP:** Chỉ sử dụng một interface chung `IRepository<T>`. Concrete Repository triển khai interface này và tiếp tục sử dụng `Repository<T>` để quản lý dữ liệu. Service phụ thuộc `IRepository<T>` thông qua Dependency Injection, không phụ thuộc trực tiếp Concrete Repository.
+- **Ngoại lệ Pricing:** `PricingRepository` quản lý một cấu hình không có ID, không phù hợp CRUD của `IRepository<T>`. `PricingService` giữ `PricingRepository&` qua constructor; không tạo interface mới hoặc ép cấu hình này vào `IRepository<Pricing>`.
 - **RBAC:** Kiểm tra quyền bằng `AuthService::hasPermission()` hoặc `requirePermission()` với mã Permission tương ứng. Không dùng `requireAdmin()`, `isAdmin()`, `isStaff()` hoặc kiểm tra role cứng để cấp quyền. `requireLogin()` không thay thế kiểm tra Permission. Không tự ý nuốt exception hoặc thay đổi hợp đồng trả lỗi.
 - **Phân chia trách nhiệm:** Service xử lý nghiệp vụ; Repository quản lý dữ liệu và tính toàn vẹn; Model quản lý trạng thái và quan hệ; GUI chỉ tương tác với Service.
 

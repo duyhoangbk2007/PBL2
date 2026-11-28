@@ -71,7 +71,7 @@ Các công việc chung không thay thế trách nhiệm chính của từng th�
 | Suất chiếu | ShowtimeService | Ưu tiên refactor theo `IRepository<Showtime>`, `IRepository<Movie>`, `IRepository<Room>`; kiểm tra Ticket/Invoice khi hủy hoặc xóa suất phải chờ các Repository đó được Hoàng refactor và kiểm thử |
 | Ghế | SeatService | Cần kiểm tra lịch sử Ticket, kể cả vé đã hủy, trước khi xóa ghế |
 | Nhân viên | UserService | UserRepository đã kiểm thử 69 PASS, 0 FAIL; phần UserService ngoài StaffService còn theo kế hoạch |
-| Giá vé | PricingService | PricingRepository vừa được cập nhật trên nhánh Hoàng; Service còn theo kế hoạch |
+| Giá vé | PricingService | Đã CHỐT MARKDOWN, hoàn thành trong phạm vi kiểm thử: giữ `PricingRepository&` là ngoại lệ DIP qua DI, Permission-only với `PRICING_VIEW`/`PRICING_UPDATE`; 8 hàm public, không có hàm private. Bỏ validation trùng, dùng `numeric_limits<int>::max()` và hạn chế tràn trung gian; giữ nghiệp vụ/schema/ghi TXT trước RAM. `.h/.cpp` khớp Markdown 100%; ngày 28/11/2026 biên dịch C++17, PricingService 67/67 PASS và năm Service hồi quy 192/192 PASS; tổng 259 PASS, 0 FAIL |
 
 **Trọng tâm hiện tại:** Chỉ refactor Service đã tồn tại, không triển khai Service mới trong giai đoạn này. Rà soát dependency thực tế trước khi thiết kế từng Service; phần phụ thuộc Repository chưa sẵn sàng được ghi rõ và thực hiện sau.
 
@@ -84,6 +84,8 @@ Kết quả AuthService chưa bao phủ tái sử dụng User ID, mọi dạng T
 Kết quả StaffService chưa bao phủ lỗi ghi TXT và tích hợp nạp Invoice từ Repository thực. Sáu lời gọi `deactivateStaff()` trong `tests/legacy_test/test_staff_service.cpp` vẫn chờ cập nhật; không sửa test legacy chỉ để tạo kết quả PASS.
 
 Kết quả MemberService đã kiểm thử rollback khi load trùng số điện thoại và load lại sau khi sửa TXT. Chưa kiểm thử trực tiếp lỗi ghi TXT và chưa dùng công cụ dò rò rỉ bộ nhớ.
+
+Kết quả PricingService đã kiểm thử lỗi ghi TXT: update trả false và RAM giữ nguyên. Chưa kiểm chứng tính nguyên tử của TXT khi lỗi ghi giữa chừng và tích hợp BookingService.
 
 ### 4.3. Các thành phần dùng chung
 
@@ -157,7 +159,7 @@ Cả hai thành viên:
 
 ### Giai đoạn 03 – Refactor Service
 
-- Kiệt đã hoàn thành `MovieService`, `RoomService`, `AuthService`, `StaffService` và `MemberService` trong phạm vi kiểm thử; tiếp tục ưu tiên `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
+- Kiệt đã hoàn thành `MovieService`, `RoomService`, `AuthService`, `StaffService`, `MemberService` và `PricingService` trong phạm vi kiểm thử; tiếp tục ưu tiên `ShowtimeService` đã tồn tại. Hoàng tiếp tục Data Access song song.
 - Rà soát dependency thực tế; phần cần Repository chưa refactor xong được ghi rõ để thực hiện sau.
 - Service tuân thủ DIP qua `IRepository<T>`, Permission-only, quy tắc nghiệp vụ và quy ước code trong `AGENTS.md`; kiểm thử từng Service trước khi đánh dấu hoàn thành.
 

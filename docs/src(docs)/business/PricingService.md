@@ -1,6 +1,6 @@
 # PricingService
 
-> Trạng thái: CHỐT MARKDOWN — đã triển khai mã nguồn, chưa kiểm thử.
+> Trạng thái: CHỐT MARKDOWN — đã triển khai và hoàn thành trong phạm vi kiểm thử ngày 28/11/2026.
 
 ## 1. Tổng quan
 
@@ -26,7 +26,7 @@ GUI / BookingService
 ```
 
 - DI: truyền hai dependency qua constructor bằng tham chiếu, Service không sở hữu chúng.
-- Ngoại lệ DIP: PricingRepository quản lý một cấu hình không có ID, không phù hợp với CRUD của IRepository<T>. Giữ concrete dependency, không thêm interface mới. Cần ghi nhận ngoại lệ trong quy chuẩn nhóm khi chốt; không tuyên bố đã áp dụng DIP đầy đủ.
+- Ngoại lệ DIP: PricingRepository quản lý một cấu hình không có ID, không phù hợp với CRUD của IRepository<T>. Giữ concrete dependency qua DI, không thêm interface mới; ngoại lệ đã ghi trong AGENTS.md, không tuyên bố đã áp dụng DIP đầy đủ.
 - Permission-only: dùng requirePermission, không dùng role cứng hoặc requireLogin thay cho quyền.
 - PricingRepository kiểm tra Pricing::isValid(), ghi TXT trước khi thay cấu hình RAM. Service không gọi save thêm.
 
@@ -422,31 +422,32 @@ Kiểm tra quyền -> Kiểm tra paidAmount -> [Sai: invalid_argument]
 ## 6. Nội dung thay đổi và điểm cần chốt
 
 - Giữ 8 hàm public, không thêm save hoặc helper, không đổi enum/API.
-- Ngoại lệ DIP tương tự RolePermissionRepository: cần thống nhất và ghi rõ trong AGENTS.md hoặc tài liệu kiến trúc liên quan; không tự sửa quy chuẩn trong bước này.
-- Ba hàm tính toán chuyển từ requireLogin sang PRICING_VIEW. Đây là thay đổi chính sách quyền: tài khoản chỉ có TICKET_SELL mà thiếu PRICING_VIEW sẽ không thể hoàn thành luồng tính giá. Bảng quyền mặc định cấp cả hai cho ADMIN/STAFF. Không thêm quyền hoặc sửa BookingService lúc này; cần kiểm thử quyền tùy chỉnh và cập nhật mô tả business_rules.md sau khi chốt.
+- Ngoại lệ DIP của PricingRepository đã ghi ngắn gọn trong AGENTS.md; Service nhận dependency qua constructor.
+- Ba hàm tính toán chuyển từ requireLogin sang PRICING_VIEW. Đây là thay đổi chính sách quyền: tài khoản chỉ có TICKET_SELL mà thiếu PRICING_VIEW sẽ không thể hoàn thành luồng tính giá. Bảng quyền mặc định cấp cả hai cho ADMIN/STAFF. Quyền tùy chỉnh đã được kiểm thử; phạm vi PRICING_VIEW đã cập nhật trong business_rules.md. BookingService chưa được tích hợp lại.
 - Loại validation trùng ở update; giữ kiểm tra nullptr, enum và tham số tính toán.
 - Dùng numeric_limits và đổi thứ tự phép nhân/chia; không đổi công thức nghiệp vụ. Không cộng dồn ưu đãi, không làm tròn tiền, điểm tính riêng từng vé.
 - Giá mặc định STANDARD 70000, VIP 100000, COUPLE 160000, STUDENT 10%, MEMBER 5%; cấu hình thực tế lấy từ TXT, không dùng mặc định thay cho file lỗi. Ví dụ COUPLE, STUDENT và thành viên: giảm 16000, trả 144000, 14 điểm.
 - update ghi TXT trước khi thay RAM; lỗi ghi có thể làm file thay đổi một phần, không bảo đảm ghi nguyên tử. to_string có giới hạn độ chính xác khi serialize; không thay schema hoặc cơ chế lưu trong phạm vi này.
 - BookingService giữ snapshot giá/điểm trên vé và chịu trách nhiệm cộng/thu hồi điểm. Không sửa các caller chưa refactor.
 
-## 7. Kiểm thử dự kiến
+## 7. Kiểm thử
 
-Tạo `tests/test_pricing_service.cpp`, dùng PricingRepository thực với TXT tạm riêng và AuthService với dependency phù hợp. Không giả lập PricingRepository bằng IRepository vì không có interface tương ứng.
+Ngày 28/11/2026, `tests/test_pricing_service.cpp` dùng PricingRepository thực và TXT tạm riêng; biên dịch C++17 và chạy đạt **Passed: 67, Failed: 0, Total: 67**. Hồi quy MemberService **45/45**, StaffService **32/32**, AuthService **31/31**, MovieService **41/41**, RoomService **43/43 PASS**. Tổng sáu bài: **259 PASS, 0 FAIL**. `.h/.cpp` khớp hai khối code Markdown 100%; giữ 8 hàm public, không có hàm private, DI qua `PricingRepository&` đặc thù và Permission-only.
 
-- [ ] Constructor DI, toàn bộ 8 hàm public.
-- [ ] Load đúng 5 khóa, thiếu file, dữ liệu sai, trùng khóa, reload thành công/thất bại; getPricing null khi chưa nạp.
-- [ ] PRICING_VIEW và PRICING_UPDATE độc lập; chưa đăng nhập, inactive, thiếu quyền kể cả ADMIN; chỉ TICKET_SELL không đủ cho phép tính.
-- [ ] Cập nhật từng loại ghế, từng tỷ lệ; giữ nguyên các thuộc tính khác; đọc lại TXT xác nhận lưu.
-- [ ] Enum sai, giá 0/âm/NaN/vô cực, tỷ lệ âm/trên 100/NaN/vô cực; tỷ lệ 0 và 100 hợp lệ; không đổi RAM khi update thất bại.
-- [ ] Lỗi ghi TXT nếu môi trường cho phép tái hiện an toàn; không khẳng định file cũ nguyên vẹn.
-- [ ] getBasePrice đủ ba loại, enum sai, chưa nạp.
-- [ ] calculateDiscount: REGULAR/STUDENT, có/không thành viên, tỷ lệ bằng nhau, tỷ lệ thành viên cao hơn, không cộng dồn, enum sai, giá không hợp lệ, chưa nạp, giá hữu hạn rất lớn.
-- [ ] calculatePaidAmount: giảm 0, giảm toàn bộ, phần thập phân, giảm âm/vượt giá, NaN/vô cực; không yêu cầu loaded.
-- [ ] calculatePoints: không thành viên, 0, dưới 10000, đúng 10000, phần dư, giới hạn int và vượt giới hạn, âm/NaN/vô cực; không yêu cầu loaded.
-- [ ] Kiểm thử hồi quy Member 45, Staff 32, Auth 31, Movie 41, Room 43 (192 ca trước đó; chưa chạy lại).
+- [x] Constructor DI và toàn bộ 8 hàm public.
+- [x] Load đúng 5 khóa, thiếu file, dữ liệu sai, trùng khóa, reload thành công/thất bại; getPricing null khi chưa nạp.
+- [x] PRICING_VIEW và PRICING_UPDATE độc lập; chưa đăng nhập, inactive, thiếu quyền kể cả ADMIN; chỉ TICKET_SELL không đủ cho phép tính.
+- [x] Cập nhật ba loại ghế và hai tỷ lệ; giữ thuộc tính khác, nạp lại từ TXT xác nhận lưu.
+- [x] Enum sai, giá 0/âm/NaN/vô cực, tỷ lệ âm/trên 100/NaN/vô cực; tỷ lệ 0 và 100 hợp lệ; không đổi RAM khi update thất bại.
+- [x] Lỗi ghi TXT trong thư mục tạm: update trả false và cấu hình RAM giữ nguyên.
+- [x] getBasePrice đủ ba loại, enum sai và chưa nạp.
+- [x] calculateDiscount: REGULAR/STUDENT, có/không thành viên, tỷ lệ bằng nhau hoặc thành viên cao hơn, không cộng dồn, enum và giá sai, chưa nạp, giá hữu hạn rất lớn không tràn trung gian.
+- [x] calculatePaidAmount: giảm 0/toàn bộ, phần thập phân, giảm âm/vượt giá, NaN/vô cực; không yêu cầu loaded.
+- [x] calculatePoints: không thành viên, 0, dưới/đúng 10000, phần dư, giới hạn int/vượt giới hạn, âm/NaN/vô cực; không yêu cầu loaded.
+- [x] Hồi quy Member 45, Staff 32, Auth 31, Movie 41, Room 43; 192/192 PASS.
+- [ ] Chưa kiểm chứng tính nguyên tử của TXT nếu ghi thất bại giữa chừng và tích hợp BookingService.
 
-Lệnh PowerShell dự kiến, cần xác minh đường dẫn và dependency thực tế khi triển khai:
+Lệnh PowerShell tham khảo; khi chạy thực tế đã chọn các dependency cần thiết, loại Service chưa refactor:
 
 ```powershell
 $src = Get-ChildItem src -Recurse -Filter *.cpp | Where-Object {
@@ -458,7 +459,7 @@ g++ -std=c++17 -I src tests/test_pricing_service.cpp $src.FullName -o test_prici
 if ($LASTEXITCODE -eq 0) { .\test_pricing_service.exe }
 ```
 
-Nếu các source khác không tương thích, loại đúng file ngoài phạm vi và ghi rõ lý do; không sửa code chưa refactor chỉ để biên dịch test. Mỗi test có main riêng. Ghi Passed/Failed/Total thực tế và giới hạn chưa kiểm chứng. Chưa có kết quả test PricingService.
+Mỗi test có main riêng. BookingService chưa được biên dịch trong cấu hình test do còn gọi API cũ `InvoiceRepository::rollbackPending()` và `AuthService::requireAdmin()`; chưa sửa module này.
 
 ## 8. Bàn giao
 
@@ -467,8 +468,8 @@ Nếu các source khác không tương thích, loại đúng file ngoài phạm 
 - [x] Review, xác nhận ngoại lệ DIP và phạm vi PRICING_VIEW, CHỐT MARKDOWN.
 - [x] Triển khai .h/.cpp khớp 100%.
 - [x] Biên dịch C++17 `PricingService.cpp` và kiểm tra cú pháp cùng `AuthService.cpp`, `PricingRepository.cpp`, `Pricing.cpp`; hai file `.h/.cpp` khớp khối code Markdown 100%.
-- [ ] Viết, chạy test PricingService và hồi quy; chưa đánh dấu hoàn thành module.
-- [ ] Cập nhật PricingService.md, tài liệu kiến trúc/nghiệp vụ liên quan và tiến độ, phân công, Task_Kiet theo phạm vi được duyệt.
+- [x] Viết và chạy test PricingService 67/67 PASS cùng năm bài hồi quy 192/192 PASS; hoàn thành module trong phạm vi đã kiểm thử.
+- [x] Cập nhật PricingService.md, AGENTS.md, business_rules.md và tài liệu tiến độ, phân công, Task_Kiet; ghi rõ giới hạn chưa kiểm chứng.
 - [ ] Commit/push do người phụ trách thực hiện.
 
-Vị trí tài liệu chi tiết theo cấu trúc nhóm hiện dùng: `docs/src(docs)/business/PricingService.md`; bản thiết kế đã CHỐT MARKDOWN và triển khai mã nguồn, chưa được xem là module đã kiểm thử. Kiểm tra cú pháp `BookingService.cpp` còn lỗi tại lời gọi `InvoiceRepository::rollbackPending()` và `AuthService::requireAdmin()` đã không còn tồn tại; chưa xử lý Service ngoài phạm vi. Không sửa Repository, Model, BookingService hoặc Git ở bước này.
+Vị trí tài liệu chi tiết theo cấu trúc nhóm hiện dùng: `docs/src(docs)/business/PricingService.md`; bản thiết kế đã CHỐT MARKDOWN, triển khai và kiểm thử trong phạm vi nêu trên. Kiểm tra cú pháp `BookingService.cpp` còn lỗi tại lời gọi `InvoiceRepository::rollbackPending()` và `AuthService::requireAdmin()` đã không còn tồn tại; chưa xử lý Service ngoài phạm vi.

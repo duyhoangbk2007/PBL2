@@ -47,7 +47,7 @@
 | `PRICING_VIEW` | Có | Có |
 | `PRICING_UPDATE` | Có | Không |
 
-Bảng hiện gồm 31 mã quyền; file `data/role_permissions.txt` hiện có 31 cặp cho `ADMIN` và 10 cặp cho `STAFF`. Hai cột role chỉ mô tả **dữ liệu mặc định**, không phải điều kiện quyền viết cứng. `PRICING_VIEW` cho xem bảng giá/giá gốc, `PRICING_UPDATE` cho sửa giá ghế và tỷ lệ ưu đãi. Có mã quyền không có nghĩa mọi nghiệp vụ tương ứng đã hoàn thiện.
+Bảng hiện gồm 31 mã quyền; file `data/role_permissions.txt` hiện có 31 cặp cho `ADMIN` và 10 cặp cho `STAFF`. Hai cột role chỉ mô tả **dữ liệu mặc định**, không phải điều kiện quyền viết cứng. `PRICING_VIEW` cho xem bảng giá/giá gốc và gọi các hàm tính tiền giảm, tiền thực trả, điểm; `PRICING_UPDATE` cho sửa giá ghế và tỷ lệ ưu đãi. Chỉ có `TICKET_SELL` mà thiếu `PRICING_VIEW` không đủ quyền gọi các hàm tính của PricingService. Có mã quyền không có nghĩa mọi nghiệp vụ tương ứng đã hoàn thiện.
 
 Chưa đăng nhập hoặc tài khoản đã bị vô hiệu hóa thì từ chối nghiệp vụ được bảo vệ; `AuthService` tra lại trạng thái tài khoản khi kiểm tra quyền. Thiếu file quyền, sai định dạng hoặc cặp trùng phải từ chối truy cập, không dùng bảng nạp dở hay cấp quyền dự phòng; file rỗng không cấp quyền nào. **Khoảng trống hiện tại:** `RolePermissionRepository::load()` chưa kiểm tra mã quyền có thuộc danh mục 31 mã; quy tắc từ chối mã lạ cần được triển khai và kiểm thử sau khi nhóm chốt nguồn danh mục. Phiên bản này chỉ đọc bảng quyền; chưa có API/GUI cấp hoặc thu hồi quyền, thay đổi file ngoài ứng dụng chỉ có hiệu lực sau khi nạp lại/khởi động lại.
 
