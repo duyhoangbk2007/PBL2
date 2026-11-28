@@ -2,49 +2,54 @@
 #define TICKET_REPOSITORY_H
 
 #include <string>
-#include <vector>
-
+#include "IRepository.h"
 #include "Repository.h"
 #include "../models/Ticket.h"
 
-class ShowtimeRepository;
-class SeatRepository;
-class InvoiceRepository;
+class Showtime;
+class Seat;
+class Invoice;
 
-class TicketRepository
+class TicketRepository : public IRepository<Ticket>
 {
 private:
     Repository<Ticket> repo;
-    std::vector<std::string> pendingIds;
-    ShowtimeRepository& showtimeRepo;
-    SeatRepository& seatRepo;
-    InvoiceRepository& invoiceRepo;
+    IRepository<Showtime>& showtimeRepo;
+    IRepository<Seat>& seatRepo;
+    IRepository<Invoice>& invoiceRepo;
 
+    static bool isValidTicket(const Ticket* ticket);
     static std::string getTicketId(Ticket* ticket);
     static Ticket* stringToTicket(const std::string& line);
     static std::string ticketToString(Ticket* ticket);
-    static bool isValidTicket(const Ticket* ticket);
 
     bool isValidReference(const Ticket* ticket);
+
+    bool isSeatSold(const std::string& showtimeId,
+                    const std::string& seatId);
     void unlinkAll();
 
 public:
-    TicketRepository(const std::string& filePath, ShowtimeRepository& showtimeRepo, SeatRepository& seatRepo, InvoiceRepository& invoiceRepo);
-    ~TicketRepository();
-    
-    bool load();
-    bool save();
+    TicketRepository(const std::string& filePath,
+                     IRepository<Showtime>& showtimeRepo,
+                     IRepository<Seat>& seatRepo,
+                     IRepository<Invoice>& invoiceRepo);
+    ~TicketRepository() override;
 
-    bool add(Ticket* ticket);
-    bool rollbackPending(const std::string& ticketId);
-    Ticket* findById(const std::string& ticketId);
-    Ticket* getAt(int index);
-    int count();
-    bool isLoaded();
+    // Doc va ghi du lieu
+    bool load() override;
+    bool save() override;
 
-    std::vector<Ticket*> getByShowtime(const std::string& showtimeId);
-    std::vector<Ticket*> getByInvoice(const std::string& invoiceId);
-    bool isSeatSold(const std::string& showtimeId, const std::string& seatId);
+    // Quan ly du lieu
+    bool add(Ticket* ticket) override;
+    bool update(const Ticket& newValues) override;
+    bool removeById(const std::string& ticketId) override;
+
+    // Truy van du lieu
+    Ticket* findById(const std::string& ticketId) override;
+    Ticket* getAt(int index) override;
+    int count() override;
+    bool isLoaded() override;
 };
 
 #endif
