@@ -1,11 +1,13 @@
 #include "PricingService.h"
 #include <stdexcept>
 #include <cmath>
+#include <limits>
 using namespace std;
 
-
-PricingService::PricingService(PricingRepository& pricingRepo, AuthService& authService)
-    : pricingRepo(pricingRepo), authService(authService)
+PricingService::PricingService(PricingRepository& pricingRepo,
+                               AuthService& authService)
+    : pricingRepo(pricingRepo),
+      authService(authService)
 {
 }
 
@@ -25,10 +27,11 @@ bool PricingService::updateSeatPrice(SeatType seatType, double newPrice)
     authService.requirePermission("PRICING_UPDATE");
 
     const Pricing* current = pricingRepo.getPricing();
-    if (current == nullptr || !isfinite(newPrice) || newPrice <= 0)
+    if (current == nullptr)
     {
         return false;
     }
+
     double standardPrice = current->getStandardPrice();
     double vipPrice = current->getVipPrice();
     double couplePrice = current->getCouplePrice();
@@ -49,13 +52,12 @@ bool PricingService::updateSeatPrice(SeatType seatType, double newPrice)
     {
         return false;
     }
-    Pricing newPricing(
-        standardPrice,
-        vipPrice,
-        couplePrice,
-        current->getStudentDiscount(),
-        current->getMemberDiscount()
-    );
+
+    Pricing newPricing(standardPrice,
+                       vipPrice,
+                       couplePrice,
+                       current->getStudentDiscount(),
+                       current->getMemberDiscount());
     return pricingRepo.update(newPricing);
 }
 
@@ -64,12 +66,14 @@ bool PricingService::updateDiscountRate(DiscountType discountType, double newRat
     authService.requirePermission("PRICING_UPDATE");
 
     const Pricing* current = pricingRepo.getPricing();
-    if (current == nullptr || !isfinite(newRate) || newRate < 0 || newRate > 100)
+    if (current == nullptr)
     {
         return false;
     }
+
     double studentDiscount = current->getStudentDiscount();
     double memberDiscount = current->getMemberDiscount();
+
     if (discountType == DiscountType::STUDENT)
     {
         studentDiscount = newRate;
@@ -82,21 +86,19 @@ bool PricingService::updateDiscountRate(DiscountType discountType, double newRat
     {
         return false;
     }
-    Pricing newPricing(
-        current->getStandardPrice(),
-        current->getVipPrice(),
-        current->getCouplePrice(),
-        studentDiscount,
-        memberDiscount
-    );
+
+    Pricing newPricing(current->getStandardPrice(),
+                       current->getVipPrice(),
+                       current->getCouplePrice(),
+                       studentDiscount,
+                       memberDiscount);
     return pricingRepo.update(newPricing);
 }
 
-// Lay gia goc theo loai ghe
 double PricingService::getBasePrice(SeatType seatType) const
 {
-    authService.requirePermission("PRICING_VIEW"); 
-    
+    authService.requirePermission("PRICING_VIEW");
+
     const Pricing* current = pricingRepo.getPricing();
     if (current == nullptr)
     {
@@ -117,10 +119,11 @@ double PricingService::getBasePrice(SeatType seatType) const
     throw invalid_argument("Loai ghe khong hop le");
 }
 
-// Tinh so tien duoc giam
-double PricingService::calculateDiscount(double basePrice, TicketType ticketType, bool isMember) const
+double PricingService::calculateDiscount(double basePrice,
+                                         TicketType ticketType,
+                                         bool isMember) const
 {
-    authService.requireLogin();
+    authService.requirePermission("PRICING_VIEW");
 
     const Pricing* current = pricingRepo.getPricing();
     if (current == nullptr)
@@ -131,6 +134,7 @@ double PricingService::calculateDiscount(double basePrice, TicketType ticketType
     {
         throw invalid_argument("Gia ve khong hop le");
     }
+
     double discountRate = 0;
     if (ticketType == TicketType::STUDENT)
     {
@@ -140,18 +144,16 @@ double PricingService::calculateDiscount(double basePrice, TicketType ticketType
     {
         throw invalid_argument("Loai ve khong hop le");
     }
-    // áp dụng mức giảm giá coa nhất
     if (isMember && current->getMemberDiscount() > discountRate)
     {
         discountRate = current->getMemberDiscount();
     }
-    return basePrice * discountRate / 100.0;
+    return basePrice * (discountRate / 100.0);
 }
 
-// Tinh so tien khach phai tra
 double PricingService::calculatePaidAmount(double basePrice, double discountAmount) const
 {
-    authService.requireLogin();
+    authService.requirePermission("PRICING_VIEW");
 
     if (!isfinite(basePrice) || !isfinite(discountAmount) ||
         basePrice <= 0 || discountAmount < 0 ||
@@ -159,14 +161,12 @@ double PricingService::calculatePaidAmount(double basePrice, double discountAmou
     {
         throw invalid_argument("So tien khong hop le");
     }
-
     return basePrice - discountAmount;
 }
 
-// Tinh diem tich luy
 int PricingService::calculatePoints(double paidAmount, bool isMember) const
 {
-    authService.requireLogin();
+    authService.requirePermission("PRICING_VIEW");
 
     if (!isfinite(paidAmount) || paidAmount < 0)
     {
@@ -176,8 +176,9 @@ int PricingService::calculatePoints(double paidAmount, bool isMember) const
     {
         return 0;
     }
-    double points = floor(paidAmount / 10000.0); //floor làm tròn xuống số nguyên gần nhất
-    if (points > 2147483647.0)
+
+    double points = floor(paidAmount / 10000.0);
+    if (points > numeric_limits<int>::max())
     {
         throw invalid_argument("So diem vuot gioi han");
     }
